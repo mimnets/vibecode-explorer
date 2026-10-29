@@ -1,0 +1,86 @@
+{
+  "name": "vibecode-explorer",
+  "displayName": "VibeCode Explorer",
+  "description": "Local-first dashboard for exploring workspace changes and file dependencies during AI-assisted coding.",
+  "version": "0.1.0",
+  "private": true,
+  "license": "UNLICENSED",
+  "publisher": "mimnets",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/mimnets/vibedev-explorer.git"
+  },
+  "engines": {
+    "vscode": "^1.100.0"
+  },
+  "categories": [
+    "Visualization",
+    "Other"
+  ],
+  "main": "./out/src/extension/extension.js",
+  "activationEvents": [],
+  "extensionDependencies": [
+    "vscode.git"
+  ],
+  "capabilities": {
+    "untrustedWorkspaces": {
+      "supported": "limited",
+      "description": "In untrusted workspaces VibeCode Explorer does not read Git data or analyze files."
+    },
+    "virtualWorkspaces": false
+  },
+  "contributes": {
+    "commands": [
+      {
+        "command": "vibecodeExplorer.openDashboard",
+        "title": "Open Dashboard",
+        "category": "VibeCode Explorer"
+      },
+      {
+        "command": "vibecodeExplorer.openPreview",
+        "title": "Open App Preview",
+        "category": "VibeCode Explorer"
+      }
+    ],
+    "configuration": {
+      "title": "VibeCode Explorer",
+      "properties": {
+        "vibecodeExplorer.previewUrl": {
+          "type": "string",
+          "default": "",
+          "markdownDescription": "Local app URL to preview (for example `http://localhost:3000`). Only `http`/`https` URLs on `localhost`, `127.0.0.1` or `[::1]` are allowed. VibeCode Explorer never starts your server."
+        },
+        "vibecodeExplorer.maxGraphFiles": {
+          "type": "number",
+          "default": 500,
+          "minimum": 10,
+          "maximum": 5000,
+          "description": "Maximum number of source files scanned for the dependency graph."
+        }
+      }
+    }
+  },
+  "scripts": {
+    "vscode:prepublish": "npm run compile",
+    "compile": "tsc -p .",
+    "watch": "tsc -p . -w",
+    "lint": "eslint src test",
+    "test:unit": "npm run compile && node --test \"out/test/unit/*.test.js\"",
+    "test:integration": "npm run compile && node out/test/integration/runTest.js",
+    "test": "npm run lint && npm run test:unit && npm run test:integration",
+    "package": "vsce package --skip-license --out vibecode-explorer.vsix"
+  },
+  "dependencies": {
+    "cytoscape": "3.34.4",
+    "typescript": "~6.0.3"
+  },
+  "devDependencies": {
+    "@eslint/js": "^10.0.1",
+    "@types/node": "^24.19.2",
+    "@types/vscode": "1.100.0",
+    "@vscode/test-electron": "^3.1.0",
+    "@vscode/vsce": "^4.1.0",
+    "eslint": "^10.13.0",
+    "typescript-eslint": "^8.72.1"
+  }
+}

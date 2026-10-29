@@ -1,0 +1,11 @@
+**
+!package.json
+!README.md
+!out/src/**/*.js
+!src/webview/**
+!node_modules/cytoscape/dist/cytoscape.min.js
+!node_modules/cytoscape/package.json
+!node_modules/cytoscape/LICENSE
+!node_modules/typescript/lib/typescript.js
+!node_modules/typescript/package.json
+!node_modules/typescript/LICENSE.txt
