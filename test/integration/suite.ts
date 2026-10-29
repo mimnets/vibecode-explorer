@@ -164,6 +164,34 @@ export async function run(): Promise<void> {
     assert.ok(!(input instanceof vscode.TabInputText && input.uri.path.endsWith('.env')));
   });
 
+  // Phase 5: plain-language explanations from static facts.
+  const nodeOf = (p: string) => state.graph.nodes.find((n) => n.path === p)?.id as string;
+  check('circular imports are marked in the graph', () => {
+    assert.deepEqual(state.graph.cycleNodes.slice().sort(), [nodeOf('src/ping.ts'), nodeOf('src/pong.ts')].sort());
+    assert.equal(state.graph.cycleEdges.length, 2);
+    assert.ok(state.glossary['circular import']);
+  });
+  const utilExplained = await api.explainTarget(repoFolder, utilTarget, described.details, state, 0);
+  check('a file is explained in plain words', () => {
+    assert.equal(utilExplained.role, 'leaf');
+    assert.ok(utilExplained.sentences.includes('It does not import anything.'), JSON.stringify(utilExplained.sentences));
+    assert.ok(utilExplained.sentences.includes('2 files use it (index.ts and new.ts).'), JSON.stringify(utilExplained.sentences));
+    assert.ok(utilExplained.sentences.some((x) => /^It was changed in 1 commit/.test(x)), JSON.stringify(utilExplained.sentences));
+  });
+  const pingTarget = targets.get(idOf('src/ping.ts', 'f') as string)!;
+  const pingDescribed = await api.describeTarget('f1', pingTarget);
+  const pingExplained = await api.explainTarget(repoFolder, pingTarget, pingDescribed.details, state, 0);
+  check('a circular import gets a tip naming the other file', () => {
+    assert.match(pingExplained.tips[0] ?? '', /ping\.ts and pong\.ts import each other/);
+    assert.ok(pingExplained.sentences.includes('It has not been committed yet.'));
+  });
+  const symbolText = await api.explainSymbolAt(described.symbols.get(utilSymbol!.id)!, usages);
+  check('a symbol is explained with its declaration and usages', () => {
+    assert.equal(symbolText[0], 'util is a function defined on line 1.');
+    assert.ok(symbolText.some((x) => x.startsWith('Its declaration: function util(): number')), JSON.stringify(symbolText));
+    assert.ok(symbolText.some((x) => /^It appears in \d+ places in 3 files/.test(x)), JSON.stringify(symbolText));
+  });
+
   const plain = await api.collectState(1, true);
   const plainHistory = await api.loadHistory(vscode.workspace.workspaceFolders![1], 50);
   check('no-Git folder has no history', () => assert.equal(plainHistory.result.git.kind, 'noGit'));

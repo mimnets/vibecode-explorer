@@ -2,6 +2,7 @@ import * as crypto from 'crypto';
 import * as path from 'path';
 import * as vscode from 'vscode';
 import { CommitEntry, headUri } from '../git/gitChanges';
+import { explainSymbolAt, explainTarget } from './explain';
 import { describeCommit, HistoryFile, loadHistory, openCommitFile } from './history';
 import { askToAllowSessions, describeSession, loadSessions, StoredSession } from './agentSessions';
 import { createNote, ensureNotesAllowed, listNotes, NoteEntry, notesFor, NoteSubject } from './notes';
@@ -159,6 +160,12 @@ export class Dashboard {
         this.post({ type: 'details', details });
         this.subject = { id: msg.id, label: target.relPath, value: { about: target.relPath } };
         await this.postNotes();
+        const folder = this.folder();
+        if (folder && this.state && vscode.workspace.isTrusted) {
+          const notes = this.allNotes ? notesFor(this.allNotes, { about: target.relPath }).length : 0;
+          const explanation = await explainTarget(folder, target, details, this.state, notes);
+          this.post({ type: 'explain', subject: msg.id, ...explanation });
+        }
         break;
       }
       case 'history': {
@@ -240,6 +247,7 @@ export class Dashboard {
           .filter(([id, t]) => id.startsWith('f') && result.files.includes(t.relPath))
           .map(([id]) => id);
         this.post({ type: 'usages', result, nodeIds });
+        this.post({ type: 'symbolExplain', symbol: loc.name, kind: (loc.kind ?? '').toLowerCase(), sentences: await explainSymbolAt(loc, result) });
         break;
       }
     }
@@ -367,7 +375,7 @@ export class Dashboard {
     </div>
     <div id="graph"></div>
     <div class="legend muted">
-      <span class="dot file"></span>file <span class="dot changed"></span>changed <span class="dot untracked"></span>new <span class="dot unknown"></span>unknown import <span class="dot used"></span>uses selected symbol <span class="dot commit"></span>in selected commit or session
+      <span class="dot file"></span>file <span class="dot changed"></span>changed <span class="dot untracked"></span>new <span class="dot unknown"></span>unknown import <span class="dot used"></span>uses selected symbol <span class="dot commit"></span>in selected commit or session <span class="dot cycle"></span>circular import
     </div>
   </section>
   <aside class="pane" id="info"><h2>Details</h2><p class="muted">Select a file in the graph or the changes list.</p></aside>

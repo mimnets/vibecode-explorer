@@ -1,5 +1,7 @@
 import * as path from 'path';
 import * as vscode from 'vscode';
+import { findCycles } from '../analysis/explain';
+import { GLOSSARY } from '../analysis/glossary';
 import { buildGraph, FileAnalysis } from '../analysis/graph';
 import { SOURCE_EXTENSIONS } from '../analysis/imports';
 import { EXCLUDE_GLOB, isSensitiveFile } from '../analysis/sensitive';
@@ -33,12 +35,23 @@ export interface DashboardState {
     | { kind: 'unavailable'; reason: string }
     | { kind: 'restricted' }
     | { kind: 'none' };
-  graph: { nodes: GraphNode[]; edges: { source: string; target: string }[]; fileCount: number; truncated: boolean; maxFiles: number };
+  graph: {
+    nodes: GraphNode[];
+    edges: { source: string; target: string }[];
+    fileCount: number;
+    truncated: boolean;
+    maxFiles: number;
+    /** Node ids in a circular import, and indexes of the edges that form the loops. */
+    cycleNodes: string[];
+    cycleEdges: number[];
+  };
+  /** Plain-language explanations of terms (Phase 5). */
+  glossary: Readonly<Record<string, string>>;
   previewUrl: string;
   scannedAt: string;
 }
 
-const emptyGraph = (maxFiles: number): DashboardState['graph'] => ({ nodes: [], edges: [], fileCount: 0, truncated: false, maxFiles });
+const emptyGraph = (maxFiles: number): DashboardState['graph'] => ({ nodes: [], edges: [], fileCount: 0, truncated: false, maxFiles, cycleNodes: [], cycleEdges: [] });
 
 /** Collects everything the dashboard shows for one workspace folder. Never writes to the workspace. */
 export async function collectState(folderIndex: number, refreshGit: boolean): Promise<{ state: DashboardState; targets: Map<string, Target> }> {
@@ -53,6 +66,7 @@ export async function collectState(folderIndex: number, refreshGit: boolean): Pr
     folderIndex: index,
     git: { kind: 'none' },
     graph: emptyGraph(maxFiles),
+    glossary: GLOSSARY,
     previewUrl: config.get<string>('previewUrl', ''),
     scannedAt: new Date().toLocaleTimeString(),
   };
@@ -126,7 +140,16 @@ export async function collectState(folderIndex: number, refreshGit: boolean): Pr
     if (f.dynamicUnknown > 0) edges.push({ source, target: unknownNode('? dynamic import') });
   }
 
-  state.graph = { nodes, edges, fileCount: graph.files.length, truncated: graph.truncated || uris.length >= maxFiles * 4, maxFiles };
+  // Circular imports: groups of file nodes that import each other in a loop.
+  const fileIds = nodes.filter((n) => n.kind === 'file').map((n) => n.id);
+  const groupOf = new Map<string, number>();
+  findCycles(fileIds, edges.map((e): [string, string] => [e.source, e.target])).forEach((g, i) => g.forEach((id) => groupOf.set(id, i)));
+  const cycleEdges = edges.flatMap((e, i) => (groupOf.has(e.source) && groupOf.get(e.source) === groupOf.get(e.target) ? [i] : []));
+
+  state.graph = {
+    nodes, edges, fileCount: graph.files.length, truncated: graph.truncated || uris.length >= maxFiles * 4, maxFiles,
+    cycleNodes: [...groupOf.keys()], cycleEdges,
+  };
   return { state, targets };
 }
 
@@ -144,7 +167,7 @@ export interface FileDetails {
 }
 
 /** A code position the webview may jump to, addressed by an opaque id (`s…` symbol, `r…` usage). */
-export interface CodeLocation { uri: vscode.Uri; relPath: string; position: vscode.Position; name: string }
+export interface CodeLocation { uri: vscode.Uri; relPath: string; position: vscode.Position; name: string; kind?: string }
 
 const MAX_SYMBOLS = 200;
 const MAX_USAGES = 100;
@@ -182,7 +205,7 @@ export async function describeTarget(id: string, t: Target): Promise<{ details: 
         // selectionRange is the symbol's name, which is where reference lookups must start.
         const position = 'selectionRange' in s ? s.selectionRange.start : s.location.range.start;
         const symbolId = `s${details.symbols.length}`;
-        symbols.set(symbolId, { uri: t.uri, relPath: t.relPath, position, name: s.name });
+        symbols.set(symbolId, { uri: t.uri, relPath: t.relPath, position, name: s.name, kind: vscode.SymbolKind[s.kind] });
         details.symbols.push({ id: symbolId, name: s.name, kind: vscode.SymbolKind[s.kind], line: position.line + 1, depth });
         if ('children' in s && depth < 2) walk(s.children, depth + 1);
       }

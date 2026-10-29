@@ -7,7 +7,8 @@ A private, local-first VS Code extension for seeing what changed during AI-assis
 - **Notes:** attach your own notes (what, why, decision) to a file or a commit. They are saved as Markdown files in `.vibecode/notes/`, only after you allow it.
 - **AI sessions:** your prompts to Claude Code, the security points in its replies, tokens used, files it changed, and short learning tips. Read from Claude Code's own logs on your computer, only after you allow it.
 - **Dependency graph:** an interactive graph of JavaScript/TypeScript files and their local imports. Click a node to inspect it, double-click to open it, and zoom, pan or fit the view.
-- **Details panel:** path, type, Git status, imports and code symbols for the selected file.
+- **Details panel:** path, type, Git status, imports and code symbols for the selected file, with an **In plain words** summary (what it uses, what uses it, its role, history and notes) and code tips.
+- **Learning aids:** click **?** next to a term for a short explanation. Clicking a symbol explains it from its declaration and usages. Circular imports are outlined in red in the graph. No AI is used.
 - **Preview:** opens your configured local app URL in VS Code's Simple Browser.
 
 Nothing is uploaded and no AI is called. The extension only reads your project. The one exception is your own notes, which it saves in `.vibecode/notes/` only after you allow it.
@@ -43,6 +44,7 @@ What to click:
 - **Details** (right): **Open source** jumps to the file. Click a symbol to jump to it and list where it is used (**Used in**). The files that use it are outlined in purple in the graph. This needs VS Code's language support for that file type (built-in for JS/TS).
 - **Notes** (in Details, for a file or a commit): **Add note** asks once per project whether notes may be saved in `.vibecode/notes/`, asks for a title, then opens the new note in the editor. Click a note to open it. Edit or delete notes like any other file. Whether to commit them is up to you.
 - **AI sessions** (left, third tab): click **Allow reading Claude Code logs** once per project. You'll see totals and a list of sessions. Click one for its prompts, tokens, changed files (outlined in blue in the graph), commits made during it, security mentions and tips. **VibeCode Explorer: Reset Permissions** in the Command Palette makes it ask again (for notes too).
+- **In plain words** (top of Details): facts about the selected file, its role (entry point, hub or leaf), and up to 3 tips (circular import, large file, hub without a test). Click **?** next to any term for an explanation.
 - **Refresh** re-reads Git status and rescans imports. **Folder** switches between workspace folders.
 - **Open Preview**: first set `vibecodeExplorer.previewUrl` (for example `http://localhost:3000`) in Settings and start your app yourself.
 

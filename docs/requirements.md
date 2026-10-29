@@ -9,11 +9,11 @@ Status key: **Partial** = some of it is delivered and verified. **Constraint** =
 | # | Requirement | Status after Phase 1 |
 | --- | --- | --- |
 | 1 | See files created, changed or deleted during AI-assisted coding. | Partial: current working-tree changes against HEAD. Phase 3 adds commit history with the files each commit changed (owner-verified). No per-session view. |
-| 2 | Understand modules, functions, classes and variables. | Partial: a per-file symbol list. Phase 2 adds go-to and "used in" (owner-verified). No explanations yet. |
+| 2 | Understand modules, functions, classes and variables. | Partial: a per-file symbol list. Phase 2 adds go-to and "used in" (owner-verified). Phase 5 adds plain-language explanations (awaiting owner check). |
 | 3 | Visually explore files, imports, functions, APIs and database relationships. | Partial: a file-import graph for JS/TS relative imports. Phase 2 highlights the files that use a symbol. No API or database relationships yet. |
 | 4 | Understand why important changes were made. | Partial: Phase 3 shows each commit's full message. Phase 4 adds the owner's notes on files and commits (awaiting owner check). |
 | 5 | Preview working websites alongside their code. | Partial: opens a user-configured local URL in Simple Browser. |
-| 6 | Learn programming incrementally while developing. | Partial (awaiting owner check): Phase 4b shows rule-based tips for each AI session. |
+| 6 | Learn programming incrementally while developing. | Partial (awaiting owner check): Phase 4b shows rule-based tips for each AI session. Phase 5 adds plain-language file and symbol explanations, a glossary and code tips. |
 | 7 | Preserve educational notes, architecture explanations and decisions. | Partial (awaiting owner check): Phase 4 saves the owner's notes (what, why, decision) as Markdown in `.vibecode/notes/`, opt-in. |
 | 8 | Work across projects and programming languages. | Partial: any folder, multi-root, no-Git. Graph is JS/TS only. |
 | 9 | Support Claude, Qwen, Gemini and other agents without proprietary agent APIs. | Constraint: kept. Data comes from Git and files, never from agent APIs. |
@@ -89,6 +89,21 @@ Requested by the owner and approved on 2026-10-29 with the recommended choices: 
 | F | Claude Code reader behind an `AgentLogReader` interface, ready for other agents. No new dependency, no network | Done |
 
 Changed from the plan: commits made during a session are listed as text, with a pointer to the History tab, rather than as links. Owner verification is pending. Non-goals: money cost, live updates, other agents' readers, search, export.
+
+## Phase 5 scope: learning aids
+
+Approved by the owner on 2026-10-29 with the recommended choices: inline glossary explanations, and circular imports outlined in red.
+
+| # | Requirement | Status |
+| --- | --- | --- |
+| A | **In plain words** for the selected file: type, lines, local imports and packages, the files that use it, role (entry point, hub with 5 or more importers, leaf), top-level symbol counts, commit count and latest date, note count | Done (UI not auto-tested) |
+| B | Symbol explanation: kind, line, declaration and doc comment (VS Code hover provider), usage count. Says "may be unused" when only the definition is found | Done |
+| C | Glossary of about 55 hand-written terms, with a **?** button that shows the explanation inline. A unit test checks that every term the dashboard explains has an entry | Done (UI not auto-tested) |
+| D | Up to 3 code tips: circular import (naming the other files), large file (over 400 lines), hub without a matching `.test`/`.spec` file | Done |
+| E | Circular imports (strongly connected groups) outlined in red in the graph, with a legend entry | Done (UI not auto-tested) |
+| F | Static facts only: no AI, no network, no new dependency, read-only | Done |
+
+Owner verification is pending. Non-goals: AI-written explanations, tutorials, other languages, line-by-line explanations.
 
 ## Non-goals for Phase 1
 

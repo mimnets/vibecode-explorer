@@ -40,6 +40,13 @@ function createSample(root: string): string {
   write(path.join(repo, 'src/new.ts'), `import { util } from './util';\nexport const n = util();\n`);
   write(path.join(repo, '.env'), `API_KEY=changed-do-not-read\n`);
   fs.rmSync(path.join(repo, 'src/old.ts'));
+  // Phase 5: a circular import (untracked).
+  write(path.join(repo, 'src/ping.ts'), `import { pong } from './pong';
+export const ping = () => pong;
+`);
+  write(path.join(repo, 'src/pong.ts'), `import { ping } from './ping';
+export const pong = () => ping;
+`);
 
   const plain = path.join(root, 'plain-folder');
   write(path.join(plain, 'a.js'), `const b = require('./b');\n`);

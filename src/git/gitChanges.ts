@@ -22,7 +22,7 @@ interface GitRepository {
     readonly mergeChanges: GitChange[];
   };
   status(): Promise<void>;
-  log(options?: { maxEntries?: number }): Promise<GitCommit[]>;
+  log(options?: { maxEntries?: number; path?: string }): Promise<GitCommit[]>;
   /** Runs `git diff ref1...ref2`; both refs must be commits. */
   diffBetween(ref1: string, ref2: string): Promise<GitChange[]>;
 }
@@ -151,6 +151,18 @@ export async function getHistory(folder: vscode.WorkspaceFolder, max: number): P
   } catch {
     // A repository without commits makes `git log` fail.
     return { kind: 'ok', commits: [] };
+  }
+}
+
+/** How many commits changed a file (capped), and the date of the latest. Read-only. */
+export async function getFileHistory(folder: vscode.WorkspaceFolder, uri: vscode.Uri, max: number): Promise<{ count: number; capped: boolean; last?: Date } | undefined> {
+  const found = await findRepo(folder);
+  if (found.kind !== 'repo') return undefined;
+  try {
+    const commits = await found.repo.log({ maxEntries: max, path: uri.fsPath });
+    return { count: commits.length, capped: commits.length >= max, last: commits[0]?.authorDate };
+  } catch {
+    return undefined;
   }
 }
 

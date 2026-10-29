@@ -10,6 +10,8 @@
 
   /** @type {any} */
   let cy;
+  /** Term -> plain explanation, sent by the extension with the state. */
+  let glossary = {};
   let selectedId = '';
   /** Symbol whose usages are being looked up; stale replies are ignored. */
   let pendingSymbol = '';
@@ -28,6 +30,30 @@
     const node = document.createElement(tag);
     if (text !== undefined) node.textContent = text;
     if (className) node.className = className;
+    return node;
+  }
+
+  /** Adds a "?" button after a term; clicking shows its explanation inline (keyboard accessible). */
+  function withHelp(node, term) {
+    const text = glossary[String(term).toLowerCase()];
+    if (!text) return node;
+    const btn = el('button', '?', 'help-btn');
+    btn.title = `What does "${term}" mean?`;
+    btn.setAttribute('aria-expanded', 'false');
+    /** @type {HTMLElement | undefined} */
+    let box;
+    btn.addEventListener('click', () => {
+      if (box) {
+        box.remove();
+        box = undefined;
+      } else {
+        box = el('p', text, 'help');
+        // An inline term (a tag inside a heading) gets its explanation below the heading.
+        (node.tagName === 'SPAN' && node.parentElement ? node.parentElement : node).after(box);
+      }
+      btn.setAttribute('aria-expanded', String(!!box));
+    });
+    node.append(btn);
     return node;
   }
 
@@ -91,6 +117,8 @@
     else if (msg.type === 'details') renderDetails(msg.details);
     else if (msg.type === 'usagesLoading') renderUsagesLoading(msg.symbol);
     else if (msg.type === 'usages') renderUsages(msg.result, msg.nodeIds);
+    else if (msg.type === 'symbolExplain') renderSymbolExplain(msg);
+    else if (msg.type === 'explain') renderExplain(msg);
     else if (msg.type === 'history') renderHistory(msg.result);
     else if (msg.type === 'commit') renderCommit(msg.details, msg.nodeIds);
     else if (msg.type === 'notes') renderNotes(msg);
@@ -100,6 +128,7 @@
   });
 
   function renderState(state) {
+    glossary = state.glossary || {};
     $('status').textContent = 'Updated ' + state.scannedAt;
     const select = /** @type {HTMLSelectElement} */ ($('folder'));
     select.replaceChildren(...state.folders.map((name, i) => {
@@ -142,7 +171,7 @@
     for (const group of Object.keys(GROUP_LABELS)) {
       const items = git.changes.filter((c) => c.group === group);
       if (items.length === 0) continue;
-      list.append(el('h3', `${GROUP_LABELS[group]} (${items.length})`, 'group ' + group));
+      list.append(withHelp(el('h3', `${GROUP_LABELS[group]} (${items.length})`, 'group ' + group), group));
       const ul = el('ul', undefined, 'files');
       for (const c of items) {
         const li = el('li');
@@ -162,11 +191,13 @@
     const info = `${graph.fileCount} files · ${graph.edges.length} imports` + (graph.truncated ? ` · limited to ${graph.maxFiles} files` : '');
     $('graphInfo').textContent = info;
 
+    const cycleNodes = new Set(graph.cycleNodes || []);
+    const cycleEdges = new Set(graph.cycleEdges || []);
     const fg = cssVar('--vscode-foreground', '#ccc');
     const accent = cssVar('--vscode-focusBorder', '#0078d4');
     const elements = [
-      ...graph.nodes.map((n) => ({ data: { id: n.id, label: n.label, kind: n.kind, group: n.group || '' } })),
-      ...graph.edges.map((e, i) => ({ data: { id: 'e' + i, source: e.source, target: e.target } })),
+      ...graph.nodes.map((n) => ({ data: { id: n.id, label: n.label, kind: n.kind, group: n.group || '', cycle: cycleNodes.has(n.id) } })),
+      ...graph.edges.map((e, i) => ({ data: { id: 'e' + i, source: e.source, target: e.target, cycle: cycleEdges.has(i) } })),
     ];
     if (cy) cy.destroy();
     cy = cytoscape({
@@ -181,6 +212,8 @@
         { selector: 'node[group = "untracked"]', style: { 'background-color': '#4caf50' } },
         { selector: 'node[kind = "unknown"]', style: { shape: 'diamond', 'background-color': '#888', 'font-style': 'italic' } },
         { selector: 'edge', style: { width: 1, 'line-color': '#777', 'target-arrow-color': '#777', 'target-arrow-shape': 'triangle', 'curve-style': 'bezier', 'arrow-scale': 0.7, opacity: 0.7 } },
+        { selector: 'node[?cycle]', style: { 'border-width': 2, 'border-color': '#f14c4c' } },
+        { selector: 'edge[?cycle]', style: { width: 2, 'line-color': '#f14c4c', 'target-arrow-color': '#f14c4c' } },
         { selector: 'node:selected', style: { 'border-width': 3, 'border-color': accent } },
         { selector: '.faded', style: { opacity: 0.15 } },
         { selector: 'node.used', style: { 'border-width': 3, 'border-color': '#c586c0' } },
@@ -229,21 +262,22 @@
     const row = (k, v) => rows.append(el('dt', k), el('dd', v));
     row('Path', d.path);
     row('Type', d.fileType);
-    row('Git status', d.group ? GROUP_LABELS[d.group] : 'unchanged');
-    info.replaceChildren(el('h2', 'Details'), rows, open);
+    rows.append(withHelp(el('dt', 'Git status'), 'git status'));
+    rows.append(withHelp(el('dd', d.group ? GROUP_LABELS[d.group] : 'unchanged'), d.group || ''));
+    info.replaceChildren(el('h2', 'Details'), el('div', undefined, 'explain'), rows, open);
     if (d.note) info.append(el('p', d.note, 'muted'));
     currentSubject = d.id;
     info.append(el('div', undefined, 'notes'));
 
     if (d.analyzed) {
-      info.append(el('h3', `Imports (${d.imports.length})`));
+      info.append(withHelp(el('h3', `Imports (${d.imports.length})`), 'imports'));
       const ul = el('ul', undefined, 'files');
       for (const imp of d.imports) ul.append(el('li', `${imp.specifier}${imp.target ? ' → ' + imp.target : ''}  [${imp.kind}]`, 'mono'));
       if (d.dynamicUnknown) ul.append(el('li', `${d.dynamicUnknown} dynamic import(s) with unknown target`, 'muted'));
       info.append(ul);
     }
     if (!d.sensitive && d.group !== 'deleted') {
-      info.append(el('h3', `Symbols (${d.symbols.length})`));
+      info.append(withHelp(el('h3', `Symbols (${d.symbols.length})`), 'symbols'));
       if (d.symbols.length === 0) info.append(el('p', 'No symbols reported by VS Code language support.', 'muted'));
       else info.append(el('p', 'Click a symbol to jump to it and see where it is used.', 'muted'));
       const ul = el('ul', undefined, 'files');
@@ -276,7 +310,7 @@
     if (r.symbol !== pendingSymbol) return; // the details panel changed meanwhile
     const box = usagesBox();
     if (!box) return;
-    box.append(el('h3', `Used in: ${r.symbol} (${r.usages.length}${r.truncated ? '+' : ''} places, ${r.files.length} files)`));
+    box.append(withHelp(el('h3', `Used in: ${r.symbol} (${r.usages.length}${r.truncated ? '+' : ''} places, ${r.files.length} files)`), 'used in'));
     if (!r.available) box.append(el('p', 'Usages are not available: no VS Code language support answered for this file type.', 'muted'));
     else if (r.usages.length === 0) box.append(el('p', 'No usages found in this folder.', 'muted'));
     const ul = el('ul', undefined, 'files');
@@ -335,7 +369,7 @@
     row('Commit', d.hash.slice(0, 12));
     row('Author', d.author);
     row('Date', d.date);
-    info.replaceChildren(el('h2', 'Commit'), rows, el('h3', 'Message'), el('p', d.message.trim() || '(no message)', 'message'));
+    info.replaceChildren(withHelp(el('h2', 'Commit'), 'commit'), rows, el('h3', 'Message'), el('p', d.message.trim() || '(no message)', 'message'));
     currentSubject = d.id;
     info.append(el('div', undefined, 'notes'));
 
@@ -346,7 +380,7 @@
       for (const group of Object.keys(GROUP_LABELS)) {
         const items = d.files.filter((f) => f.group === group);
         if (items.length === 0) continue;
-        info.append(el('h3', `${GROUP_LABELS[group]} (${items.length})`, 'group ' + group));
+        info.append(withHelp(el('h3', `${GROUP_LABELS[group]} (${items.length})`, 'group ' + group), group));
         const ul = el('ul', undefined, 'files');
         for (const f of items) {
           const li = el('li');
@@ -369,11 +403,34 @@
     }
   }
 
+  /** "In plain words" for the file shown in Details. */
+  function renderExplain(msg) {
+    if (msg.subject !== currentSubject) return;
+    const box = /** @type {HTMLElement | null} */ ($('info').querySelector('.explain'));
+    if (!box) return;
+    const head = el('h3', 'In plain words');
+    if (msg.role) head.append(withHelp(el('span', msg.role, 'tag'), msg.role));
+    box.replaceChildren(head, el('p', msg.sentences.join(' ')));
+    if (msg.tips.length) {
+      const ul = el('ul', undefined, 'tips');
+      for (const tip of msg.tips) ul.append(el('li', tip));
+      box.append(withHelp(el('h3', 'Tips'), msg.tips.some((t) => t.includes('circular')) ? 'circular import' : ''), ul);
+    }
+  }
+
+  function renderSymbolExplain(msg) {
+    if (msg.symbol !== pendingSymbol) return;
+    const box = /** @type {HTMLElement | null} */ ($('info').querySelector('.usages'));
+    if (!box) return;
+    const p = el('p', msg.sentences.join(' '), 'symbol-explain');
+    box.prepend(withHelp(el('h3', `About ${msg.symbol}`), msg.kind), p);
+  }
+
   function renderNotes(msg) {
     if (msg.subject !== currentSubject) return;
     const box = /** @type {HTMLElement | null} */ ($('info').querySelector('.notes'));
     if (!box) return;
-    box.replaceChildren(el('h3', `Notes (${msg.notes.length})`));
+    box.replaceChildren(withHelp(el('h3', `Notes (${msg.notes.length})`), 'notes'));
     if (!msg.available) { box.append(el('p', 'Notes are off in Restricted Mode.', 'muted')); return; }
     const ul = el('ul', undefined, 'files');
     for (const n of msg.notes) {
@@ -457,10 +514,10 @@
     row('Replies', fmt(d.replies));
     info.replaceChildren(el('h2', 'AI session'), el('p', d.title, 'strong'), rows);
 
-    info.append(el('h3', 'Tokens'));
+    info.append(withHelp(el('h3', 'Tokens'), 'tokens'));
     const tok = el('dl');
-    tok.append(el('dt', 'Input'), el('dd', fmt(d.tokens.input)), el('dt', 'Output'), el('dd', fmt(d.tokens.output)),
-      el('dt', 'Cache read'), el('dd', fmt(d.tokens.cacheRead)), el('dt', 'Cache write'), el('dd', fmt(d.tokens.cacheWrite)));
+    tok.append(withHelp(el('dt', 'Input'), 'input tokens'), el('dd', fmt(d.tokens.input)), withHelp(el('dt', 'Output'), 'output tokens'), el('dd', fmt(d.tokens.output)),
+      withHelp(el('dt', 'Cache read'), 'cache tokens'), el('dd', fmt(d.tokens.cacheRead)), el('dt', 'Cache write'), el('dd', fmt(d.tokens.cacheWrite)));
     info.append(tok);
 
     if (d.tips.length) {
@@ -484,14 +541,14 @@
       info.append(ul, el('p', 'Open them in the History tab.', 'muted small'));
     }
 
-    info.append(el('h3', `Security mentions (${d.securityMentions.length})`));
+    info.append(withHelp(el('h3', `Security mentions (${d.securityMentions.length})`), 'security mentions'));
     if (d.securityMentions.length === 0) info.append(el('p', 'None found in the replies.', 'muted'));
     else info.append(el('p', 'Sentences in the replies that mention a security topic. Found by keywords, not a review of your code.', 'muted small'));
     const sec = el('ul', undefined, 'mentions');
     for (const m of d.securityMentions) sec.append(el('li', m));
     info.append(sec);
 
-    info.append(el('h3', `Prompts (${d.prompts.length})`));
+    info.append(withHelp(el('h3', `Prompts (${d.prompts.length})`), 'prompt'));
     const prompts = el('ol', undefined, 'prompts');
     for (const p of d.prompts) {
       const li = el('li');

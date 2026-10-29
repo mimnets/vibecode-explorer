@@ -1,6 +1,7 @@
 import * as vscode from 'vscode';
 import { loadSessions, readSessions, resetPermissions } from './agentSessions';
 import { Dashboard, openTarget } from './dashboard';
+import { explainSymbolAt, explainTarget } from './explain';
 import { describeCommit, loadHistory, openCommitFile } from './history';
 import { createNote, listNotes, notesFor } from './notes';
 import { openPreview } from './preview';
@@ -33,6 +34,8 @@ export function activate(context: vscode.ExtensionContext) {
     loadHistory,
     describeCommit,
     openCommitFile,
+    explainTarget,
+    explainSymbolAt,
     listNotes,
     notesFor,
     createNote: context.extensionMode === vscode.ExtensionMode.Test ? createNote : undefined,
