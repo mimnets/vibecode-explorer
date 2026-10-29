@@ -1,6 +1,16 @@
 {
   "version": "2.0.0",
   "tasks": [
-    { "type": "npm", "script": "compile", "group": "build", "problemMatcher": "$tsc" }
+    {
+      // Shell task instead of "type": "npm": on Windows a bare `npm` resolves to npm.ps1,
+      // which PowerShell blocks when script execution is disabled. npm.cmd avoids that.
+      "label": "compile",
+      "type": "shell",
+      "command": "npm",
+      "windows": { "command": "npm.cmd" },
+      "args": ["run", "compile"],
+      "group": { "kind": "build", "isDefault": true },
+      "problemMatcher": "$tsc"
+    }
   ]
 }
