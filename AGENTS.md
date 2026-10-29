@@ -18,7 +18,7 @@ Plan only the current approved phase. Mark a requirement Met only after it has b
 - **Reuse before writing.** Prefer VS Code APIs, then small maintained permissive-licensed (MIT/Apache-2.0/BSD) packages, then new code.
 - **Framework-independent.** No assumptions about a specific project, framework, agent, user path or GitHub account.
 - **Local-first.** No telemetry, no cloud uploads, no remote AI API calls, no direct database connections.
-- **Read-only by default.** The extension never modifies the project it inspects.
+- **Read-only by default.** The extension never modifies the project it inspects. The one exception is the owner's own notes (Phase 4): new files in `.vibecode/notes/` only, after the owner allows it for that folder.
 - **Minimal dependencies.** Justify each new package (license, maintenance, advisories) in `docs/development-log.md`.
 - **Focused testing.** Compile, lint and test what changed. Say clearly what was verified automatically vs. in the GUI.
 - **Short educational explanations.** After each meaningful checkpoint: WHAT / WHY / WHERE / HOW / DATABASE impact / HOW TO PREVIEW, in ~5–10 lines.

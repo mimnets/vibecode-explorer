@@ -181,6 +181,32 @@ export async function run(): Promise<void> {
     assert.equal(again.state.graph.edges.length, state.graph.edges.length);
   });
 
+  // Phase 4: notes. The consent dialog is modal, so tests call the writer directly (exposed in test mode only).
+  const notesDir = vscode.Uri.joinPath(repoFolder.uri, '.vibecode', 'notes');
+  const notesDirExists = async () => vscode.workspace.fs.stat(notesDir).then(() => true, () => false);
+  const dirBefore = await notesDirExists();
+  const notesBefore = await api.listNotes(repoFolder);
+  check('nothing is written to the project before a note is added', () => {
+    assert.equal(dirBefore, false);
+    assert.deepEqual(notesBefore, []);
+  });
+  assert.ok(api.createNote, 'note writer is exposed in test mode');
+  const noteUri = await api.createNote!(repoFolder, { about: 'src/util.ts' }, 'Why util returns 2');
+  const again2 = await api.createNote!(repoFolder, { about: 'src/util.ts' }, 'Why util returns 2');
+  await api.createNote!(repoFolder, { commit: log[0].shortHash }, 'Rename decision');
+  const allNotes = await api.listNotes(repoFolder);
+  check('a note is created inside .vibecode/notes with a generated name', () => {
+    assert.match(noteUri.path, /\/\.vibecode\/notes\/\d{4}-\d{2}-\d{2}-why-util-returns-2\.md$/);
+    assert.match(again2.path, /-why-util-returns-2-2\.md$/, 'never overwrites an existing note');
+  });
+  check('notes are listed for their file and their commit', () => {
+    assert.equal(allNotes.length, 3);
+    assert.deepEqual(api.notesFor(allNotes, { about: 'src/util.ts' }).map((n) => n.title), ['Why util returns 2', 'Why util returns 2']);
+    const fullHash = commits.get(log[0].id)!.hash;
+    assert.deepEqual(api.notesFor(allNotes, { commit: fullHash }).map((n) => n.title), ['Rename decision']);
+    assert.deepEqual(api.notesFor(allNotes, { about: 'src/index.ts' }), []);
+  });
+
   // Restoring dashboard tabs after a reload (what VS Code's serializer does).
   const viewType = 'vibecodeExplorer.dashboard';
   const extra = vscode.window.createWebviewPanel(viewType, 'VibeCode Explorer', vscode.ViewColumn.One, {});

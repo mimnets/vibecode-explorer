@@ -3,6 +3,7 @@ import * as path from 'path';
 import * as vscode from 'vscode';
 import { CommitEntry, headUri } from '../git/gitChanges';
 import { describeCommit, HistoryFile, loadHistory, openCommitFile } from './history';
+import { createNote, ensureNotesAllowed, listNotes, NoteEntry, notesFor, NoteSubject } from './notes';
 import { parseWebviewMessage, WebviewMessage } from './messages';
 import { openPreview } from './preview';
 import { CodeLocation, collectState, DashboardState, describeTarget, findUsages, Target } from './state';
@@ -17,18 +18,23 @@ export class Dashboard {
   /** Commits in the History tab (`k…`) and files of the shown commit (`h…`). */
   private commits = new Map<string, CommitEntry>();
   private historyFiles = new Map<string, HistoryFile>();
+  /** Notes of the file or commit shown in Details (`n…`), and every note of the folder (cached). */
+  private notes = new Map<string, NoteEntry>();
+  private allNotes: NoteEntry[] | undefined;
+  /** The file or commit shown in Details; its id is what the webview sends with "Add note". */
+  private subject: { id: string; label: string; value: NoteSubject } | undefined;
   private state: DashboardState | undefined;
   private folderIndex = 0;
   private loading: Promise<void> | undefined;
   private readonly disposables: vscode.Disposable[] = [];
 
-  static show(extensionUri: vscode.Uri): Dashboard {
+  static show(extensionUri: vscode.Uri, memento: vscode.Memento): Dashboard {
     if (Dashboard.current) {
       Dashboard.current.panel.reveal();
       return Dashboard.current;
     }
     const panel = vscode.window.createWebviewPanel(Dashboard.viewType, 'VibeCode Explorer', vscode.ViewColumn.One, Dashboard.options(extensionUri));
-    Dashboard.current = new Dashboard(panel, extensionUri);
+    Dashboard.current = new Dashboard(panel, extensionUri, memento);
     return Dashboard.current;
   }
 
@@ -48,13 +54,13 @@ export class Dashboard {
    * Restores a dashboard tab left open before a reload, so it becomes the live dashboard
    * instead of a stale page. Extra restored tabs are closed: there is only one dashboard.
    */
-  static revive(panel: vscode.WebviewPanel, extensionUri: vscode.Uri): void {
+  static revive(panel: vscode.WebviewPanel, extensionUri: vscode.Uri, memento: vscode.Memento): void {
     if (Dashboard.current) {
       panel.dispose();
       return;
     }
     panel.webview.options = Dashboard.options(extensionUri);
-    Dashboard.current = new Dashboard(panel, extensionUri);
+    Dashboard.current = new Dashboard(panel, extensionUri, memento);
   }
 
   static get instance(): Dashboard | undefined {
@@ -65,13 +71,22 @@ export class Dashboard {
     this.panel.dispose();
   }
 
-  private constructor(private readonly panel: vscode.WebviewPanel, private readonly extensionUri: vscode.Uri) {
+  private constructor(private readonly panel: vscode.WebviewPanel, private readonly extensionUri: vscode.Uri, private readonly memento: vscode.Memento) {
+    const watcher = vscode.workspace.createFileSystemWatcher('**/.vibecode/notes/**');
+    const notesChanged = (): void => {
+      this.allNotes = undefined;
+      void this.postNotes();
+    };
     panel.webview.html = this.html();
     this.disposables.push(
       panel.onDidDispose(() => this.dispose()),
       panel.webview.onDidReceiveMessage((raw) => this.onMessage(parseWebviewMessage(raw))),
       vscode.workspace.onDidChangeWorkspaceFolders(() => this.refresh(false)),
       vscode.workspace.onDidGrantWorkspaceTrust(() => this.refresh(false)),
+      watcher,
+      watcher.onDidCreate(notesChanged),
+      watcher.onDidChange(notesChanged),
+      watcher.onDidDelete(notesChanged),
     );
   }
 
@@ -88,6 +103,9 @@ export class Dashboard {
           this.state = state;
           this.targets = targets;
           this.locations.clear();
+          this.notes.clear();
+          this.allNotes = undefined;
+          this.subject = undefined;
           this.commits.clear();
           this.historyFiles.clear();
           this.post({ type: 'state', state });
@@ -135,6 +153,8 @@ export class Dashboard {
         const { details, symbols } = await describeTarget(msg.id, target);
         this.locations = symbols;
         this.post({ type: 'details', details });
+        this.subject = { id: msg.id, label: target.relPath, value: { about: target.relPath } };
+        await this.postNotes();
         break;
       }
       case 'history': {
@@ -157,11 +177,21 @@ export class Dashboard {
           .filter(([id, t]) => id.startsWith('f') && paths.has(t.relPath))
           .map(([id]) => id);
         this.post({ type: 'commit', details, nodeIds });
+        this.subject = { id: msg.id, label: `commit ${commit.hash.slice(0, 7)}`, value: { commit: commit.hash } };
+        await this.postNotes();
         break;
       }
       case 'commitFile': {
         const file = this.historyFiles.get(msg.id);
         if (file) await openCommitFile(file);
+        break;
+      }
+      case 'addNote':
+        await this.addNote(msg.id);
+        break;
+      case 'openNote': {
+        const note = this.notes.get(msg.id);
+        if (note) await vscode.commands.executeCommand('vscode.open', note.uri, SIDE);
         break;
       }
       case 'goto': {
@@ -186,6 +216,53 @@ export class Dashboard {
         break;
       }
     }
+  }
+
+  private folder(): vscode.WorkspaceFolder | undefined {
+    return vscode.workspace.workspaceFolders?.[this.state?.folderIndex ?? 0];
+  }
+
+  /** Sends the notes of the file or commit shown in Details. */
+  private async postNotes(): Promise<void> {
+    const subject = this.subject;
+    const folder = this.folder();
+    if (!subject || !folder) return;
+    if (!vscode.workspace.isTrusted) {
+      this.post({ type: 'notes', subject: subject.id, available: false, notes: [] });
+      return;
+    }
+    this.allNotes ??= await listNotes(folder);
+    if (this.subject !== subject) return; // Details changed while reading
+    this.notes.clear();
+    const notes = notesFor(this.allNotes, subject.value).map((n, i) => {
+      const id = `n${i}`;
+      this.notes.set(id, n);
+      return { id, title: n.title, created: n.created, path: n.relPath };
+    });
+    this.post({ type: 'notes', subject: subject.id, available: true, notes });
+  }
+
+  /** The only write into the project: a new note file, after the owner allows it. */
+  private async addNote(id: string): Promise<void> {
+    const subject = this.subject;
+    const folder = this.folder();
+    if (!subject || subject.id !== id || !folder || !vscode.workspace.isTrusted) return;
+    if (!await ensureNotesAllowed(this.memento, folder)) return;
+    const title = await vscode.window.showInputBox({
+      title: 'New note',
+      prompt: `Title of the note about ${subject.label}`,
+      value: `Note about ${subject.label.split('/').pop()}`,
+      validateInput: (v) => (v.trim() ? undefined : 'Enter a title.'),
+    });
+    if (!title?.trim()) return;
+    try {
+      const uri = await createNote(folder, subject.value, title.trim().slice(0, 200));
+      await vscode.commands.executeCommand('vscode.open', uri, SIDE);
+    } catch (err) {
+      void vscode.window.showErrorMessage(err instanceof Error ? err.message : String(err));
+    }
+    this.allNotes = undefined;
+    await this.postNotes();
   }
 
   private post(message: unknown): void {

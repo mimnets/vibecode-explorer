@@ -4,11 +4,12 @@ A private, local-first VS Code extension for seeing what changed during AI-assis
 
 - **Workspace changes:** added, modified, deleted and untracked files, plus repository and branch. Click a file to open it or its diff against HEAD.
 - **History:** the latest commits with their messages. Click one to see the files it changed, highlighted in the graph, and open a before/after diff of any of them.
+- **Notes:** attach your own notes (what, why, decision) to a file or a commit. They are saved as Markdown files in `.vibecode/notes/`, only after you allow it.
 - **Dependency graph:** an interactive graph of JavaScript/TypeScript files and their local imports. Click a node to inspect it, double-click to open it, and zoom, pan or fit the view.
 - **Details panel:** path, type, Git status, imports and code symbols for the selected file.
 - **Preview:** opens your configured local app URL in VS Code's Simple Browser.
 
-Nothing is uploaded and no AI is called. The extension only reads your project and never writes to it.
+Nothing is uploaded and no AI is called. The extension only reads your project. The one exception is your own notes, which it saves in `.vibecode/notes/` only after you allow it.
 
 ## How to use it with other projects
 
@@ -39,6 +40,7 @@ What to click:
 - **History** (left, second tab): the latest 50 commits, and **Load more** shows up to 200. Click a commit to see its full message and changed files in Details. Those files are outlined in blue in the graph. Click a file to open its before/after diff.
 - **Graph** (centre): click a node to see details, double-click to open the file. Use **Fit**, **+**/**−** and **Re-layout**, scroll to zoom and drag to pan.
 - **Details** (right): **Open source** jumps to the file. Click a symbol to jump to it and list where it is used (**Used in**). The files that use it are outlined in purple in the graph. This needs VS Code's language support for that file type (built-in for JS/TS).
+- **Notes** (in Details, for a file or a commit): **Add note** asks once per project whether notes may be saved in `.vibecode/notes/`, asks for a title, then opens the new note in the editor. Click a note to open it. Edit or delete notes like any other file. Whether to commit them is up to you.
 - **Refresh** re-reads Git status and rescans imports. **Folder** switches between workspace folders.
 - **Open Preview**: first set `vibecodeExplorer.previewUrl` (for example `http://localhost:3000`) in Settings and start your app yourself.
 
@@ -70,6 +72,7 @@ The first integration run downloads an isolated VS Code into `.vscode-test/`. It
 - Symbols depend on the language support installed in VS Code.
 - Files whose names look sensitive (`.env*`, keys, `secrets.*`, `credentials.*`) are never read. A source file named `secrets.ts` is therefore skipped too.
 - History needs VS Code's built-in Git extension. It can't list the files of a repository's first commit, because there is no earlier commit to compare with. Merge commits are compared with their first parent.
+- Notes are linked to a file by its path. If the file is renamed or moved, its notes lose the link (edit `about:` in the note to fix it).
 - Preview uses VS Code's Simple Browser. It does not start servers or inject code into your app.
 
 See [docs/architecture.md](docs/architecture.md) and [docs/requirements.md](docs/requirements.md).

@@ -50,6 +50,9 @@ ul.commits li { padding: 4px 0; border-bottom: 1px solid var(--vscode-panel-bord
 button.link.selected { font-weight: 600; }
 .small { font-size: 0.85em; }
 .message { white-space: pre-wrap; word-break: break-word; margin: 0 0 8px; }
+.notes { margin: 8px 0; }
+.notes ul.files { margin-bottom: 6px; }
+.note-date { margin-left: 8px; }
 
 ul.files { list-style: none; padding: 0; margin: 0; }
 ul.files li { padding: 1px 0; }

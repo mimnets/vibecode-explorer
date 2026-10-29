@@ -24,12 +24,15 @@ test('webview messages are validated strictly', () => {
   assert.deepEqual(parseWebviewMessage({ type: 'history', limit: 50 }), { type: 'history', limit: 50 });
   assert.deepEqual(parseWebviewMessage({ type: 'commit', id: 'k2' }), { type: 'commit', id: 'k2' });
   assert.deepEqual(parseWebviewMessage({ type: 'commitFile', id: 'h0' }), { type: 'commitFile', id: 'h0' });
+  assert.deepEqual(parseWebviewMessage({ type: 'addNote', id: 'k1' }), { type: 'addNote', id: 'k1' });
+  assert.deepEqual(parseWebviewMessage({ type: 'openNote', id: 'n0' }), { type: 'openNote', id: 'n0' });
   for (const bad of [null, 'open', 42, {}, { type: 'exec', cmd: 'rm -rf /' }, { type: 'open', id: '../../.env' },
     { type: 'open', id: 'C:\\secret' }, { type: 'open' }, { type: 'inspect', id: 7 }, { type: 'symbol', id: 'util' },
     { type: 'goto', id: 'src/util.ts:3' }, { type: 'goto' }, { type: 'selectFolder', index: -1 },
     { type: 'selectFolder', index: 1.5 }, { type: 'selectFolder', index: '0' }, { type: 'history' },
     { type: 'history', limit: 0 }, { type: 'history', limit: 201 }, { type: 'history', limit: '50' },
-    { type: 'commit', id: 'HEAD~1' }, { type: 'commit', id: 'a1b2c3d4e5f6' }, { type: 'commitFile', id: 'src/.env' }]) {
+    { type: 'commit', id: 'HEAD~1' }, { type: 'commit', id: 'a1b2c3d4e5f6' }, { type: 'commitFile', id: 'src/.env' },
+    { type: 'addNote', id: '.vibecode/notes/x.md' }, { type: 'openNote', id: 'C:/notes/a.md' }]) {
     assert.equal(parseWebviewMessage(bad), undefined, JSON.stringify(bad));
   }
 });

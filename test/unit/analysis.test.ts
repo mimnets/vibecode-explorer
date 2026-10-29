@@ -3,6 +3,7 @@ import { test } from 'node:test';
 import { buildGraph } from '../../src/analysis/graph';
 import { parseImports, resolveSpecifier } from '../../src/analysis/imports';
 import { isExcludedFromAnalysis, isSensitiveFile } from '../../src/analysis/sensitive';
+import { isNoteFileName, noteFileName, noteTemplate, parseNote, sameCommit } from '../../src/analysis/notes';
 import { summarizeUsages } from '../../src/analysis/usages';
 
 test('parseImports finds static, re-export, require, import-equals and literal dynamic imports', () => {
@@ -103,4 +104,23 @@ test('summarizeUsages hides outside, excluded and sensitive locations, de-duplic
   assert.deepEqual(r.files, ['src/a.ts', 'src/b.ts']);
   assert.equal(r.hidden, 5);
   assert.equal(r.truncated, true);
+});
+
+test('notes: header, commit matching, safe file names and template', () => {
+  const text = noteTemplate({ about: 'src/app.ts' }, '2026-10-29', 'Why we cache');
+  assert.deepEqual(parseNote(text), { about: 'src/app.ts', created: '2026-10-29', title: 'Why we cache' });
+  assert.deepEqual(parseNote('\uFEFF---\r\ncommit: 5ed9230\r\nfoo: bar\r\n---\r\nno heading'), { commit: '5ed9230', title: '' });
+  assert.deepEqual(parseNote('# Just a title'), { title: 'Just a title' });
+  assert.ok(sameCommit('5ed9230', '5ed9230c8e19abcdef'));
+  assert.ok(!sameCommit('5ed92', '5ed9230c8e19'));
+  assert.ok(!sameCommit('5ed9231', '5ed9230c8e19'));
+
+  assert.equal(noteFileName('2026-10-29', 'Why we cache!', new Set()), '2026-10-29-why-we-cache.md');
+  assert.equal(noteFileName('2026-10-29', 'Why we cache', new Set(['2026-10-29-why-we-cache.md'])), '2026-10-29-why-we-cache-2.md');
+  for (const title of ['../../etc/passwd', '..\\..\\x', 'C:\\Windows', '', '日本語']) {
+    const name = noteFileName('2026-10-29', title, new Set());
+    assert.ok(isNoteFileName(name) && !/[/\\]/.test(name) && !name.includes('..'), name);
+  }
+  assert.ok(!isNoteFileName('../2026-10-29-x.md'));
+  assert.ok(!isNoteFileName('2026-10-29-x.md.exe'));
 });

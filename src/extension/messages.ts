@@ -18,6 +18,10 @@ export type WebviewMessage =
   | { type: 'commit'; id: string }
   /** Open a file of the shown commit (`h…`) as a before/after diff. */
   | { type: 'commitFile'; id: string }
+  /** Add a note to the file or commit shown in Details (its `f…`/`c…`/`k…` id). */
+  | { type: 'addNote'; id: string }
+  /** Open a note (`n…`) in the editor. */
+  | { type: 'openNote'; id: string }
   /** Sent by the webview after drawing the graph, or when a script error occurs. */
   | { type: 'rendered'; nodes: number; edges: number }
   | { type: 'webviewError'; message: string };
@@ -46,6 +50,8 @@ export function parseWebviewMessage(raw: unknown): WebviewMessage | undefined {
     case 'goto':
     case 'commit':
     case 'commitFile':
+    case 'addNote':
+    case 'openNote':
       return typeof msg.id === 'string' && ID_PATTERN.test(msg.id) ? { type: msg.type, id: msg.id } : undefined;
     case 'rendered':
       return Number.isInteger(msg.nodes) && Number.isInteger(msg.edges)

@@ -18,6 +18,8 @@
   let historyLimit = HISTORY_PAGE;
   /** Commit whose files are being loaded; stale replies are ignored. */
   let pendingCommit = '';
+  /** File or commit shown in Details; notes replies for anything else are ignored. */
+  let currentSubject = '';
 
   function el(tag, text, className) {
     const node = document.createElement(tag);
@@ -82,6 +84,7 @@
     else if (msg.type === 'usages') renderUsages(msg.result, msg.nodeIds);
     else if (msg.type === 'history') renderHistory(msg.result);
     else if (msg.type === 'commit') renderCommit(msg.details, msg.nodeIds);
+    else if (msg.type === 'notes') renderNotes(msg);
   });
 
   function renderState(state) {
@@ -196,6 +199,7 @@
   }
 
   function renderUnknown(label) {
+    currentSubject = '';
     const info = $('info');
     info.replaceChildren(el('h2', 'Unknown import'), el('p', label, 'mono'),
       el('p', 'The target could not be resolved statically (path alias, dynamic expression, or outside this folder). No edge is guessed.', 'muted'));
@@ -214,6 +218,8 @@
     row('Git status', d.group ? GROUP_LABELS[d.group] : 'unchanged');
     info.replaceChildren(el('h2', 'Details'), rows, open);
     if (d.note) info.append(el('p', d.note, 'muted'));
+    currentSubject = d.id;
+    info.append(el('div', undefined, 'notes'));
 
     if (d.analyzed) {
       info.append(el('h3', `Imports (${d.imports.length})`));
@@ -315,6 +321,8 @@
     row('Author', d.author);
     row('Date', d.date);
     info.replaceChildren(el('h2', 'Commit'), rows, el('h3', 'Message'), el('p', d.message.trim() || '(no message)', 'message'));
+    currentSubject = d.id;
+    info.append(el('div', undefined, 'notes'));
 
     if (!d.filesAvailable) {
       info.append(el('p', 'The file list is not available for this commit. If it is the first commit in the repository, VS Code\'s Git extension has no earlier commit to compare it with.', 'muted'));
@@ -344,6 +352,28 @@
       for (const id of nodeIds) cy.getElementById(id).removeClass('faded').addClass('inCommit');
       if (nodeIds.length === 0) cy.elements().removeClass('faded');
     }
+  }
+
+  function renderNotes(msg) {
+    if (msg.subject !== currentSubject) return;
+    const box = /** @type {HTMLElement | null} */ ($('info').querySelector('.notes'));
+    if (!box) return;
+    box.replaceChildren(el('h3', `Notes (${msg.notes.length})`));
+    if (!msg.available) { box.append(el('p', 'Notes are off in Restricted Mode.', 'muted')); return; }
+    const ul = el('ul', undefined, 'files');
+    for (const n of msg.notes) {
+      const li = el('li');
+      const btn = el('button', n.title, 'link');
+      btn.title = 'Open ' + n.path;
+      btn.addEventListener('click', () => send({ type: 'openNote', id: n.id }));
+      li.append(btn);
+      if (n.created) li.append(el('span', n.created, 'muted small note-date'));
+      ul.append(li);
+    }
+    const add = el('button', 'Add note');
+    add.title = 'Write down what, why and the decision. Saved as a Markdown file in .vibecode/notes/';
+    add.addEventListener('click', () => send({ type: 'addNote', id: currentSubject }));
+    box.append(ul, add);
   }
 
   send({ type: 'ready' });

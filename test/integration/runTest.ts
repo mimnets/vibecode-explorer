@@ -50,13 +50,13 @@ function createSample(root: string): string {
   return workspace;
 }
 
-/** Hash of every file outside .git, plus the Git index, to detect any modification. */
+/** Hash of every file outside .git and the notes folder (the only place notes may be written). */
 function fingerprint(root: string): string {
   const hash = crypto.createHash('sha256');
   const walk = (dir: string): void => {
     for (const entry of fs.readdirSync(dir, { withFileTypes: true }).sort((a, b) => a.name.localeCompare(b.name))) {
       const full = path.join(dir, entry.name);
-      if (entry.isDirectory() && entry.name === '.git') continue;
+      if (entry.isDirectory() && (entry.name === '.git' || full.endsWith(path.join('.vibecode', 'notes')))) continue;
       if (entry.isDirectory()) walk(full);
       else hash.update(full).update(fs.readFileSync(full));
     }
@@ -86,7 +86,11 @@ async function main(): Promise<void> {
   });
 
   if (fingerprint(path.join(root, 'ws')) !== before) throw new Error('sample workspace files were modified');
-  console.log('  ✔ sample workspace unchanged (read-only)');
+  console.log('  ✔ sample workspace unchanged outside .vibecode/notes');
+  const notes = fs.readdirSync(path.join(root, 'ws', 'sample-repo', '.vibecode', 'notes'));
+  if (notes.length !== 3 || !notes.every((n) => /^\d{4}-\d{2}-\d{2}-[a-z0-9-]+\.md$/.test(n))) throw new Error(`unexpected notes: ${notes}`);
+  if (fs.readdirSync(path.join(root, 'ws', 'sample-repo', '.vibecode')).length !== 1) throw new Error('unexpected files in .vibecode');
+  console.log('  ✔ notes folder holds only the 3 notes created by the test');
   fs.rmSync(root, { recursive: true, force: true, maxRetries: 5 });
 }
 
