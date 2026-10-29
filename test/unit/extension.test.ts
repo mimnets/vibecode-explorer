@@ -18,8 +18,11 @@ test('webview messages are validated strictly', () => {
   assert.deepEqual(parseWebviewMessage({ type: 'open', id: 'f12' }), { type: 'open', id: 'f12' });
   assert.deepEqual(parseWebviewMessage({ type: 'selectFolder', index: 1 }), { type: 'selectFolder', index: 1 });
   assert.deepEqual(parseWebviewMessage({ type: 'refresh', extra: 'ignored' }), { type: 'refresh' });
+  assert.deepEqual(parseWebviewMessage({ type: 'symbol', id: 's3' }), { type: 'symbol', id: 's3' });
+  assert.deepEqual(parseWebviewMessage({ type: 'goto', id: 'r0' }), { type: 'goto', id: 'r0' });
   for (const bad of [null, 'open', 42, {}, { type: 'exec', cmd: 'rm -rf /' }, { type: 'open', id: '../../.env' },
-    { type: 'open', id: 'C:\\secret' }, { type: 'open' }, { type: 'inspect', id: 7 }, { type: 'selectFolder', index: -1 },
+    { type: 'open', id: 'C:\\secret' }, { type: 'open' }, { type: 'inspect', id: 7 }, { type: 'symbol', id: 'util' },
+    { type: 'goto', id: 'src/util.ts:3' }, { type: 'goto' }, { type: 'selectFolder', index: -1 },
     { type: 'selectFolder', index: 1.5 }, { type: 'selectFolder', index: '0' }]) {
     assert.equal(parseWebviewMessage(bad), undefined, JSON.stringify(bad));
   }

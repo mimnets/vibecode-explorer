@@ -4,13 +4,15 @@ import * as vscode from 'vscode';
 import { headUri } from '../git/gitChanges';
 import { parseWebviewMessage, WebviewMessage } from './messages';
 import { openPreview } from './preview';
-import { collectState, DashboardState, describeTarget, Target } from './state';
+import { CodeLocation, collectState, DashboardState, describeTarget, findUsages, Target } from './state';
 
 /** Single dashboard webview. The webview only renders; all file and Git access happens here. */
 export class Dashboard {
   private static current: Dashboard | undefined;
 
   private targets = new Map<string, Target>();
+  /** Symbols of the file shown in Details (`s…`) and usages of the last symbol (`r…`). */
+  private locations = new Map<string, CodeLocation>();
   private state: DashboardState | undefined;
   private folderIndex = 0;
   private loading: Promise<void> | undefined;
@@ -58,6 +60,7 @@ export class Dashboard {
           const { state, targets } = await collectState(this.folderIndex, refreshGit);
           this.state = state;
           this.targets = targets;
+          this.locations.clear();
           this.post({ type: 'state', state });
         } catch (err) {
           this.post({ type: 'error', message: err instanceof Error ? err.message : String(err) });
@@ -100,7 +103,30 @@ export class Dashboard {
         const target = this.targets.get(msg.id);
         if (!target) return; // Only ids issued in the current state are accepted.
         if (msg.type === 'open') await openTarget(target);
-        this.post({ type: 'details', details: await describeTarget(msg.id, target) });
+        const { details, symbols } = await describeTarget(msg.id, target);
+        this.locations = symbols;
+        this.post({ type: 'details', details });
+        break;
+      }
+      case 'goto': {
+        const loc = this.locations.get(msg.id);
+        if (loc) await revealLocation(loc);
+        break;
+      }
+      case 'symbol': {
+        const loc = msg.id.startsWith('s') ? this.locations.get(msg.id) : undefined;
+        const folder = vscode.workspace.workspaceFolders?.[this.state?.folderIndex ?? 0];
+        if (!loc || !folder) return;
+        await revealLocation(loc);
+        this.post({ type: 'usagesLoading', symbol: loc.name });
+        const { result, locations } = await findUsages(folder.uri, loc);
+        // Usage ids replace older usage ids; the current file's symbol ids stay valid.
+        for (const id of [...this.locations.keys()]) if (id.startsWith('r')) this.locations.delete(id);
+        for (const [id, l] of locations) this.locations.set(id, l);
+        const nodeIds = [...this.targets.entries()]
+          .filter(([id, t]) => id.startsWith('f') && result.files.includes(t.relPath))
+          .map(([id]) => id);
+        this.post({ type: 'usages', result, nodeIds });
         break;
       }
     }
@@ -157,7 +183,7 @@ export class Dashboard {
     </div>
     <div id="graph"></div>
     <div class="legend muted">
-      <span class="dot file"></span>file <span class="dot changed"></span>changed <span class="dot untracked"></span>new <span class="dot unknown"></span>unknown import
+      <span class="dot file"></span>file <span class="dot changed"></span>changed <span class="dot untracked"></span>new <span class="dot unknown"></span>unknown import <span class="dot used"></span>uses selected symbol
     </div>
   </section>
   <aside class="pane" id="info"><h2>Details</h2><p class="muted">Select a file in the graph or the changes list.</p></aside>
@@ -175,6 +201,11 @@ export class Dashboard {
 }
 
 const SIDE = { viewColumn: vscode.ViewColumn.Beside, preview: true } as const;
+
+/** Opens a file at a symbol or usage position. Read-only. */
+export async function revealLocation(loc: CodeLocation): Promise<void> {
+  await vscode.window.showTextDocument(loc.uri, { ...SIDE, selection: new vscode.Range(loc.position, loc.position) });
+}
 
 /** Opens a file, its diff against HEAD, or the HEAD version of a deleted file. Read-only. */
 export async function openTarget(t: Target): Promise<void> {

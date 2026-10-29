@@ -8,6 +8,10 @@ export type WebviewMessage =
   | { type: 'selectFolder'; index: number }
   | { type: 'open'; id: string }
   | { type: 'inspect'; id: string }
+  /** Jump to a symbol (`s…`) and list where it is used. */
+  | { type: 'symbol'; id: string }
+  /** Jump to a symbol (`s…`) or usage (`r…`) location. */
+  | { type: 'goto'; id: string }
   /** Sent by the webview after drawing the graph, or when a script error occurs. */
   | { type: 'rendered'; nodes: number; edges: number }
   | { type: 'webviewError'; message: string };
@@ -28,6 +32,8 @@ export function parseWebviewMessage(raw: unknown): WebviewMessage | undefined {
         : undefined;
     case 'open':
     case 'inspect':
+    case 'symbol':
+    case 'goto':
       return typeof msg.id === 'string' && ID_PATTERN.test(msg.id) ? { type: msg.type, id: msg.id } : undefined;
     case 'rendered':
       return Number.isInteger(msg.nodes) && Number.isInteger(msg.edges)

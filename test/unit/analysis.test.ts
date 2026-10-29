@@ -3,6 +3,7 @@ import { test } from 'node:test';
 import { buildGraph } from '../../src/analysis/graph';
 import { parseImports, resolveSpecifier } from '../../src/analysis/imports';
 import { isExcludedFromAnalysis, isSensitiveFile } from '../../src/analysis/sensitive';
+import { summarizeUsages } from '../../src/analysis/usages';
 
 test('parseImports finds static, re-export, require, import-equals and literal dynamic imports', () => {
   const src = `
@@ -84,4 +85,22 @@ test('buildGraph never reads excluded files and respects maxFiles', async () => 
 
   const skipped = await buildGraph(['big.ts'], async () => undefined, 10);
   assert.ok(skipped.files[0].skipped);
+});
+
+test('summarizeUsages hides outside, excluded and sensitive locations, de-duplicates, sorts and caps', () => {
+  const r = summarizeUsages([
+    { relPath: 'src/b.ts', line: 9 },
+    { relPath: 'src/a.ts', line: 2 },
+    { relPath: 'src/a.ts', line: 2 },
+    { relPath: '../other/x.ts', line: 1 },
+    { relPath: 'C:/elsewhere/y.ts', line: 1 },
+    { relPath: '', line: 1 },
+    { relPath: 'node_modules/lib/index.d.ts', line: 1 },
+    { relPath: '.env', line: 1 },
+    { relPath: 'src/a.ts', line: 1 },
+  ], 2);
+  assert.deepEqual(r.usages, [{ relPath: 'src/a.ts', line: 1 }, { relPath: 'src/a.ts', line: 2 }]);
+  assert.deepEqual(r.files, ['src/a.ts', 'src/b.ts']);
+  assert.equal(r.hidden, 5);
+  assert.equal(r.truncated, true);
 });

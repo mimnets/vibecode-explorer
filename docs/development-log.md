@@ -47,3 +47,14 @@
 - Dev-only advisory GHSA-xcx6-jx8p-x3h5 in `@vscode/vsce`'s dependency tree remains open (it's not shipped).
 
 **Docs:** permanent requirements now carry a per-requirement status (`docs/requirements.md`). Added `docs/roadmap.md`. `AGENTS.md` now tells agents to read requirements, roadmap and log before planning. No application code changed.
+
+## 2026-10-29: Phase 2: inside files (symbols and usages)
+
+**Pushed first:** the 6 Phase 0–1 commits went to GitHub as they were (`origin/main`). Their `Co-Authored-By` trailers were kept, because removing them would rewrite history. The owner's new global attribution setting applies to commits from this one on.
+
+**What:** symbols in the Details panel are now clickable. A click opens the definition and lists where the symbol is used. Each usage opens at its line, and the files that use it are outlined in the graph. **How:** `vscode.executeReferenceProvider` (built in, no new dependency) runs on demand. The new pure helper `src/analysis/usages.ts` filters out locations outside the folder, excluded or sensitive, then de-duplicates them and caps them at 100. New webview messages are `symbol` and `goto`, which carry opaque `s…`/`r…` ids only.
+
+**Verified automatically:** lint. 12 unit tests, including the usage filtering and the new message validation. 25 integration checks in VS Code 1.144, including symbols listed with opaque ids and usages of `util` found in `index.ts`, `new.ts` and `util.ts`. The sample workspace stayed unchanged.
+**Not verified automatically:** the webview click handlers, the "Used in" rendering and the graph highlight. These need the owner's GUI check.
+
+**Limitations:** usages depend on the installed language support. For JS/TS that's VS Code's built-in TypeScript extension, and if it's disabled the panel says usages are not available. The first lookup can be slow while the TypeScript server starts. A list of more than 100 places is cut off.

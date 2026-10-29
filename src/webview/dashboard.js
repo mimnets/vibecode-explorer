@@ -11,6 +11,8 @@
   /** @type {any} */
   let cy;
   let selectedId = '';
+  /** Symbol whose usages are being looked up; stale replies are ignored. */
+  let pendingSymbol = '';
 
   function el(tag, text, className) {
     const node = document.createElement(tag);
@@ -48,6 +50,8 @@
     else if (msg.type === 'error') $('status').textContent = 'Error: ' + msg.message;
     else if (msg.type === 'state') renderState(msg.state);
     else if (msg.type === 'details') renderDetails(msg.details);
+    else if (msg.type === 'usagesLoading') renderUsagesLoading(msg.symbol);
+    else if (msg.type === 'usages') renderUsages(msg.result, msg.nodeIds);
   });
 
   function renderState(state) {
@@ -131,17 +135,18 @@
         { selector: 'edge', style: { width: 1, 'line-color': '#777', 'target-arrow-color': '#777', 'target-arrow-shape': 'triangle', 'curve-style': 'bezier', 'arrow-scale': 0.7, opacity: 0.7 } },
         { selector: 'node:selected', style: { 'border-width': 3, 'border-color': accent } },
         { selector: '.faded', style: { opacity: 0.15 } },
+        { selector: 'node.used', style: { 'border-width': 3, 'border-color': '#c586c0' } },
       ],
     });
     cy.on('tap', 'node', (evt) => {
       const node = evt.target;
       selectedId = node.id();
-      cy.elements().addClass('faded');
+      cy.elements().removeClass('used').addClass('faded');
       node.closedNeighborhood().removeClass('faded');
       if (node.data('kind') === 'file') send({ type: 'inspect', id: selectedId });
       else renderUnknown(node.data('label'));
     });
-    cy.on('tap', (evt) => { if (evt.target === cy) cy.elements().removeClass('faded'); });
+    cy.on('tap', (evt) => { if (evt.target === cy) cy.elements().removeClass('faded used'); });
     cy.on('dbltap', 'node[kind = "file"]', (evt) => send({ type: 'open', id: evt.target.id() }));
     runLayout();
     send({ type: 'rendered', nodes: cy.nodes().length, edges: cy.edges().length });
@@ -160,6 +165,7 @@
   }
 
   function renderDetails(d) {
+    pendingSymbol = '';
     const info = $('info');
     const open = el('button', d.group === 'deleted' ? 'Open HEAD version' : 'Open source');
     open.addEventListener('click', () => send({ type: 'open', id: d.id }));
@@ -181,12 +187,55 @@
     if (!d.sensitive && d.group !== 'deleted') {
       info.append(el('h3', `Symbols (${d.symbols.length})`));
       if (d.symbols.length === 0) info.append(el('p', 'No symbols reported by VS Code language support.', 'muted'));
+      else info.append(el('p', 'Click a symbol to jump to it and see where it is used.', 'muted'));
       const ul = el('ul', undefined, 'files');
       for (const s of d.symbols) {
-        const li = el('li', `${'  '.repeat(s.depth)}${s.kind} ${s.name}  :${s.line}`, 'mono');
+        const btn = el('button', `${'  '.repeat(s.depth)}${s.kind} ${s.name}  :${s.line}`, 'link mono');
+        btn.title = 'Go to definition and find usages';
+        btn.addEventListener('click', () => send({ type: 'symbol', id: s.id }));
+        const li = el('li');
+        li.append(btn);
         ul.append(li);
       }
-      info.append(ul);
+      info.append(ul, el('div', undefined, 'usages'));
+    }
+  }
+
+  function usagesBox() {
+    const box = /** @type {HTMLElement | null} */ ($('info').querySelector('.usages'));
+    if (box) box.replaceChildren();
+    return box;
+  }
+
+  function renderUsagesLoading(symbol) {
+    const box = usagesBox();
+    if (!box) return;
+    pendingSymbol = symbol;
+    box.append(el('h3', `Used in: ${symbol}`), el('p', 'Finding usages…', 'muted'));
+  }
+
+  function renderUsages(r, nodeIds) {
+    if (r.symbol !== pendingSymbol) return; // the details panel changed meanwhile
+    const box = usagesBox();
+    if (!box) return;
+    box.append(el('h3', `Used in: ${r.symbol} (${r.usages.length}${r.truncated ? '+' : ''} places, ${r.files.length} files)`));
+    if (!r.available) box.append(el('p', 'Usages are not available: no VS Code language support answered for this file type.', 'muted'));
+    else if (r.usages.length === 0) box.append(el('p', 'No usages found in this folder.', 'muted'));
+    const ul = el('ul', undefined, 'files');
+    for (const u of r.usages) {
+      const btn = el('button', `${u.path}:${u.line}`, 'link mono');
+      btn.addEventListener('click', () => send({ type: 'goto', id: u.id }));
+      const li = el('li');
+      li.append(btn);
+      ul.append(li);
+    }
+    box.append(ul);
+    if (r.truncated) box.append(el('p', 'Only the first results are shown.', 'muted'));
+    if (r.hidden) box.append(el('p', `${r.hidden} location(s) hidden: outside this folder, generated, or sensitive.`, 'muted'));
+    if (cy && nodeIds.length) {
+      cy.elements().removeClass('used').addClass('faded');
+      for (const id of nodeIds) cy.getElementById(id).removeClass('faded').addClass('used');
+      if (selectedId) cy.getElementById(selectedId).removeClass('faded');
     }
   }
 

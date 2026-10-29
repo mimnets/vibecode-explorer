@@ -3,6 +3,7 @@ import * as vscode from 'vscode';
 import { buildGraph, FileAnalysis } from '../analysis/graph';
 import { SOURCE_EXTENSIONS } from '../analysis/imports';
 import { EXCLUDE_GLOB, isSensitiveFile } from '../analysis/sensitive';
+import { summarizeUsages, UsageLocation } from '../analysis/usages';
 import { ChangeGroup } from '../git/status';
 import { getGitSnapshot, WorkspaceChange } from '../git/gitChanges';
 
@@ -139,13 +140,18 @@ export interface FileDetails {
   dynamicUnknown: number;
   analyzed: boolean;
   note?: string;
-  symbols: { name: string; kind: string; line: number; depth: number }[];
+  symbols: { id: string; name: string; kind: string; line: number; depth: number }[];
 }
 
+/** A code position the webview may jump to, addressed by an opaque id (`s…` symbol, `r…` usage). */
+export interface CodeLocation { uri: vscode.Uri; relPath: string; position: vscode.Position; name: string }
+
 const MAX_SYMBOLS = 200;
+const MAX_USAGES = 100;
 
 /** Details for the info panel. Symbols come from whatever VS Code language support is installed. */
-export async function describeTarget(id: string, t: Target): Promise<FileDetails> {
+export async function describeTarget(id: string, t: Target): Promise<{ details: FileDetails; symbols: Map<string, CodeLocation> }> {
+  const symbols = new Map<string, CodeLocation>();
   const ext = path.posix.extname(t.relPath);
   const details: FileDetails = {
     id,
@@ -161,11 +167,11 @@ export async function describeTarget(id: string, t: Target): Promise<FileDetails
   };
   if (t.sensitive) {
     details.note = 'Sensitive file: contents are never read or analyzed.';
-    return details;
+    return { details, symbols };
   }
   if (t.group === 'deleted') {
     details.note = 'Deleted in the working tree. Open shows the HEAD version.';
-    return details;
+    return { details, symbols };
   }
   try {
     const result = await vscode.commands.executeCommand<(vscode.DocumentSymbol | vscode.SymbolInformation)[] | undefined>(
@@ -173,8 +179,11 @@ export async function describeTarget(id: string, t: Target): Promise<FileDetails
     const walk = (items: (vscode.DocumentSymbol | vscode.SymbolInformation)[], depth: number): void => {
       for (const s of items) {
         if (details.symbols.length >= MAX_SYMBOLS) return;
-        const range = 'range' in s ? s.range : s.location.range;
-        details.symbols.push({ name: s.name, kind: vscode.SymbolKind[s.kind], line: range.start.line + 1, depth });
+        // selectionRange is the symbol's name, which is where reference lookups must start.
+        const position = 'selectionRange' in s ? s.selectionRange.start : s.location.range.start;
+        const symbolId = `s${details.symbols.length}`;
+        symbols.set(symbolId, { uri: t.uri, relPath: t.relPath, position, name: s.name });
+        details.symbols.push({ id: symbolId, name: s.name, kind: vscode.SymbolKind[s.kind], line: position.line + 1, depth });
         if ('children' in s && depth < 2) walk(s.children, depth + 1);
       }
     };
@@ -182,5 +191,47 @@ export async function describeTarget(id: string, t: Target): Promise<FileDetails
   } catch {
     // No symbol provider for this language: leave the list empty.
   }
-  return details;
+  return { details, symbols };
+}
+
+export interface UsageResult {
+  symbol: string;
+  /** False when no language support answered the reference request. */
+  available: boolean;
+  usages: { id: string; path: string; line: number }[];
+  files: string[];
+  hidden: number;
+  truncated: boolean;
+}
+
+/** Where a symbol is used inside the folder, via VS Code's reference provider ("Find All References"). Read-only. */
+export async function findUsages(folder: vscode.Uri, ref: CodeLocation): Promise<{ result: UsageResult; locations: Map<string, CodeLocation> }> {
+  const locations = new Map<string, CodeLocation>();
+  const result: UsageResult = { symbol: ref.name, available: false, usages: [], files: [], hidden: 0, truncated: false };
+  let found: vscode.Location[] | undefined;
+  try {
+    found = await vscode.commands.executeCommand<vscode.Location[] | undefined>('vscode.executeReferenceProvider', ref.uri, ref.position);
+  } catch {
+    return { result, locations };
+  }
+  if (!found) return { result, locations };
+  const locByKey = new Map<string, vscode.Location>();
+  const raw: UsageLocation[] = found.map((loc) => {
+    const relPath = loc.uri.scheme === 'file' ? path.relative(folder.fsPath, loc.uri.fsPath).split(path.sep).join('/') : '';
+    const line = loc.range.start.line + 1;
+    if (!locByKey.has(`${relPath}:${line}`)) locByKey.set(`${relPath}:${line}`, loc);
+    return { relPath, line };
+  });
+  const summary = summarizeUsages(raw, MAX_USAGES);
+  result.available = true;
+  result.files = summary.files;
+  result.hidden = summary.hidden;
+  result.truncated = summary.truncated;
+  result.usages = summary.usages.map((u, i) => {
+    const id = `r${i}`;
+    const loc = locByKey.get(`${u.relPath}:${u.line}`) as vscode.Location;
+    locations.set(id, { uri: loc.uri, relPath: u.relPath, position: loc.range.start, name: ref.name });
+    return { id, path: u.relPath, line: u.line };
+  });
+  return { result, locations };
 }

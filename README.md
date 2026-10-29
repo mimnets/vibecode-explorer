@@ -36,7 +36,7 @@ To update, rebuild and run the install command again, then run **Developer: Relo
 What to click:
 - **Workspace changes** (left): click a file to open its diff, or the HEAD version if it was deleted.
 - **Graph** (centre): click a node to see details, double-click to open the file. Use **Fit**, **+**/**−** and **Re-layout**, scroll to zoom and drag to pan.
-- **Details** (right): **Open source** jumps to the file.
+- **Details** (right): **Open source** jumps to the file. Click a symbol to jump to it and list where it is used (**Used in**). The files that use it are outlined in purple in the graph. This needs VS Code's language support for that file type (built-in for JS/TS).
 - **Refresh** re-reads Git status and rescans imports. **Folder** switches between workspace folders.
 - **Open Preview**: first set `vibecodeExplorer.previewUrl` (for example `http://localhost:3000`) in Settings and start your app yourself.
 

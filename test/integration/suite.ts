@@ -95,6 +95,26 @@ export async function run(): Promise<void> {
     assert.ok(input instanceof vscode.TabInputText && input.uri.fsPath.endsWith('index.ts'));
   });
 
+  // Phase 2: symbols and usages come from VS Code's built-in TypeScript support, which may need time to start.
+  const utilTarget = targets.get(idOf('src/util.ts', 'f') as string)!;
+  let described = await api.describeTarget('f0', utilTarget);
+  for (let i = 0; i < 60 && described.details.symbols.length === 0; i++) {
+    await new Promise((r) => setTimeout(r, 500));
+    described = await api.describeTarget('f0', utilTarget);
+  }
+  const utilSymbol = described.details.symbols.find((s) => s.name === 'util');
+  check('file symbols are listed with opaque ids', () => {
+    assert.ok(utilSymbol, JSON.stringify(described.details.symbols));
+    assert.match(utilSymbol.id, /^s\d+$/);
+    assert.equal(utilSymbol.line, 1);
+  });
+  const { result: usages, locations } = await api.findUsages(vscode.workspace.workspaceFolders![0].uri, described.symbols.get(utilSymbol!.id)!);
+  check('usages of a symbol are found across files', () => {
+    assert.ok(usages.available);
+    for (const f of ['src/index.ts', 'src/new.ts', 'src/util.ts']) assert.ok(usages.files.includes(f), JSON.stringify(usages));
+    assert.ok(usages.usages.every((u) => /^r\d+$/.test(u.id) && locations.has(u.id)));
+  });
+
   const plain = await api.collectState(1, true);
   check('no-Git folder reports noGit', () => assert.equal(plain.state.git.kind, 'noGit'));
   check('multi-folder workspaces are not mixed', () => {
