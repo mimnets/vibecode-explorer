@@ -1,21 +1,29 @@
 # Requirements
 
-## Long-term vision (roadmap, not all in Phase 1)
+## Permanent product requirements
 
-1. See files created, changed or deleted during AI-assisted coding.
-2. Understand modules, functions, classes and variables.
-3. Visually explore files, imports, functions, APIs and database relationships.
-4. Understand why important changes were made.
-5. Preview working websites alongside their code.
-6. Learn programming incrementally while developing.
-7. Preserve educational notes, architecture explanations and decisions.
-8. Work across projects and programming languages.
-9. Support Claude, Qwen, Gemini and other agents without proprietary agent APIs.
-10. Save tokens through local static analysis and Git data.
-11. Minimise cost with free, open-source dependencies.
-12. Protect private source code, secrets and local project data.
+These 12 requirements define the final product. They don't change from phase to phase. Phases deliver them a piece at a time (see [roadmap.md](roadmap.md)). A requirement is marked **Met** only after it has been implemented and verified, with the evidence recorded in [development-log.md](development-log.md).
 
-## Phase 1 scope (MVP)
+Status key: **Partial** = some of it is delivered and verified. **Constraint** = a rule every phase must keep, checked each phase. **Planned** = not started.
+
+| # | Requirement | Status after Phase 1 |
+| --- | --- | --- |
+| 1 | See files created, changed or deleted during AI-assisted coding. | Partial: current working-tree changes against HEAD. No history or per-session view yet. |
+| 2 | Understand modules, functions, classes and variables. | Partial: a per-file symbol list in the details panel. No explanations or symbol graph yet. |
+| 3 | Visually explore files, imports, functions, APIs and database relationships. | Partial: a file-import graph for JS/TS relative imports only. |
+| 4 | Understand why important changes were made. | Planned |
+| 5 | Preview working websites alongside their code. | Partial: opens a user-configured local URL in Simple Browser. |
+| 6 | Learn programming incrementally while developing. | Planned |
+| 7 | Preserve educational notes, architecture explanations and decisions. | Planned (in-product). The repo's `docs/` covers this project only. |
+| 8 | Work across projects and programming languages. | Partial: any folder, multi-root, no-Git. Graph is JS/TS only. |
+| 9 | Support Claude, Qwen, Gemini and other agents without proprietary agent APIs. | Constraint: kept. Data comes from Git and files, never from agent APIs. |
+| 10 | Save tokens through local static analysis and Git data. | Constraint: kept. No LLM calls. |
+| 11 | Minimise cost with free, open-source dependencies. | Constraint: kept. Runtime deps are MIT/Apache-2.0 only. |
+| 12 | Protect private source code, secrets and local project data. | Constraint: kept. See the security requirements below. |
+
+## Phase 1 scope (MVP): complete
+
+The owner accepted this on 2026-10-29 after using it in their own VS Code. The known limitations are listed in [development-log.md](development-log.md).
 
 | # | Requirement | Status |
 | --- | --- | --- |

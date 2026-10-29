@@ -1,0 +1,25 @@
+# Roadmap
+
+Each phase is the smallest useful step toward the 12 permanent requirements in [requirements.md](requirements.md) (R1–R12). There are no dates. The phases' order and scope are proposals, and the owner approves each phase before work starts. R9–R12 (agent-independent, local and token-saving, free dependencies, privacy) are constraints that every phase must keep.
+
+Before each phase: write a short plan, get owner approval, implement, verify, record the evidence in [development-log.md](development-log.md), and update the status column in `requirements.md`.
+
+| Phase | Goal | Serves | Status |
+| --- | --- | --- | --- |
+| 0 | Governance, docs, TypeScript tooling | — | Done |
+| 1 | MVP dashboard: workspace changes, JS/TS file-import graph, details panel, local preview | R1, R2, R3, R5, R8 (partial) | Done, owner-verified 2026-10-29 |
+| 2 | Inside files: functions and classes per file, and where each one is used, from local static analysis | R2, R3 | Proposed next |
+| 3 | Change history: browse commits, see the files each one touched and the commit message | R1, R4 | Planned |
+| 4 | Notes and decisions: attach the owner's notes to files or changes, stored as plain files in the project only if the owner opts in | R4, R6, R7 | Planned |
+| 5 | Learning aids: plain-language explanations built from static facts (what a symbol is, where it is used), no LLM | R6, R2 | Planned |
+| 6 | More languages: add a second language parser (for example Python) behind the existing per-extension hook | R8, R3 | Planned |
+| 7 | API and database relationships: detect routes, HTTP calls and schema or ORM files statically. No database connections | R3 | Planned |
+| 8 | Preview alongside code: link preview pages to the source files that serve them, where this can be proven statically | R5 | Planned |
+
+## Guardrails for every phase
+
+- MVP first: build only the current phase. Later rows are ideas, not commitments.
+- Reuse VS Code APIs and small permissive packages before writing new code.
+- Read-only toward the inspected project, unless the owner explicitly opts in to a write (Phase 4 notes).
+- No telemetry, cloud, remote AI calls, agent-specific APIs or database connections.
+- Ask the owner before pushing, opening or merging a PR, publishing, or installing globally.

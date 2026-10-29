@@ -3,6 +3,15 @@
 Canonical rules for every AI coding agent (Claude, Qwen, Gemini, …) working in this repository.
 The owner is the final decision-maker.
 
+## Before planning any feature
+
+Read these first, in this order:
+1. `docs/requirements.md`: the 12 permanent requirements and their current status.
+2. `docs/roadmap.md`: the phases and which one is current.
+3. `docs/development-log.md`: the latest status, decisions and known limitations.
+
+Plan only the current approved phase. Mark a requirement Met only after it has been implemented and verified, with the evidence logged.
+
 ## Principles
 
 - **MVP first.** Build the smallest thing that works; don't implement roadmap items early.

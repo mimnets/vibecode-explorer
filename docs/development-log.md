@@ -32,3 +32,18 @@
 ## 2026-10-29: Fix: installed VSIX was built before the dependency fix
 
 **Cause:** `vibecode-explorer.vsix` was packaged at 15:39, before commit 143b726 (15:58) removed `extensionDependencies: ["vscode.git"]`. The VSIX was never rebuilt, and that stale package was installed at 16:07. Its `package.json` and `extension.vsixmanifest` still declared the dependency, so with `vscode.git` disabled in the owner's profile the extension stayed disabled and its commands never appeared. **Fix:** rebuilt the VSIX from the current source and reinstalled it with `--force`. No source code changed. **Verified:** the installed VSIX ran in an isolated profile of the real VS Code 1.144 with `--disable-extension=vscode.git`: it loads, the command activates it, the dashboard opens, and the graph renders. Git is reported as unavailable. With Git enabled, changes are listed. The full integration suite (22 checks) also passed on the same binary. The browser fallback was not needed.
+
+## 2026-10-29: Phase 1 accepted by owner
+
+**Acceptance:** the owner restarted VS Code with the rebuilt VSIX installed, opened the dashboard and reported that everything works. Automated evidence is in the entries above: unit tests and 22 integration checks. The owner reported success overall but did not list each feature they tried.
+
+**Known limitations carried forward:**
+- Graph covers JS/TS **relative** imports only. Path aliases, package imports and absolute paths appear as *unknown* nodes.
+- Changes are the current working tree against HEAD only. There's no commit history or per-session view.
+- The changes pane needs VS Code's built-in Git extension. The owner's profile has it disabled, so the pane shows "Git unavailable" until they enable it.
+- Restricted Mode (an untrusted folder) is checked by hand only. See the README.
+- Scan caps: 500 files by default (configurable up to 5000), 512 KB per file, 200 symbols per file.
+- Preview opens only loopback http/https URLs and never starts the app.
+- Dev-only advisory GHSA-xcx6-jx8p-x3h5 in `@vscode/vsce`'s dependency tree remains open (it's not shipped).
+
+**Docs:** permanent requirements now carry a per-requirement status (`docs/requirements.md`). Added `docs/roadmap.md`. `AGENTS.md` now tells agents to read requirements, roadmap and log before planning. No application code changed.
