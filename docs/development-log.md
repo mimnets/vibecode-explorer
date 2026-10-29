@@ -162,3 +162,32 @@ The owner has no Python project, so with their approval a small demo was created
 **Verified automatically:** lint (with the browser globals added to the webview ESLint config). 35 unit tests, including request checks for a missing, wrong or truncated key, DNS rebinding, other ports, cross-site fetches, plain and encoded path traversal, wrong methods, POSTs with no or a foreign Origin, `text/plain` bodies and bad tab ids, plus the CSP and the browser page markup. 56 integration checks against the real server: the page with key and CSP header, 404 without the key, 421 for a foreign Host, assets served, an SSE tab receiving the state after `ready`, 403 for a POST without Origin, a browser `open` message opening `util.ts` in VS Code, no connection from the machine's LAN address, Stop telling the tab and refusing connections, and the idle stop (with a 300 ms test timeout). All existing checks still pass after the refactor. **Not verified automatically:** the page in a real browser (the bridge, the theme colours, the graph). This needs the owner's GUI check.
 
 **Limitations:** needs VS Code running. The browser uses its own colours, not the VS Code theme. `vscode.env.openExternal` may ask the owner to confirm opening the link the first time. One VS Code window owns the server, and another window starts its own on a different port.
+
+## 2026-10-29: Owner's first look at the browser view, and four small fixes
+
+**Owner evidence (partial GUI check of Phase 6b):** the owner's screenshot shows the dashboard in Chrome at `127.0.0.1:<random port>/<key>/`, with the History tab (latest 18 commits), the dependency graph (39 files, 77 imports) and Details for `src/extension/explain.ts` all rendered in the browser's light colours. Not yet shown: clicks opening files in VS Code, notes, the AI sessions tab and Stop. So Phase 6b stays "Awaiting owner check".
+
+**Fixed, from the screenshot:**
+1. **Overlapping graph labels.** The layout now counts each label in its node's size (`nodeDimensionsIncludeLabels`) and spreads nodes a little further. Labels get a faint backdrop, so they stay readable where they cross edges.
+2. **"explain.ts … uses explain.ts".** In plain words, a file whose name matches the selected file, or another listed file, is now shown with its folder (`src/analysis/explain.ts`).
+3. **Imports wrapping mid-word.** `[local]` / `[external]` no longer break across lines, and code text wraps between words before breaking inside one (`overflow-wrap: anywhere` instead of `word-break: break-all`).
+4. **A `../../../package.json` "unknown import" node.** It came from the manifest unit test's `require`, which points out of the project from the source folder. The test now reads the file with `fs` instead, so there is no import edge. A dry run of the graph builder on this repository finds no import that is neither local nor a package.
+
+**Verified automatically:** lint, 35 unit tests (one new check for same-name files) and 58 integration checks. **Not verified automatically:** how the new layout and label backdrop look. This needs the owner's GUI check.
+
+## Handoff for the next session (written 2026-10-29)
+
+**Where things stand:** Phases 0–3 are Done and owner-verified. Phases 4, 4b, 5, 6 and 6b are implemented and auto-tested but **awaiting the owner's GUI check**. Nothing is pushed to GitHub yet (pushing needs the owner's yes). The working tree is clean after the last commit.
+
+**Start tomorrow with, in this order:**
+1. Rebuild and reinstall the VSIX (`npm run package`, then install `vibecode-explorer.vsix` in VS Code and reload). Ask the owner first, as AGENTS.md requires for installs into their VS Code.
+2. Owner GUI checks, one phase at a time, each recorded here with the evidence:
+   - **Phase 6b browser view:** labels no longer overlap; clicking a file in the browser opens it in VS Code; **Stop Browser View** closes the page.
+   - **Phase 4 notes:** Add note asks once, creates a file in `.vibecode/notes/`, and the note appears under Notes.
+   - **Phase 4b AI sessions:** the tab asks permission, then lists sessions with prompts and tokens; no secrets shown.
+   - **Phase 5 learning aids:** In plain words, the **?** buttons, clicking a symbol, red circular-import outline.
+   - **Phase 6 Python:** open `Documents\vibecode-python-demo`, check the `orders.py`/`payments.py` loop in red.
+3. After each passing check, update its row in `docs/roadmap.md` and the status in `docs/requirements.md`.
+4. Then plan **Phase 7** (API and database relationships, static only) and ask for approval before building it.
+
+**Open ideas, not scheduled:** a "No" answer to the notes question isn't remembered; notes break on file rename; AI sessions read Claude Code logs only.

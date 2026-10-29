@@ -197,6 +197,7 @@
     const cycleEdges = new Set(graph.cycleEdges || []);
     const fg = cssVar('--vscode-foreground', '#ccc');
     const accent = cssVar('--vscode-focusBorder', '#0078d4');
+    const bg = cssVar('--vscode-editor-background', '#1e1e1e');
     const elements = [
       ...graph.nodes.map((n) => ({ data: { id: n.id, label: n.label, kind: n.kind, group: n.group || '', cycle: cycleNodes.has(n.id) } })),
       ...graph.edges.map((e, i) => ({ data: { id: 'e' + i, source: e.source, target: e.target, cycle: cycleEdges.has(i) } })),
@@ -209,7 +210,9 @@
       minZoom: 0.05,
       maxZoom: 4,
       style: [
-        { selector: 'node', style: { label: 'data(label)', color: fg, 'font-size': 10, 'text-valign': 'bottom', 'text-margin-y': 4, width: 14, height: 14, 'background-color': '#6c8ebf' } },
+        { selector: 'node', style: { label: 'data(label)', color: fg, 'font-size': 10, 'text-valign': 'bottom', 'text-margin-y': 4, width: 14, height: 14, 'background-color': '#6c8ebf',
+          // A backdrop keeps a label readable where it crosses edges or another label.
+          'text-background-color': bg, 'text-background-opacity': 0.75, 'text-background-padding': 1 } },
         { selector: 'node[group = "modified"], node[group = "renamed"], node[group = "added"], node[group = "conflict"]', style: { 'background-color': '#d7a33a' } },
         { selector: 'node[group = "untracked"]', style: { 'background-color': '#4caf50' } },
         { selector: 'node[kind = "unknown"]', style: { shape: 'diamond', 'background-color': '#888', 'font-style': 'italic' } },
@@ -243,7 +246,8 @@
 
   function runLayout() {
     if (!cy) return;
-    cy.layout({ name: 'cose', animate: false, nodeRepulsion: 8000, idealEdgeLength: 60, padding: 30 }).run();
+    // Counting labels in each node's size keeps file names from landing on top of each other.
+    cy.layout({ name: 'cose', animate: false, nodeDimensionsIncludeLabels: true, nodeRepulsion: 12000, idealEdgeLength: 70, padding: 30 }).run();
   }
 
   function renderUnknown(label) {
@@ -274,7 +278,12 @@
     if (d.analyzed) {
       info.append(withHelp(el('h3', `Imports (${d.imports.length})`), 'imports'));
       const ul = el('ul', undefined, 'files');
-      for (const imp of d.imports) ul.append(el('li', `${imp.specifier}${imp.target ? ' → ' + imp.target : ''}  [${imp.kind}]`, 'mono'));
+      for (const imp of d.imports) {
+        // The kind stays on one line; long paths wrap between words first.
+        const li = el('li', `${imp.specifier}${imp.target ? ' → ' + imp.target : ''} `, 'mono');
+        li.append(el('span', `[${imp.kind}]`, 'nowrap'));
+        ul.append(li);
+      }
       if (d.dynamicUnknown) ul.append(el('li', `${d.dynamicUnknown} dynamic import(s) with unknown target`, 'muted'));
       info.append(ul);
     }

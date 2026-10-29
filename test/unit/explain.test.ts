@@ -51,6 +51,9 @@ test('a file is explained in plain sentences', () => {
   assert.equal(entry.role, 'entry point');
   const plain = explainFile(facts({ analyzed: false, symbolKinds: {}, fileType: 'MD', lines: undefined, commits: undefined, notes: 0 }));
   assert.deepEqual(plain.sentences, ['dashboard.ts is an MD file.']);
+  // A file with the same name as the subject, or as another listed file, is shown with its path.
+  const same = explainFile(facts({ path: 'src/extension/explain.ts', localImports: ['src/analysis/explain.ts', 'src/a/x.ts', 'src/b/x.ts', 'src/state.ts'] }));
+  assert.ok(same.sentences.includes('It uses 4 other files in this project (src/analysis/explain.ts, src/a/x.ts, src/b/x.ts and 1 more) and 2 packages (vscode, crypto).'));
 });
 
 test('code tips: circular import, large file, hub without a test', () => {

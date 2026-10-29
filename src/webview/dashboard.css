@@ -21,7 +21,8 @@ select {
   border: 1px solid var(--vscode-dropdown-border);
 }
 .muted { color: var(--vscode-descriptionForeground); }
-.mono { font-family: var(--vscode-editor-font-family); font-size: 0.9em; white-space: pre-wrap; word-break: break-all; }
+.mono { font-family: var(--vscode-editor-font-family); font-size: 0.9em; white-space: pre-wrap; overflow-wrap: anywhere; }
+.nowrap { white-space: nowrap; }
 
 .toolbar { display: flex; gap: 10px; align-items: center; padding: 8px 12px; border-bottom: 1px solid var(--vscode-panel-border); flex-wrap: wrap; }
 .banner { padding: 8px 12px; background: var(--vscode-inputValidation-warningBackground); border-bottom: 1px solid var(--vscode-inputValidation-warningBorder); }

@@ -73,9 +73,10 @@ export function findCycles(nodes: string[], edges: [string, string][]): string[]
 const base = (p: string): string => p.split('/').pop() ?? p;
 const plural = (n: number, one: string, many = one + 's'): string => `${n} ${n === 1 ? one : many}`;
 
-/** "a.ts, b.ts and 3 more" */
-function listNames(paths: string[], max = 3): string {
-  const names = paths.map(base);
+/** "a.ts, b.ts and 3 more". A name shared with `self` or another listed file is shown as its full path. */
+function listNames(paths: string[], self: string, max = 3): string {
+  const taken = [base(self), ...paths.map(base)];
+  const names = paths.map((p) => (taken.filter((n) => n === base(p)).length > 1 ? p : base(p)));
   if (names.length <= max) return names.length > 1 ? `${names.slice(0, -1).join(', ')} and ${names[names.length - 1]}` : names.join('');
   return `${names.slice(0, max).join(', ')} and ${names.length - max} more`;
 }
@@ -120,11 +121,11 @@ export function explainFile(f: FileFacts): { sentences: string[]; role?: FileRol
   let role: FileRole | undefined;
   if (f.analyzed) {
     const uses: string[] = [];
-    if (f.localImports.length) uses.push(`${plural(f.localImports.length, 'other file')} in this project (${listNames(f.localImports)})`);
+    if (f.localImports.length) uses.push(`${plural(f.localImports.length, 'other file')} in this project (${listNames(f.localImports, f.path)})`);
     if (f.packages.length) uses.push(`${plural(f.packages.length, 'package')} (${f.packages.slice(0, 3).join(', ')}${f.packages.length > 3 ? ', …' : ''})`);
     sentences.push(uses.length ? `It uses ${uses.join(' and ')}.` : 'It does not import anything.');
     if (f.unknownImports) sentences.push(`${plural(f.unknownImports, 'import')} could not be followed (an alias or a computed path).`);
-    sentences.push(f.importedBy.length ? `${plural(f.importedBy.length, 'file')} use${f.importedBy.length === 1 ? 's' : ''} it (${listNames(f.importedBy)}).` : 'No other file in this project imports it.');
+    sentences.push(f.importedBy.length ? `${plural(f.importedBy.length, 'file')} use${f.importedBy.length === 1 ? 's' : ''} it (${listNames(f.importedBy, f.path)}).` : 'No other file in this project imports it.');
     role = fileRole(f.localImports.length, f.importedBy.length);
     if (role === 'hub') sentences.push(`That makes it a hub: a change here can affect ${plural(f.importedBy.length, 'file')}.`);
     else if (role === 'entry point') sentences.push('Nothing imports it, so it is likely an entry point where the program or a feature starts.');
@@ -151,7 +152,7 @@ export function explainFile(f: FileFacts): { sentences: string[]; role?: FileRol
 export function codeTips(f: FileFacts): string[] {
   const tips: string[] = [];
   if (f.cycleWith.length) {
-    tips.push(`${base(f.path)} and ${listNames(f.cycleWith)} import each other (a circular import). This can cause load-order bugs where something is still undefined. Moving the shared part into a separate file breaks the loop.`);
+    tips.push(`${base(f.path)} and ${listNames(f.cycleWith, f.path)} import each other (a circular import). This can cause load-order bugs where something is still undefined. Moving the shared part into a separate file breaks the loop.`);
   }
   if (f.lines && f.lines > LARGE_FILE_LINES) {
     tips.push(`At ${f.lines} lines this file is large. Splitting it by responsibility makes it easier to read and to ask an AI about one part at a time.`);

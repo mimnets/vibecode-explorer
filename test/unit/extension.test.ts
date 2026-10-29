@@ -1,4 +1,6 @@
 import { strict as assert } from 'assert';
+import { readFileSync } from 'fs';
+import { join } from 'path';
 import { test } from 'node:test';
 import { parseWebviewMessage } from '../../src/extension/messages';
 import { validatePreviewUrl } from '../../src/extension/previewUrl';
@@ -52,8 +54,8 @@ test('git status codes map to change groups', () => {
 test('manifest has no hard extension dependencies', () => {
   // VS Code disables an extension whose dependency is disabled, hiding all its commands.
   // Git is optional: gitChanges.ts reports it as unavailable instead.
-  // eslint-disable-next-line @typescript-eslint/no-require-imports
-  const manifest = require('../../../package.json');
+  // Read as a file, not imported, so the project's own graph shows no import leaving the project.
+  const manifest = JSON.parse(readFileSync(join(__dirname, '..', '..', '..', 'package.json'), 'utf8'));
   assert.equal(manifest.extensionDependencies, undefined);
   // Activates only on its command or when VS Code restores a dashboard tab, never at every startup.
   assert.deepEqual(manifest.activationEvents, ['onWebviewPanel:vibecodeExplorer.dashboard']);
