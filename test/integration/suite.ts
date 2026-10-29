@@ -1,5 +1,8 @@
 // Runs inside the Extension Development Host. Throwing fails the run.
 import { strict as assert } from 'assert';
+import * as http from 'http';
+import * as net from 'net';
+import * as os from 'os';
 import * as vscode from 'vscode';
 import type { activate } from '../../src/extension/extension';
 
@@ -284,6 +287,104 @@ export async function run(): Promise<void> {
     assert.equal(sum.securityMentions.length, 1);
     assert.ok(!JSON.stringify(sum).includes('TOOL OUTPUT') && !JSON.stringify(sum).includes('supersecret'));
   });
+
+  // Phase 6b: the browser view's local server.
+  assert.ok(api.browserLink, 'browser link is exposed in test mode');
+  const link = new URL(await api.browserLink!());
+  const bPort = Number(link.port);
+  const request = (opts: http.RequestOptions & { body?: string }) => new Promise<{ status: number; headers: http.IncomingHttpHeaders; body: string }>((resolve, reject) => {
+    const req = http.request({ host: '127.0.0.1', port: bPort, ...opts }, (res) => {
+      let body = '';
+      res.on('data', (c) => { body += c; });
+      res.on('end', () => resolve({ status: res.statusCode ?? 0, headers: res.headers, body }));
+    });
+    req.on('error', reject);
+    req.end(opts.body);
+  });
+  const page = await request({ path: link.pathname });
+  const wrongKey = await request({ path: '/not-the-key/' });
+  const rebinding = await request({ path: link.pathname, headers: { host: `evil.example:${bPort}` } });
+  const script = await request({ path: `${link.pathname}a/dashboard.js` });
+  check('the browser page loads only with the key and the right Host', () => {
+    assert.equal(link.hostname, '127.0.0.1');
+    assert.equal(page.status, 200);
+    assert.match(String(page.headers['content-security-policy']), /connect-src 'self'/);
+    assert.ok(page.body.includes('./a/browserBridge.js'));
+    assert.equal(wrongKey.status, 404);
+    assert.equal(rebinding.status, 421);
+    assert.equal(script.status, 200);
+    assert.match(String(script.headers['content-type']), /javascript/);
+  });
+
+  // Connect like a browser tab: open the event stream, then send messages.
+  const received: { type: string; [k: string]: unknown }[] = [];
+  let client = '';
+  let streamText = '';
+  const stream = await new Promise<http.IncomingMessage>((resolve) => {
+    http.get({ host: '127.0.0.1', port: bPort, path: `${link.pathname}events` }, resolve);
+  });
+  stream.setEncoding('utf8');
+  stream.on('data', (chunk: string) => {
+    streamText += chunk;
+    let end: number;
+    while ((end = streamText.indexOf('\n\n')) >= 0) {
+      const block = streamText.slice(0, end);
+      streamText = streamText.slice(end + 2);
+      const data = /^data: (.*)$/m.exec(block)?.[1];
+      if (/^event: hello$/m.test(block) && data) client = JSON.parse(data).client;
+      else if (/^event: stopped$/m.test(block)) received.push({ type: '__stopped' });
+      else if (data) received.push(JSON.parse(data));
+    }
+  });
+  const waitFor = async (pred: () => boolean) => {
+    for (let i = 0; i < 150 && !pred(); i++) await new Promise((r) => setTimeout(r, 100));
+    return pred();
+  };
+  await waitFor(() => client !== '');
+  const origin = `http://127.0.0.1:${bPort}`;
+  const send = (message: object, headers: http.OutgoingHttpHeaders = { origin, 'content-type': 'application/json' }) =>
+    request({ method: 'POST', path: `${link.pathname}message?c=${client}`, headers, body: JSON.stringify(message) });
+  const noOrigin = await send({ type: 'ready' }, { 'content-type': 'application/json' });
+  const accepted = await send({ type: 'ready' });
+  await waitFor(() => received.some((m) => m.type === 'state'));
+  const bState = received.find((m) => m.type === 'state')?.state as typeof state | undefined;
+  check('a browser tab gets the dashboard state over the event stream', () => {
+    assert.match(client, /^[a-f0-9]{32}$/);
+    assert.equal(noOrigin.status, 403, 'POST without Origin is refused');
+    assert.equal(accepted.status, 204);
+    assert.ok(bState && bState.graph.nodes.some((n) => n.path === 'src/util.ts'));
+  });
+  const utilNode = bState?.graph.nodes.find((n) => n.path === 'src/util.ts')?.id;
+  await send({ type: 'open', id: utilNode });
+  await waitFor(() => received.some((m) => m.type === 'details'));
+  check('a click in the browser opens the file in VS Code', () => {
+    const input = activeTab();
+    assert.ok(input instanceof vscode.TabInputText && input.uri.fsPath.endsWith('util.ts'), String(input));
+    assert.ok(received.some((m) => m.type === 'details'));
+  });
+  const lanAddress = Object.values(os.networkInterfaces()).flat().find((a) => a && a.family === 'IPv4' && !a.internal)?.address;
+  const fromNetwork = lanAddress
+    ? await new Promise<string>((resolve) => {
+      const s = net.connect({ host: lanAddress, port: bPort }, () => { s.destroy(); resolve('connected'); });
+      s.on('error', (e: NodeJS.ErrnoException) => resolve(e.code ?? 'error'));
+    })
+    : 'no network interface';
+  check('the browser view is not reachable from the network', () => assert.notEqual(fromNetwork, 'connected', lanAddress));
+
+  api.stopBrowserView();
+  await waitFor(() => received.some((m) => m.type === '__stopped'));
+  const afterStop = await request({ path: link.pathname }).then(() => 'answered', (e: NodeJS.ErrnoException) => e.code);
+  check('stopping closes open tabs and the server', () => {
+    assert.ok(received.some((m) => m.type === '__stopped'));
+    assert.equal(afterStop, 'ECONNREFUSED');
+  });
+  const idleLink = new URL(await api.browserLink!(300));
+  await new Promise((r) => setTimeout(r, 1200));
+  const afterIdle = await new Promise<string>((resolve) => {
+    const s = net.connect({ host: '127.0.0.1', port: Number(idleLink.port) }, () => { s.destroy(); resolve('connected'); });
+    s.on('error', (e: NodeJS.ErrnoException) => resolve(e.code ?? 'error'));
+  });
+  check('the browser view stops by itself when idle', () => assert.equal(afterIdle, 'ECONNREFUSED'));
 
   // Restoring dashboard tabs after a reload (what VS Code's serializer does).
   const viewType = 'vibecodeExplorer.dashboard';

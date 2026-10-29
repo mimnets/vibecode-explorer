@@ -1,6 +1,8 @@
 import * as vscode from 'vscode';
 import { loadSessions, readSessions, resetPermissions } from './agentSessions';
-import { Dashboard, openTarget } from './dashboard';
+import { BrowserView, openInBrowser } from './browserView';
+import { Dashboard } from './dashboard';
+import { openTarget } from './open';
 import { explainSymbolAt, explainTarget } from './explain';
 import { describeCommit, loadHistory, openCommitFile } from './history';
 import { createNote, listNotes, notesFor } from './notes';
@@ -14,6 +16,12 @@ export function activate(context: vscode.ExtensionContext) {
       Dashboard.show(context.extensionUri, context.workspaceState);
     }),
     vscode.commands.registerCommand('vibecodeExplorer.openPreview', openPreview),
+    vscode.commands.registerCommand('vibecodeExplorer.openInBrowser', () => openInBrowser(context.extensionUri, context.workspaceState)),
+    vscode.commands.registerCommand('vibecodeExplorer.stopBrowserView', () => {
+      void vscode.window.showInformationMessage(BrowserView.stop() ? 'The browser view has stopped.' : 'The browser view is not running.');
+    }),
+    // Closing VS Code (or disabling the extension) always stops the browser view.
+    { dispose: () => BrowserView.stop() },
     vscode.commands.registerCommand('vibecodeExplorer.resetPermissions', async () => {
       await resetPermissions(context.workspaceState);
       void vscode.window.showInformationMessage('VibeCode Explorer will ask again before reading AI session logs or saving notes in this workspace.');
@@ -45,7 +53,13 @@ export function activate(context: vscode.ExtensionContext) {
     renderReport: () => Dashboard.instance?.renderReport,
     revivePanel: (panel: vscode.WebviewPanel) => Dashboard.revive(panel, context.extensionUri, context.workspaceState),
     closeDashboard: () => Dashboard.instance?.close(),
+    browserLink: context.extensionMode === vscode.ExtensionMode.Test
+      ? (idleMs?: number) => BrowserView.link(context.extensionUri, context.workspaceState, idleMs)
+      : undefined,
+    stopBrowserView: () => BrowserView.stop(),
   };
 }
 
-export function deactivate() {}
+export function deactivate() {
+  BrowserView.stop();
+}

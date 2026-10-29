@@ -5,6 +5,8 @@ export type WebviewMessage =
   | { type: 'ready' }
   | { type: 'refresh' }
   | { type: 'preview' }
+  /** Show the dashboard in the owner's web browser (Phase 6b). */
+  | { type: 'openInBrowser' }
   | { type: 'selectFolder'; index: number }
   | { type: 'open'; id: string }
   | { type: 'inspect'; id: string }
@@ -40,6 +42,7 @@ export function parseWebviewMessage(raw: unknown): WebviewMessage | undefined {
     case 'ready':
     case 'refresh':
     case 'preview':
+    case 'openInBrowser':
     case 'sessions':
     case 'allowSessions':
       return { type: msg.type };

@@ -33,6 +33,7 @@ Plan only the current approved phase. Mark a requirement Met only after it has b
 - Outside the project, read only the open project's own agent log folder (Phase 4b, `src/extension/agentSessions.ts`), read-only and after the owner allows it. Never show tool output; hide anything that looks like a secret.
 - Skip `node_modules`, `.git`, build outputs; cap scan size.
 - Never expose shell execution; never start user servers.
+- The only server the extension may run is its own browser view (Phase 6b, `src/extension/browserView.ts`): bound to 127.0.0.1, random port, secret key in every URL, Host/Origin checks, started only by the owner, stopped on exit or idle.
 
 ## Approval boundaries
 

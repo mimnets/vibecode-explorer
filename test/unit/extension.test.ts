@@ -19,6 +19,7 @@ test('webview messages are validated strictly', () => {
   assert.deepEqual(parseWebviewMessage({ type: 'open', id: 'f12' }), { type: 'open', id: 'f12' });
   assert.deepEqual(parseWebviewMessage({ type: 'selectFolder', index: 1 }), { type: 'selectFolder', index: 1 });
   assert.deepEqual(parseWebviewMessage({ type: 'refresh', extra: 'ignored' }), { type: 'refresh' });
+  assert.deepEqual(parseWebviewMessage({ type: 'openInBrowser', url: 'http://evil.example' }), { type: 'openInBrowser' });
   assert.deepEqual(parseWebviewMessage({ type: 'symbol', id: 's3' }), { type: 'symbol', id: 's3' });
   assert.deepEqual(parseWebviewMessage({ type: 'goto', id: 'r0' }), { type: 'goto', id: 'r0' });
   assert.deepEqual(parseWebviewMessage({ type: 'history', limit: 50 }), { type: 'history', limit: 50 });

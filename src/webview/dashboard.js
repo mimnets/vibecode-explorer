@@ -68,6 +68,8 @@
   // ---- toolbar ----
   $('refresh').addEventListener('click', () => send({ type: 'refresh' }));
   $('preview').addEventListener('click', () => send({ type: 'preview' }));
+  // Only in VS Code: the browser page has no "Open in Browser" button.
+  document.getElementById('openBrowser')?.addEventListener('click', () => send({ type: 'openInBrowser' }));
   $('folder').addEventListener('change', (e) => send({ type: 'selectFolder', index: Number(/** @type {HTMLSelectElement} */ (e.target).value) }));
   $('fit').addEventListener('click', () => cy && cy.fit(undefined, 30));
   $('zoomIn').addEventListener('click', () => cy && cy.zoom({ level: cy.zoom() * 1.25, renderedPosition: center() }));

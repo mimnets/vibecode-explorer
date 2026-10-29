@@ -41,6 +41,16 @@
         "category": "VibeCode Explorer"
       },
       {
+        "command": "vibecodeExplorer.openInBrowser",
+        "title": "Open Dashboard in Browser",
+        "category": "VibeCode Explorer"
+      },
+      {
+        "command": "vibecodeExplorer.stopBrowserView",
+        "title": "Stop Browser View",
+        "category": "VibeCode Explorer"
+      },
+      {
         "command": "vibecodeExplorer.resetPermissions",
         "title": "Reset Permissions (AI Session Logs and Notes)",
         "category": "VibeCode Explorer"
