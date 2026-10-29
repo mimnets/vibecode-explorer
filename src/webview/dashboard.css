@@ -39,6 +39,17 @@ select {
 .dot.file { background: #6c8ebf; } .dot.changed { background: #d7a33a; } .dot.untracked { background: #4caf50; }
 .dot.unknown { background: #888; border-radius: 0; transform: rotate(45deg); }
 .dot.used { background: none; border: 2px solid #c586c0; width: 7px; height: 7px; }
+.dot.commit { background: none; border: 2px solid #4fc1ff; width: 7px; height: 7px; }
+
+.tabs { display: flex; gap: 2px; margin-bottom: 8px; border-bottom: 1px solid var(--vscode-panel-border); }
+.tab { background: none; color: var(--vscode-descriptionForeground); font-weight: 600; padding: 4px 8px; border-bottom: 2px solid transparent; border-radius: 0; }
+.tab:hover { background: none; color: var(--vscode-foreground); }
+.tab.active { color: var(--vscode-foreground); border-bottom-color: var(--vscode-focusBorder); }
+ul.commits { list-style: none; padding: 0; margin: 6px 0; }
+ul.commits li { padding: 4px 0; border-bottom: 1px solid var(--vscode-panel-border); }
+button.link.selected { font-weight: 600; }
+.small { font-size: 0.85em; }
+.message { white-space: pre-wrap; word-break: break-word; margin: 0 0 8px; }
 
 ul.files { list-style: none; padding: 0; margin: 0; }
 ul.files li { padding: 1px 0; }

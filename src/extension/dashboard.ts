@@ -1,7 +1,8 @@
 import * as crypto from 'crypto';
 import * as path from 'path';
 import * as vscode from 'vscode';
-import { headUri } from '../git/gitChanges';
+import { CommitEntry, headUri } from '../git/gitChanges';
+import { describeCommit, HistoryFile, loadHistory, openCommitFile } from './history';
 import { parseWebviewMessage, WebviewMessage } from './messages';
 import { openPreview } from './preview';
 import { CodeLocation, collectState, DashboardState, describeTarget, findUsages, Target } from './state';
@@ -13,6 +14,9 @@ export class Dashboard {
   private targets = new Map<string, Target>();
   /** Symbols of the file shown in Details (`s…`) and usages of the last symbol (`r…`). */
   private locations = new Map<string, CodeLocation>();
+  /** Commits in the History tab (`k…`) and files of the shown commit (`h…`). */
+  private commits = new Map<string, CommitEntry>();
+  private historyFiles = new Map<string, HistoryFile>();
   private state: DashboardState | undefined;
   private folderIndex = 0;
   private loading: Promise<void> | undefined;
@@ -61,6 +65,8 @@ export class Dashboard {
           this.state = state;
           this.targets = targets;
           this.locations.clear();
+          this.commits.clear();
+          this.historyFiles.clear();
           this.post({ type: 'state', state });
         } catch (err) {
           this.post({ type: 'error', message: err instanceof Error ? err.message : String(err) });
@@ -106,6 +112,33 @@ export class Dashboard {
         const { details, symbols } = await describeTarget(msg.id, target);
         this.locations = symbols;
         this.post({ type: 'details', details });
+        break;
+      }
+      case 'history': {
+        const folder = vscode.workspace.workspaceFolders?.[this.state?.folderIndex ?? 0];
+        if (!folder) return;
+        const { result, commits } = await loadHistory(folder, msg.limit);
+        this.commits = commits;
+        this.historyFiles.clear();
+        this.post({ type: 'history', result });
+        break;
+      }
+      case 'commit': {
+        const commit = this.commits.get(msg.id);
+        const folder = vscode.workspace.workspaceFolders?.[this.state?.folderIndex ?? 0];
+        if (!commit || !folder) return;
+        const { details, files } = await describeCommit(folder, msg.id, commit);
+        this.historyFiles = files;
+        const paths = new Set(details.files.map((f) => f.path));
+        const nodeIds = [...this.targets.entries()]
+          .filter(([id, t]) => id.startsWith('f') && paths.has(t.relPath))
+          .map(([id]) => id);
+        this.post({ type: 'commit', details, nodeIds });
+        break;
+      }
+      case 'commitFile': {
+        const file = this.historyFiles.get(msg.id);
+        if (file) await openCommitFile(file);
         break;
       }
       case 'goto': {
@@ -168,9 +201,19 @@ export class Dashboard {
 <div id="banner" class="banner" hidden></div>
 <main class="layout">
   <section class="pane" id="changesPane">
-    <h2>Workspace changes</h2>
-    <div id="repo" class="muted"></div>
-    <div id="changes"></div>
+    <div class="tabs" role="tablist">
+      <button id="tabChanges" class="tab active" role="tab" aria-selected="true">Workspace changes</button>
+      <button id="tabHistory" class="tab" role="tab" aria-selected="false">History</button>
+    </div>
+    <div id="changesView">
+      <div id="repo" class="muted"></div>
+      <div id="changes"></div>
+    </div>
+    <div id="historyView" hidden>
+      <div id="historyInfo" class="muted"></div>
+      <ul id="commits" class="commits"></ul>
+      <button id="moreHistory" hidden>Load more</button>
+    </div>
   </section>
   <section class="pane graph-pane">
     <div class="graph-tools">
@@ -183,7 +226,7 @@ export class Dashboard {
     </div>
     <div id="graph"></div>
     <div class="legend muted">
-      <span class="dot file"></span>file <span class="dot changed"></span>changed <span class="dot untracked"></span>new <span class="dot unknown"></span>unknown import <span class="dot used"></span>uses selected symbol
+      <span class="dot file"></span>file <span class="dot changed"></span>changed <span class="dot untracked"></span>new <span class="dot unknown"></span>unknown import <span class="dot used"></span>uses selected symbol <span class="dot commit"></span>in selected commit
     </div>
   </section>
   <aside class="pane" id="info"><h2>Details</h2><p class="muted">Select a file in the graph or the changes list.</p></aside>

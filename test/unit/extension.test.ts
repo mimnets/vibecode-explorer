@@ -2,6 +2,7 @@ import { strict as assert } from 'assert';
 import { test } from 'node:test';
 import { parseWebviewMessage } from '../../src/extension/messages';
 import { validatePreviewUrl } from '../../src/extension/previewUrl';
+import { commitHeadline, summarizeCommitFiles } from '../../src/git/history';
 import { groupForStatus, moreSignificant } from '../../src/git/status';
 
 test('preview URL accepts only local http(s)', () => {
@@ -20,10 +21,15 @@ test('webview messages are validated strictly', () => {
   assert.deepEqual(parseWebviewMessage({ type: 'refresh', extra: 'ignored' }), { type: 'refresh' });
   assert.deepEqual(parseWebviewMessage({ type: 'symbol', id: 's3' }), { type: 'symbol', id: 's3' });
   assert.deepEqual(parseWebviewMessage({ type: 'goto', id: 'r0' }), { type: 'goto', id: 'r0' });
+  assert.deepEqual(parseWebviewMessage({ type: 'history', limit: 50 }), { type: 'history', limit: 50 });
+  assert.deepEqual(parseWebviewMessage({ type: 'commit', id: 'k2' }), { type: 'commit', id: 'k2' });
+  assert.deepEqual(parseWebviewMessage({ type: 'commitFile', id: 'h0' }), { type: 'commitFile', id: 'h0' });
   for (const bad of [null, 'open', 42, {}, { type: 'exec', cmd: 'rm -rf /' }, { type: 'open', id: '../../.env' },
     { type: 'open', id: 'C:\\secret' }, { type: 'open' }, { type: 'inspect', id: 7 }, { type: 'symbol', id: 'util' },
     { type: 'goto', id: 'src/util.ts:3' }, { type: 'goto' }, { type: 'selectFolder', index: -1 },
-    { type: 'selectFolder', index: 1.5 }, { type: 'selectFolder', index: '0' }]) {
+    { type: 'selectFolder', index: 1.5 }, { type: 'selectFolder', index: '0' }, { type: 'history' },
+    { type: 'history', limit: 0 }, { type: 'history', limit: 201 }, { type: 'history', limit: '50' },
+    { type: 'commit', id: 'HEAD~1' }, { type: 'commit', id: 'a1b2c3d4e5f6' }, { type: 'commitFile', id: 'src/.env' }]) {
     assert.equal(parseWebviewMessage(bad), undefined, JSON.stringify(bad));
   }
 });
@@ -46,4 +52,18 @@ test('manifest has no hard extension dependencies', () => {
   const manifest = require('../../../package.json');
   assert.equal(manifest.extensionDependencies, undefined);
   assert.ok(manifest.contributes.commands.some((c: { command: string }) => c.command === 'vibecodeExplorer.openDashboard'));
+});
+
+test('commit files are kept inside the folder, flagged, sorted and capped', () => {
+  const s = summarizeCommitFiles([
+    { relPath: 'src/b.ts', oldRelPath: '', group: 'modified' },
+    { relPath: '../other/x.ts', oldRelPath: '', group: 'added' },
+    { relPath: '.env', oldRelPath: '', group: 'modified' },
+    { relPath: 'src/a.ts', oldRelPath: 'src/secrets.pem', group: 'renamed' },
+  ], 2);
+  assert.deepEqual(s.files.map((f) => [f.relPath, f.sensitive]), [['.env', true], ['src/a.ts', true]]);
+  assert.equal(s.hidden, 1);
+  assert.equal(s.truncated, true);
+  assert.equal(commitHeadline('fix: thing\r\n\nbody'), 'fix: thing');
+  assert.equal(commitHeadline('   \n'), '(no message)');
 });

@@ -24,7 +24,18 @@ function createSample(root: string): string {
   write(path.join(repo, '.env'), `API_KEY=do-not-read\n`);
   git(repo, 'init', '-q', '-b', 'main');
   git(repo, '-c', 'user.name=test', '-c', 'user.email=test@example.invalid', 'add', '.');
-  git(repo, '-c', 'user.name=test', '-c', 'user.email=test@example.invalid', 'commit', '-q', '-m', 'init');
+  const commit = (message: string) => git(repo, '-c', 'user.name=test', '-c', 'user.email=test@example.invalid', 'commit', '-q', '-m', message);
+  commit('init');
+  // History for Phase 3: an add, a rename, a deletion and a sensitive file.
+  write(path.join(repo, 'src/helper.ts'), `export const helper = 'a fairly long line so rename detection has content to compare';\n`);
+  write(path.join(repo, 'src/temp.ts'), `export const temp = 1;\n`);
+  git(repo, 'add', '.');
+  commit('add helper\n\nWhy: keep small helpers apart from util.');
+  git(repo, 'mv', 'src/helper.ts', 'src/helpers.ts');
+  git(repo, 'rm', '-q', 'src/temp.ts');
+  write(path.join(repo, '.env'), `API_KEY=committed-do-not-read\n`);
+  git(repo, 'add', '.');
+  commit('rename helper, drop temp');
   write(path.join(repo, 'src/util.ts'), `export function util() { return 2; }\n`);
   write(path.join(repo, 'src/new.ts'), `import { util } from './util';\nexport const n = util();\n`);
   write(path.join(repo, '.env'), `API_KEY=changed-do-not-read\n`);

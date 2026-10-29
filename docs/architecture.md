@@ -16,7 +16,7 @@
 ## Key decisions
 
 - **Activation:** happens only when a command runs (`activationEvents: []`), so the extension adds no VS Code startup cost.
-- **Git:** uses the built-in `vscode.git` extension API, a minimal typed subset in `gitChanges.ts`. We never run git commands ourselves. Changes are filtered to the selected workspace folder, so separate folders are never mixed.
+- **Git:** uses the built-in `vscode.git` extension API, a minimal typed subset in `gitChanges.ts`. We never run git commands ourselves. Changes are filtered to the selected workspace folder, so separate folders are never mixed. History (Phase 3) uses the same API: `log` for commits, `diffBetween(parent, commit)` for the files of a commit, and `toGitUri` for read-only before/after content; `src/extension/history.ts` issues the opaque `k…`/`h…` ids.
 - **Import parsing:** `typescript` (Apache-2.0) `createSourceFile` gives a syntax-only AST that handles TS, TSX, JS and JSX. It finds `import`, `export … from`, `require`, `import x = require` and `import()`. A non-literal `import()` or `require()` counts as *unknown*.
 - **Resolution:** only relative specifiers resolve, trying extensions, `index.*` files and `.js` → `.ts`. Anything that can't be proven (aliases, absolute paths, paths outside the folder) becomes an *unknown* node, and no edge is guessed.
 - **Graph rendering:** Cytoscape.js (MIT, zero dependencies), loaded from the local `node_modules` with the built-in `cose` layout. There's no bundler: the webview is plain JS.

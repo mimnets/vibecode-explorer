@@ -115,7 +115,58 @@ export async function run(): Promise<void> {
     assert.ok(usages.usages.every((u) => /^r\d+$/.test(u.id) && locations.has(u.id)));
   });
 
+  // Phase 3: history of the sample repository (3 commits, newest first).
+  const repoFolder = vscode.workspace.workspaceFolders![0];
+  const { result: history, commits } = await api.loadHistory(repoFolder, 50);
+  assert.equal(history.git.kind, 'ok', JSON.stringify(history));
+  if (history.git.kind !== 'ok') return;
+  const log = history.git.commits;
+  check('history lists commits newest first with opaque ids', () => {
+    assert.deepEqual(log.map((c) => c.headline), ['rename helper, drop temp', 'add helper', 'init']);
+    assert.ok(log.every((c) => /^k\d+$/.test(c.id) && commits.has(c.id) && c.author === 'test' && c.shortHash.length === 7));
+    assert.equal(history.more, false);
+  });
+  const latest = await api.describeCommit(repoFolder, log[0].id, commits.get(log[0].id)!);
+  const fileOf = (p: string) => latest.details.files.find((f) => f.path === p);
+  check('a commit lists renamed, deleted and sensitive files', () => {
+    assert.ok(latest.details.filesAvailable);
+    assert.equal(fileOf('src/helpers.ts')?.group, 'renamed', JSON.stringify(latest.details.files));
+    assert.equal(fileOf('src/helpers.ts')?.oldPath, 'src/helper.ts');
+    assert.equal(fileOf('src/temp.ts')?.group, 'deleted');
+    assert.equal(fileOf('.env')?.sensitive, true);
+    assert.ok(latest.details.files.every((f) => /^h\d+$/.test(f.id) && latest.files.has(f.id)));
+  });
+  const second = await api.describeCommit(repoFolder, log[1].id, commits.get(log[1].id)!);
+  check('a commit shows its full message and added files', () => {
+    assert.match(second.details.message, /Why: keep small helpers apart from util\./);
+    assert.equal(second.details.files.find((f) => f.path === 'src/helper.ts')?.group, 'added');
+  });
+  const first = await api.describeCommit(repoFolder, log[2].id, commits.get(log[2].id)!);
+  check('the first commit reports its file list as unavailable', () => {
+    assert.equal(first.details.filesAvailable, false);
+    assert.equal(first.details.files.length, 0);
+  });
+  await api.openCommitFile(latest.files.get(fileOf('src/helpers.ts')!.id)!);
+  check('clicking a renamed commit file opens a before/after diff', () => {
+    const input = activeTab();
+    assert.ok(input instanceof vscode.TabInputTextDiff, 'diff tab');
+    assert.equal(input.original.scheme, 'git');
+    assert.ok(input.modified.path.endsWith('helpers.ts'));
+  });
+  await api.openCommitFile(latest.files.get(fileOf('src/temp.ts')!.id)!);
+  check('clicking a deleted commit file opens its previous version', () => {
+    const input = activeTab();
+    assert.ok(input instanceof vscode.TabInputText && input.uri.scheme === 'git' && input.uri.path.endsWith('temp.ts'));
+  });
+  await api.openCommitFile(latest.files.get(fileOf('.env')!.id)!);
+  check('sensitive commit files are never opened', () => {
+    const input = activeTab();
+    assert.ok(!(input instanceof vscode.TabInputText && input.uri.path.endsWith('.env')));
+  });
+
   const plain = await api.collectState(1, true);
+  const plainHistory = await api.loadHistory(vscode.workspace.workspaceFolders![1], 50);
+  check('no-Git folder has no history', () => assert.equal(plainHistory.result.git.kind, 'noGit'));
   check('no-Git folder reports noGit', () => assert.equal(plain.state.git.kind, 'noGit'));
   check('multi-folder workspaces are not mixed', () => {
     const paths = plain.state.graph.nodes.map((n) => n.path).sort();

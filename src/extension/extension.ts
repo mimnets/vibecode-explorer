@@ -1,5 +1,6 @@
 import * as vscode from 'vscode';
 import { Dashboard, openTarget } from './dashboard';
+import { describeCommit, loadHistory, openCommitFile } from './history';
 import { openPreview } from './preview';
 import { collectState, describeTarget, findUsages } from './state';
 
@@ -18,6 +19,9 @@ export function activate(context: vscode.ExtensionContext) {
     describeTarget,
     findUsages,
     openTarget,
+    loadHistory,
+    describeCommit,
+    openCommitFile,
     isDashboardOpen: () => Dashboard.instance !== undefined,
     renderReport: () => Dashboard.instance?.renderReport,
   };

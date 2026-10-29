@@ -13,6 +13,11 @@
   let selectedId = '';
   /** Symbol whose usages are being looked up; stale replies are ignored. */
   let pendingSymbol = '';
+  const HISTORY_PAGE = 50;
+  let historyActive = false;
+  let historyLimit = HISTORY_PAGE;
+  /** Commit whose files are being loaded; stale replies are ignored. */
+  let pendingCommit = '';
 
   function el(tag, text, className) {
     const node = document.createElement(tag);
@@ -37,6 +42,29 @@
   $('zoomIn').addEventListener('click', () => cy && cy.zoom({ level: cy.zoom() * 1.25, renderedPosition: center() }));
   $('zoomOut').addEventListener('click', () => cy && cy.zoom({ level: cy.zoom() / 1.25, renderedPosition: center() }));
   $('layout').addEventListener('click', () => runLayout());
+  $('tabChanges').addEventListener('click', () => showTab(false));
+  $('tabHistory').addEventListener('click', () => showTab(true));
+  $('moreHistory').addEventListener('click', () => {
+    historyLimit = Math.min(historyLimit + HISTORY_PAGE, 200);
+    requestHistory();
+  });
+
+  function showTab(history) {
+    historyActive = history;
+    $('tabChanges').classList.toggle('active', !history);
+    $('tabHistory').classList.toggle('active', history);
+    $('tabChanges').setAttribute('aria-selected', String(!history));
+    $('tabHistory').setAttribute('aria-selected', String(history));
+    $('changesView').hidden = history;
+    $('historyView').hidden = !history;
+    if (history) requestHistory();
+    else clearHighlight();
+  }
+
+  function requestHistory() {
+    $('historyInfo').textContent = 'Loading history…';
+    send({ type: 'history', limit: historyLimit });
+  }
 
   function center() {
     const g = $('graph');
@@ -52,6 +80,8 @@
     else if (msg.type === 'details') renderDetails(msg.details);
     else if (msg.type === 'usagesLoading') renderUsagesLoading(msg.symbol);
     else if (msg.type === 'usages') renderUsages(msg.result, msg.nodeIds);
+    else if (msg.type === 'history') renderHistory(msg.result);
+    else if (msg.type === 'commit') renderCommit(msg.details, msg.nodeIds);
   });
 
   function renderState(state) {
@@ -72,6 +102,8 @@
 
     renderChanges(state.git);
     renderGraph(state.graph);
+    // A refresh invalidates commit ids, so the History tab reloads.
+    if (historyActive) requestHistory();
   }
 
   function showBanner(text) {
@@ -136,21 +168,26 @@
         { selector: 'node:selected', style: { 'border-width': 3, 'border-color': accent } },
         { selector: '.faded', style: { opacity: 0.15 } },
         { selector: 'node.used', style: { 'border-width': 3, 'border-color': '#c586c0' } },
+        { selector: 'node.inCommit', style: { 'border-width': 3, 'border-color': '#4fc1ff' } },
       ],
     });
     cy.on('tap', 'node', (evt) => {
       const node = evt.target;
       selectedId = node.id();
-      cy.elements().removeClass('used').addClass('faded');
+      cy.elements().removeClass('used inCommit').addClass('faded');
       node.closedNeighborhood().removeClass('faded');
       if (node.data('kind') === 'file') send({ type: 'inspect', id: selectedId });
       else renderUnknown(node.data('label'));
     });
-    cy.on('tap', (evt) => { if (evt.target === cy) cy.elements().removeClass('faded used'); });
+    cy.on('tap', (evt) => { if (evt.target === cy) clearHighlight(); });
     cy.on('dbltap', 'node[kind = "file"]', (evt) => send({ type: 'open', id: evt.target.id() }));
     runLayout();
     send({ type: 'rendered', nodes: cy.nodes().length, edges: cy.edges().length });
     if (graph.nodes.length === 0) $('graphInfo').textContent = 'No JavaScript/TypeScript files found in this folder.';
+  }
+
+  function clearHighlight() {
+    if (cy) cy.elements().removeClass('faded used inCommit');
   }
 
   function runLayout() {
@@ -166,6 +203,7 @@
 
   function renderDetails(d) {
     pendingSymbol = '';
+    pendingCommit = '';
     const info = $('info');
     const open = el('button', d.group === 'deleted' ? 'Open HEAD version' : 'Open source');
     open.addEventListener('click', () => send({ type: 'open', id: d.id }));
@@ -236,6 +274,75 @@
       cy.elements().removeClass('used').addClass('faded');
       for (const id of nodeIds) cy.getElementById(id).removeClass('faded').addClass('used');
       if (selectedId) cy.getElementById(selectedId).removeClass('faded');
+    }
+  }
+
+  function renderHistory(r) {
+    const info = $('historyInfo');
+    const list = $('commits');
+    const more = $('moreHistory');
+    list.replaceChildren();
+    more.hidden = true;
+    if (r.git.kind === 'restricted') { info.textContent = 'History is off in Restricted Mode. Trust the workspace to see it.'; return; }
+    if (r.git.kind === 'noGit') { info.textContent = 'No Git repository for this folder, so there is no history.'; return; }
+    if (r.git.kind === 'unavailable') { info.textContent = r.git.reason; return; }
+    const commits = r.git.commits;
+    info.textContent = commits.length === 0 ? 'No commits yet.' : `Latest ${commits.length} commit${commits.length === 1 ? '' : 's'}`;
+    for (const c of commits) {
+      const li = el('li');
+      const btn = el('button', c.headline, 'link');
+      btn.title = 'Show this commit and the files it changed';
+      btn.addEventListener('click', () => {
+        for (const b of list.querySelectorAll('button.selected')) b.classList.remove('selected');
+        btn.classList.add('selected');
+        pendingCommit = c.id;
+        $('info').replaceChildren(el('h2', 'Commit'), el('p', 'Loading…', 'muted'));
+        send({ type: 'commit', id: c.id });
+      });
+      li.append(btn, el('div', `${c.shortHash} · ${c.author} · ${c.date}`, 'muted small'));
+      list.append(li);
+    }
+    more.hidden = !r.more;
+  }
+
+  function renderCommit(d, nodeIds) {
+    if (d.id !== pendingCommit) return; // another commit or file was selected meanwhile
+    pendingSymbol = '';
+    const info = $('info');
+    const rows = el('dl');
+    const row = (k, v) => rows.append(el('dt', k), el('dd', v));
+    row('Commit', d.hash.slice(0, 12));
+    row('Author', d.author);
+    row('Date', d.date);
+    info.replaceChildren(el('h2', 'Commit'), rows, el('h3', 'Message'), el('p', d.message.trim() || '(no message)', 'message'));
+
+    if (!d.filesAvailable) {
+      info.append(el('p', 'The file list is not available for this commit. If it is the first commit in the repository, VS Code\'s Git extension has no earlier commit to compare it with.', 'muted'));
+    } else {
+      info.append(el('h3', `Files changed (${d.files.length}${d.truncated ? '+' : ''})`));
+      for (const group of Object.keys(GROUP_LABELS)) {
+        const items = d.files.filter((f) => f.group === group);
+        if (items.length === 0) continue;
+        info.append(el('h3', `${GROUP_LABELS[group]} (${items.length})`, 'group ' + group));
+        const ul = el('ul', undefined, 'files');
+        for (const f of items) {
+          const li = el('li');
+          const btn = el('button', f.oldPath ? `${f.oldPath} → ${f.path}` : f.path, 'link');
+          btn.title = f.sensitive ? 'Sensitive file: contents are not opened' : group === 'modified' || group === 'renamed' ? 'Open before/after diff' : 'Open file';
+          btn.addEventListener('click', () => send({ type: 'commitFile', id: f.id }));
+          li.append(btn);
+          if (f.sensitive) li.append(el('span', 'sensitive', 'tag warn'));
+          ul.append(li);
+        }
+        info.append(ul);
+      }
+      if (d.truncated) info.append(el('p', 'Only the first files are shown.', 'muted'));
+      if (d.hidden) info.append(el('p', `${d.hidden} file(s) outside this folder are hidden.`, 'muted'));
+    }
+    if (cy) {
+      cy.elements().removeClass('used inCommit').addClass('faded');
+      for (const id of nodeIds) cy.getElementById(id).removeClass('faded').addClass('inCommit');
+      if (nodeIds.length === 0) cy.elements().removeClass('faded');
     }
   }
 

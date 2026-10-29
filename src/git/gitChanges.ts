@@ -1,9 +1,17 @@
 import * as path from 'path';
 import * as vscode from 'vscode';
+import { CommitFile } from './history';
 import { ChangeGroup, groupForStatus, moreSignificant } from './status';
 
 // Minimal subset of the built-in Git extension API (extensions/git/src/api/git.d.ts).
 interface GitChange { readonly uri: vscode.Uri; readonly originalUri: vscode.Uri; readonly status: number }
+interface GitCommit {
+  readonly hash: string;
+  readonly message: string;
+  readonly parents: string[];
+  readonly authorDate?: Date;
+  readonly authorName?: string;
+}
 interface GitRepository {
   readonly rootUri: vscode.Uri;
   readonly state: {
@@ -14,6 +22,9 @@ interface GitRepository {
     readonly mergeChanges: GitChange[];
   };
   status(): Promise<void>;
+  log(options?: { maxEntries?: number }): Promise<GitCommit[]>;
+  /** Runs `git diff ref1...ref2`; both refs must be commits. */
+  diffBetween(ref1: string, ref2: string): Promise<GitChange[]>;
 }
 interface GitAPI {
   readonly state: 'uninitialized' | 'initialized';
@@ -57,13 +68,24 @@ async function getApi(): Promise<GitAPI | string> {
   return api;
 }
 
-/** Read-only view of the Git changes inside one workspace folder. */
-export async function getGitSnapshot(folder: vscode.WorkspaceFolder, refresh: boolean): Promise<GitSnapshot> {
+type RepoLookup = { kind: 'repo'; repo: GitRepository } | { kind: 'noGit' } | { kind: 'unavailable'; reason: string };
+
+async function findRepo(folder: vscode.WorkspaceFolder): Promise<RepoLookup> {
   const api = await getApi();
   if (typeof api === 'string') return { kind: 'unavailable', reason: api };
-
   const repo = api.getRepository(folder.uri) ?? await api.openRepository(folder.uri);
-  if (!repo) return { kind: 'noGit' };
+  return repo ? { kind: 'repo', repo } : { kind: 'noGit' };
+}
+
+function relativeTo(folder: vscode.WorkspaceFolder, uri: vscode.Uri): string {
+  return path.relative(folder.uri.fsPath, uri.fsPath).split(path.sep).join('/');
+}
+
+/** Read-only view of the Git changes inside one workspace folder. */
+export async function getGitSnapshot(folder: vscode.WorkspaceFolder, refresh: boolean): Promise<GitSnapshot> {
+  const found = await findRepo(folder);
+  if (found.kind !== 'repo') return found;
+  const { repo } = found;
   if (refresh) await repo.status();
 
   const { state } = repo;
@@ -99,4 +121,64 @@ export async function getGitSnapshot(folder: vscode.WorkspaceFolder, refresh: bo
 /** URI for the HEAD version of a file (read-only, served by the Git extension). */
 export function headUri(uri: vscode.Uri): vscode.Uri | undefined {
   return cachedApi?.toGitUri(uri, 'HEAD');
+}
+
+export interface CommitEntry {
+  hash: string;
+  /** First parent, or undefined for the first commit of the repository. */
+  parent?: string;
+  message: string;
+  author: string;
+  date?: Date;
+}
+
+export type HistorySnapshot =
+  | { kind: 'ok'; commits: CommitEntry[] }
+  | { kind: 'noGit' }
+  | { kind: 'unavailable'; reason: string };
+
+/** The latest commits of the folder's repository, newest first. Read-only. */
+export async function getHistory(folder: vscode.WorkspaceFolder, max: number): Promise<HistorySnapshot> {
+  const found = await findRepo(folder);
+  if (found.kind !== 'repo') return found;
+  const { repo } = found;
+  try {
+    const commits = await repo.log({ maxEntries: max });
+    return {
+      kind: 'ok',
+      commits: commits.map((c) => ({ hash: c.hash, parent: c.parents[0], message: c.message, author: c.authorName ?? '', date: c.authorDate })),
+    };
+  } catch {
+    // A repository without commits makes `git log` fail.
+    return { kind: 'ok', commits: [] };
+  }
+}
+
+/** A file touched by a commit, with the URIs needed to show it before and after. */
+export interface CommitFileRef extends CommitFile { uri: vscode.Uri; originalUri: vscode.Uri }
+
+/**
+ * Files changed by a commit compared with its first parent. Returns undefined for the
+ * first commit: the Git extension API can only diff two commits, not a commit and the empty tree.
+ */
+export async function getCommitFiles(folder: vscode.WorkspaceFolder, commit: CommitEntry): Promise<CommitFileRef[] | undefined> {
+  if (!commit.parent) return undefined;
+  const found = await findRepo(folder);
+  if (found.kind !== 'repo') return undefined;
+  const { repo } = found;
+  const changes = await repo.diffBetween(commit.parent, commit.hash);
+  const files: CommitFileRef[] = [];
+  for (const c of changes) {
+    const group = groupForStatus(c.status);
+    if (!group) continue;
+    const relPath = relativeTo(folder, c.uri);
+    const oldRelPath = group === 'renamed' ? relativeTo(folder, c.originalUri) : '';
+    files.push({ relPath, oldRelPath, group, uri: c.uri, originalUri: c.originalUri });
+  }
+  return files;
+}
+
+/** URI for a file's content at a commit (read-only, served by the Git extension). */
+export function gitUriAt(uri: vscode.Uri, ref: string): vscode.Uri | undefined {
+  return cachedApi?.toGitUri(uri, ref);
 }

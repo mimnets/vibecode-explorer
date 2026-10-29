@@ -66,3 +66,16 @@ The owner renamed the GitHub repository to `mimnets/vibecode-explorer`. The `ori
 ## 2026-10-29: Phase 2 owner check
 
 The owner installed the rebuilt VSIX, restarted VS Code and reported that Phase 2 works. Their screenshot shows the dashboard on this repository with `src/extension/dashboard.ts` selected: Details lists "Imports (7)" and "Symbols (64)" with the hint "Click a symbol to jump to it and see where it is used", and the graph legend includes "uses selected symbol". This covers the GUI items the automated tests could not: the symbol click handlers, the "Used in" list and the graph highlight. Phase 2 is marked Done. Phase 3 (change history) is next and needs the owner's approval before work starts.
+
+## 2026-10-29: Phase 3: change history
+
+**Approved:** the owner approved the Phase 3 plan with the recommended choices: a History tab that swaps with Workspace changes, and 50 commits on first load.
+
+**What:** a History tab lists the latest commits, with **Load more** up to 200. Clicking a commit shows its full message and changed files in Details and outlines those files in blue in the graph. Clicking a file opens VS Code's read-only diff of the file before and after that commit. **How:** the built-in Git extension API: `log`, `diffBetween(parent, commit)` and `toGitUri`. There's no new dependency and no shell. The new pure helper `src/git/history.ts` keeps files inside the folder, flags sensitive names, sorts and caps the list. `src/extension/history.ts` issues opaque ids: `k…` for commits (`c…` was already used by the changes list) and `h…` for commit files. New validated messages are `history` (limit 1–200), `commit` and `commitFile`.
+
+**Bug found by the tests:** in VS Code 1.144 the Git extension's repository object has its own `kind` property, so a `'kind' in repo` check took a real repository for an error. The lookup now returns an explicit tagged result.
+
+**Verified automatically:** lint. 13 unit tests, including commit-file filtering and the new message validation. 33 integration checks in VS Code 1.144. The sample repository now has 3 commits (an add, a rename, a deletion and a committed `.env`), and the checks cover the newest-first list, renamed, deleted and sensitive files, the full message, the first commit, before/after diffs, sensitive files not opening, and no history without Git. The webview loaded without script errors, and the sample workspace stayed unchanged.
+**Not verified automatically:** the History tab, clicking commits and files in the webview, **Load more** and the blue graph outline. These need the owner's GUI check.
+
+**Limitations:** the Git extension API can only compare two commits (its `diffBetween` runs `git diff a...b`), and its empty-tree helper isn't public. So the first commit of a repository shows its message but not its files. Merge commits are compared with their first parent. Sensitive files in a commit are listed but never opened. Without the built-in Git extension the tab says Git is unavailable.
