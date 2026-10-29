@@ -14,7 +14,10 @@
   /** Symbol whose usages are being looked up; stale replies are ignored. */
   let pendingSymbol = '';
   const HISTORY_PAGE = 50;
-  let historyActive = false;
+  /** 'changes' | 'history' | 'sessions' */
+  let activeTab = 'changes';
+  /** AI session whose details are being loaded; stale replies are ignored. */
+  let pendingSession = '';
   let historyLimit = HISTORY_PAGE;
   /** Commit whose files are being loaded; stale replies are ignored. */
   let pendingCommit = '';
@@ -44,23 +47,29 @@
   $('zoomIn').addEventListener('click', () => cy && cy.zoom({ level: cy.zoom() * 1.25, renderedPosition: center() }));
   $('zoomOut').addEventListener('click', () => cy && cy.zoom({ level: cy.zoom() / 1.25, renderedPosition: center() }));
   $('layout').addEventListener('click', () => runLayout());
-  $('tabChanges').addEventListener('click', () => showTab(false));
-  $('tabHistory').addEventListener('click', () => showTab(true));
+  $('tabChanges').addEventListener('click', () => showTab('changes'));
+  $('tabHistory').addEventListener('click', () => showTab('history'));
+  $('tabSessions').addEventListener('click', () => showTab('sessions'));
   $('moreHistory').addEventListener('click', () => {
     historyLimit = Math.min(historyLimit + HISTORY_PAGE, 200);
     requestHistory();
   });
 
-  function showTab(history) {
-    historyActive = history;
-    $('tabChanges').classList.toggle('active', !history);
-    $('tabHistory').classList.toggle('active', history);
-    $('tabChanges').setAttribute('aria-selected', String(!history));
-    $('tabHistory').setAttribute('aria-selected', String(history));
-    $('changesView').hidden = history;
-    $('historyView').hidden = !history;
-    if (history) requestHistory();
-    else clearHighlight();
+  function showTab(name) {
+    activeTab = name;
+    for (const [tab, view, key] of [['tabChanges', 'changesView', 'changes'], ['tabHistory', 'historyView', 'history'], ['tabSessions', 'sessionsView', 'sessions']]) {
+      $(tab).classList.toggle('active', key === name);
+      $(tab).setAttribute('aria-selected', String(key === name));
+      $(view).hidden = key !== name;
+    }
+    clearHighlight();
+    if (name === 'history') requestHistory();
+    else if (name === 'sessions') requestSessions();
+  }
+
+  function requestSessions() {
+    $('sessionsView').replaceChildren(el('p', 'Loading AI sessions…', 'muted'));
+    send({ type: 'sessions' });
   }
 
   function requestHistory() {
@@ -85,6 +94,9 @@
     else if (msg.type === 'history') renderHistory(msg.result);
     else if (msg.type === 'commit') renderCommit(msg.details, msg.nodeIds);
     else if (msg.type === 'notes') renderNotes(msg);
+    else if (msg.type === 'sessions') renderSessions(msg.result);
+    else if (msg.type === 'sessionsError') $('sessionsView').replaceChildren(el('p', 'Could not read the session logs: ' + msg.message, 'muted'));
+    else if (msg.type === 'session') renderSession(msg.details, msg.nodeIds);
   });
 
   function renderState(state) {
@@ -105,8 +117,9 @@
 
     renderChanges(state.git);
     renderGraph(state.graph);
-    // A refresh invalidates commit ids, so the History tab reloads.
-    if (historyActive) requestHistory();
+    // A refresh invalidates commit and session ids, so the active tab reloads.
+    if (activeTab === 'history') requestHistory();
+    else if (activeTab === 'sessions') requestSessions();
   }
 
   function showBanner(text) {
@@ -208,6 +221,7 @@
   function renderDetails(d) {
     pendingSymbol = '';
     pendingCommit = '';
+    pendingSession = '';
     const info = $('info');
     const open = el('button', d.group === 'deleted' ? 'Open HEAD version' : 'Open source');
     open.addEventListener('click', () => send({ type: 'open', id: d.id }));
@@ -302,6 +316,7 @@
         for (const b of list.querySelectorAll('button.selected')) b.classList.remove('selected');
         btn.classList.add('selected');
         pendingCommit = c.id;
+        pendingSession = '';
         $('info').replaceChildren(el('h2', 'Commit'), el('p', 'Loading…', 'muted'));
         send({ type: 'commit', id: c.id });
       });
@@ -374,6 +389,134 @@
     add.title = 'Write down what, why and the decision. Saved as a Markdown file in .vibecode/notes/';
     add.addEventListener('click', () => send({ type: 'addNote', id: currentSubject }));
     box.append(ul, add);
+  }
+
+  const fmt = (n) => Number(n).toLocaleString();
+  const when = (iso) => (iso ? new Date(iso).toLocaleString() : '');
+
+  function renderSessions(r) {
+    const view = $('sessionsView');
+    view.replaceChildren();
+    if (r.state === 'restricted') { view.append(el('p', 'AI sessions are off in Restricted Mode. Trust the workspace to see them.', 'muted')); return; }
+    if (r.state === 'notAllowed') {
+      const allow = el('button', `Allow reading ${r.agent} logs`);
+      allow.addEventListener('click', () => send({ type: 'allowSessions' }));
+      view.append(
+        el('p', `See the prompts you gave ${r.agent}, its replies and security points, tokens used, and learning tips.`),
+        el('p', 'VibeCode Explorer will only read, never change, this folder on your computer:', 'muted'),
+        el('p', r.logFolder, 'mono'),
+        allow);
+      return;
+    }
+    if (r.sessions.length === 0) {
+      view.append(el('p', `No ${r.agent} sessions found for this folder.`, 'muted'), el('p', 'Looked in: ' + r.logFolder, 'mono muted'));
+      return;
+    }
+    const t = r.totals;
+    const summary = el('div', undefined, 'summary');
+    summary.append(
+      el('div', `${t.sessions} sessions · ${fmt(t.prompts)} prompts`),
+      el('div', `Tokens: ${fmt(t.input)} input · ${fmt(t.output)} output`, 'small'),
+      el('div', `Cache: ${fmt(t.cacheRead)} read · ${fmt(t.cacheWrite)} written`, 'muted small'));
+    if (r.topFiles.length) {
+      summary.append(el('div', 'Most edited files', 'small strong'));
+      const ul = el('ul', undefined, 'files');
+      for (const f of r.topFiles.slice(0, 5)) ul.append(el('li', `${f.path} (${f.sessions} session${f.sessions === 1 ? '' : 's'})`, 'mono small'));
+      summary.append(ul);
+    }
+    view.append(summary);
+    const list = el('ul', undefined, 'commits');
+    for (const sess of r.sessions) {
+      const li = el('li');
+      const btn = el('button', sess.title, 'link');
+      btn.title = 'Show prompts, tokens, security points and tips';
+      btn.addEventListener('click', () => {
+        for (const b of list.querySelectorAll('button.selected')) b.classList.remove('selected');
+        btn.classList.add('selected');
+        pendingSession = sess.id;
+        pendingCommit = '';
+        currentSubject = '';
+        $('info').replaceChildren(el('h2', 'AI session'), el('p', 'Loading…', 'muted'));
+        send({ type: 'session', id: sess.id });
+      });
+      li.append(btn, el('div', `${when(sess.start)} · ${sess.prompts} prompts · ${fmt(sess.tokens)} tokens`, 'muted small'));
+      list.append(li);
+    }
+    view.append(list);
+  }
+
+  function renderSession(d, nodeIds) {
+    if (d.id !== pendingSession) return;
+    pendingSymbol = '';
+    const info = $('info');
+    const rows = el('dl');
+    const row = (k, v) => rows.append(el('dt', k), el('dd', v));
+    row('Started', when(d.start));
+    row('Ended', when(d.end));
+    row('Model', d.models.join(', ') || 'unknown');
+    row('Replies', fmt(d.replies));
+    info.replaceChildren(el('h2', 'AI session'), el('p', d.title, 'strong'), rows);
+
+    info.append(el('h3', 'Tokens'));
+    const tok = el('dl');
+    tok.append(el('dt', 'Input'), el('dd', fmt(d.tokens.input)), el('dt', 'Output'), el('dd', fmt(d.tokens.output)),
+      el('dt', 'Cache read'), el('dd', fmt(d.tokens.cacheRead)), el('dt', 'Cache write'), el('dd', fmt(d.tokens.cacheWrite)));
+    info.append(tok);
+
+    if (d.tips.length) {
+      info.append(el('h3', 'Tips'));
+      const ul = el('ul', undefined, 'tips');
+      for (const tip of d.tips) ul.append(el('li', tip));
+      info.append(ul);
+    }
+
+    info.append(el('h3', `Files changed (${d.files.length})`));
+    if (d.files.length === 0) info.append(el('p', 'No files were changed in this folder.', 'muted'));
+    const files = el('ul', undefined, 'files');
+    for (const f of d.files) files.append(el('li', f, 'mono'));
+    info.append(files);
+    if (d.hiddenFiles) info.append(el('p', `${d.hiddenFiles} file(s) outside this folder are not shown.`, 'muted'));
+
+    if (d.commits.length) {
+      info.append(el('h3', `Commits during this session (${d.commits.length})`));
+      const ul = el('ul', undefined, 'files');
+      for (const c of d.commits) ul.append(el('li', `${c.shortHash} ${c.headline}`, 'mono'));
+      info.append(ul, el('p', 'Open them in the History tab.', 'muted small'));
+    }
+
+    info.append(el('h3', `Security mentions (${d.securityMentions.length})`));
+    if (d.securityMentions.length === 0) info.append(el('p', 'None found in the replies.', 'muted'));
+    else info.append(el('p', 'Sentences in the replies that mention a security topic. Found by keywords, not a review of your code.', 'muted small'));
+    const sec = el('ul', undefined, 'mentions');
+    for (const m of d.securityMentions) sec.append(el('li', m));
+    info.append(sec);
+
+    info.append(el('h3', `Prompts (${d.prompts.length})`));
+    const prompts = el('ol', undefined, 'prompts');
+    for (const p of d.prompts) {
+      const li = el('li');
+      const short = p.text.length > 300;
+      const text = el('div', short ? p.text.slice(0, 300) + '…' : p.text, 'prompt');
+      li.append(el('div', when(p.time), 'muted small'), text);
+      if (short) {
+        const more = el('button', 'Show all', 'link small');
+        more.addEventListener('click', () => {
+          const expanded = more.textContent === 'Show less';
+          text.textContent = expanded ? p.text.slice(0, 300) + '…' : p.text;
+          more.textContent = expanded ? 'Show all' : 'Show less';
+        });
+        li.append(more);
+      }
+      prompts.append(li);
+    }
+    info.append(prompts);
+    info.append(el('p', 'Text that looks like a key or password is shown as [hidden]. Tool output is never shown.', 'muted small'));
+
+    if (cy) {
+      cy.elements().removeClass('used inCommit').addClass('faded');
+      for (const id of nodeIds) cy.getElementById(id).removeClass('faded').addClass('inCommit');
+      if (nodeIds.length === 0) cy.elements().removeClass('faded');
+    }
   }
 
   send({ type: 'ready' });

@@ -39,6 +39,11 @@
         "command": "vibecodeExplorer.openPreview",
         "title": "Open App Preview",
         "category": "VibeCode Explorer"
+      },
+      {
+        "command": "vibecodeExplorer.resetPermissions",
+        "title": "Reset Permissions (AI Session Logs and Notes)",
+        "category": "VibeCode Explorer"
       }
     ],
     "configuration": {

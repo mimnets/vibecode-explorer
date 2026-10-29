@@ -3,6 +3,7 @@ import * as path from 'path';
 import * as vscode from 'vscode';
 import { CommitEntry, headUri } from '../git/gitChanges';
 import { describeCommit, HistoryFile, loadHistory, openCommitFile } from './history';
+import { askToAllowSessions, describeSession, loadSessions, StoredSession } from './agentSessions';
 import { createNote, ensureNotesAllowed, listNotes, NoteEntry, notesFor, NoteSubject } from './notes';
 import { parseWebviewMessage, WebviewMessage } from './messages';
 import { openPreview } from './preview';
@@ -23,6 +24,8 @@ export class Dashboard {
   private allNotes: NoteEntry[] | undefined;
   /** The file or commit shown in Details; its id is what the webview sends with "Add note". */
   private subject: { id: string; label: string; value: NoteSubject } | undefined;
+  /** AI sessions in the AI sessions tab (`a…`). */
+  private sessions = new Map<string, StoredSession>();
   private state: DashboardState | undefined;
   private folderIndex = 0;
   private loading: Promise<void> | undefined;
@@ -106,6 +109,7 @@ export class Dashboard {
           this.notes.clear();
           this.allNotes = undefined;
           this.subject = undefined;
+          this.sessions.clear();
           this.commits.clear();
           this.historyFiles.clear();
           this.post({ type: 'state', state });
@@ -186,6 +190,29 @@ export class Dashboard {
         if (file) await openCommitFile(file);
         break;
       }
+      case 'allowSessions': {
+        const folder = this.folder();
+        if (!folder || !vscode.workspace.isTrusted) return;
+        if (!await askToAllowSessions(this.memento, folder)) return;
+        await this.postSessions();
+        break;
+      }
+      case 'sessions':
+        await this.postSessions();
+        break;
+      case 'session': {
+        const session = this.sessions.get(msg.id);
+        const folder = this.folder();
+        if (!session || !folder) return;
+        const details = await describeSession(folder, msg.id, session);
+        const paths = new Set(details.files);
+        const nodeIds = [...this.targets.entries()]
+          .filter(([id, t]) => id.startsWith('f') && paths.has(t.relPath))
+          .map(([id]) => id);
+        this.subject = undefined;
+        this.post({ type: 'session', details, nodeIds });
+        break;
+      }
       case 'addNote':
         await this.addNote(msg.id);
         break;
@@ -220,6 +247,18 @@ export class Dashboard {
 
   private folder(): vscode.WorkspaceFolder | undefined {
     return vscode.workspace.workspaceFolders?.[this.state?.folderIndex ?? 0];
+  }
+
+  private async postSessions(): Promise<void> {
+    const folder = this.folder();
+    if (!folder) return;
+    try {
+      const { result, sessions } = await loadSessions(this.memento, folder);
+      this.sessions = sessions;
+      this.post({ type: 'sessions', result });
+    } catch (err) {
+      this.post({ type: 'sessionsError', message: err instanceof Error ? err.message : String(err) });
+    }
   }
 
   /** Sends the notes of the file or commit shown in Details. */
@@ -304,6 +343,7 @@ export class Dashboard {
     <div class="tabs" role="tablist">
       <button id="tabChanges" class="tab active" role="tab" aria-selected="true">Workspace changes</button>
       <button id="tabHistory" class="tab" role="tab" aria-selected="false">History</button>
+      <button id="tabSessions" class="tab" role="tab" aria-selected="false">AI sessions</button>
     </div>
     <div id="changesView">
       <div id="repo" class="muted"></div>
@@ -314,6 +354,7 @@ export class Dashboard {
       <ul id="commits" class="commits"></ul>
       <button id="moreHistory" hidden>Load more</button>
     </div>
+    <div id="sessionsView" hidden></div>
   </section>
   <section class="pane graph-pane">
     <div class="graph-tools">
@@ -326,7 +367,7 @@ export class Dashboard {
     </div>
     <div id="graph"></div>
     <div class="legend muted">
-      <span class="dot file"></span>file <span class="dot changed"></span>changed <span class="dot untracked"></span>new <span class="dot unknown"></span>unknown import <span class="dot used"></span>uses selected symbol <span class="dot commit"></span>in selected commit
+      <span class="dot file"></span>file <span class="dot changed"></span>changed <span class="dot untracked"></span>new <span class="dot unknown"></span>unknown import <span class="dot used"></span>uses selected symbol <span class="dot commit"></span>in selected commit or session
     </div>
   </section>
   <aside class="pane" id="info"><h2>Details</h2><p class="muted">Select a file in the graph or the changes list.</p></aside>

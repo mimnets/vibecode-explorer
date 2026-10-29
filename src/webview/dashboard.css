@@ -53,6 +53,14 @@ button.link.selected { font-weight: 600; }
 .notes { margin: 8px 0; }
 .notes ul.files { margin-bottom: 6px; }
 .note-date { margin-left: 8px; }
+.strong { font-weight: 600; }
+.summary { padding: 6px 0 8px; border-bottom: 1px solid var(--vscode-panel-border); }
+.summary > div { margin: 2px 0; }
+ul.tips, ul.mentions { margin: 4px 0; padding-left: 18px; }
+ul.tips li, ul.mentions li { margin: 3px 0; }
+ol.prompts { margin: 4px 0; padding-left: 22px; }
+ol.prompts li { margin: 0 0 8px; }
+.prompt { white-space: pre-wrap; word-break: break-word; }
 
 ul.files { list-style: none; padding: 0; margin: 0; }
 ul.files li { padding: 1px 0; }

@@ -30,6 +30,7 @@ Plan only the current approved phase. Mark a requirement Met only after it has b
 - Webview: strict CSP, nonce scripts, no remote scripts/CDNs, DOM built with `textContent` only.
 - Treat every webview message as untrusted; files are referenced by host-issued opaque ids, never paths.
 - Never read `.env`, keys, credentials or other sensitive files (`src/analysis/sensitive.ts`).
+- Outside the project, read only the open project's own agent log folder (Phase 4b, `src/extension/agentSessions.ts`), read-only and after the owner allows it. Never show tool output; hide anything that looks like a secret.
 - Skip `node_modules`, `.git`, build outputs; cap scan size.
 - Never expose shell execution; never start user servers.
 

@@ -207,6 +207,29 @@ export async function run(): Promise<void> {
     assert.deepEqual(api.notesFor(allNotes, { about: 'src/index.ts' }), []);
   });
 
+  // Phase 4b: AI sessions from (fake) Claude Code logs. Reading needs the owner's permission first.
+  const listed = await api.loadSessions(repoFolder);
+  check('session logs are not read before permission is given', () => {
+    assert.equal(listed.result.state, 'notAllowed');
+    assert.equal(listed.result.sessions.length, 0);
+    assert.match(listed.result.logFolder, /\.claude-config[\\/]projects[\\/]/);
+  });
+  assert.ok(api.readSessions, 'raw session reader is exposed in test mode');
+  const read = await api.readSessions!(repoFolder);
+  check('only this project\'s session logs are read', () => {
+    assert.equal(read.sessions.length, 1, JSON.stringify(read.sessions.map((x) => x.file)));
+    assert.ok(read.sessions[0].file.endsWith('session-1.jsonl'));
+  });
+  const sum = read.sessions[0].summary;
+  check('a session shows prompts, tokens, edited files and security points without secrets or tool output', () => {
+    assert.equal(sum.title, 'Sample session');
+    assert.deepEqual(sum.prompts.map((x) => x.text), ['Make util return 2. token=[hidden]']);
+    assert.deepEqual(sum.tokens, { input: 3, output: 4, cacheRead: 0, cacheWrite: 0 });
+    assert.ok(sum.filesEdited[0].endsWith('util.ts'));
+    assert.equal(sum.securityMentions.length, 1);
+    assert.ok(!JSON.stringify(sum).includes('TOOL OUTPUT') && !JSON.stringify(sum).includes('supersecret'));
+  });
+
   // Restoring dashboard tabs after a reload (what VS Code's serializer does).
   const viewType = 'vibecodeExplorer.dashboard';
   const extra = vscode.window.createWebviewPanel(viewType, 'VibeCode Explorer', vscode.ViewColumn.One, {});

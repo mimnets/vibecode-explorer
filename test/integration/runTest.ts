@@ -50,6 +50,23 @@ function createSample(root: string): string {
   return workspace;
 }
 
+/** A fake Claude Code config folder with one session for the sample repo and one for another project. */
+function createAgentLogs(configDir: string, repo: string): void {
+  const dirName = (p: string) => p.replace(/[^a-zA-Z0-9]/g, '-');
+  const at = (minute: number) => new Date(Date.UTC(2026, 9, 29, 10, minute)).toISOString();
+  const lines = [
+    { type: 'ai-title', aiTitle: 'Sample session' },
+    { type: 'user', cwd: repo, timestamp: at(0), message: { role: 'user', content: 'Make util return 2. token=supersecret99' } },
+    { type: 'assistant', cwd: repo, timestamp: at(1), message: { id: 'm1', model: 'test-model', usage: { input_tokens: 3, output_tokens: 4 },
+      content: [{ type: 'text', text: 'Changed it. Never commit the .env file because it holds secrets.' }, { type: 'tool_use', name: 'Edit', input: { file_path: path.join(repo, 'src', 'util.ts') } }] } },
+    { type: 'user', cwd: repo, timestamp: at(2), message: { role: 'user', content: [{ type: 'tool_result', content: 'TOOL OUTPUT' }] } },
+  ];
+  write(path.join(configDir, 'projects', dirName(repo), 'session-1.jsonl'), lines.map((l) => JSON.stringify(l)).join('\n') + '\n');
+  write(path.join(configDir, 'projects', dirName(repo), 'subagents', 'ignored.jsonl'), JSON.stringify(lines[1]) + '\n');
+  const other = path.join(path.dirname(repo), 'other-project');
+  write(path.join(configDir, 'projects', dirName(other), 'session-2.jsonl'), JSON.stringify({ ...lines[1], cwd: other }) + '\n');
+}
+
 /** Hash of every file outside .git and the notes folder (the only place notes may be written). */
 function fingerprint(root: string): string {
   const hash = crypto.createHash('sha256');
@@ -74,6 +91,8 @@ async function main(): Promise<void> {
   const root = fs.mkdtempSync(path.join(os.tmpdir(), 'vibecode-sample-'));
   const userData = path.join(root, '.user-data');
   const workspace = createSample(path.join(root, 'ws'));
+  const claudeConfig = path.join(root, '.claude-config');
+  createAgentLogs(claudeConfig, path.join(root, 'ws', 'sample-repo'));
   write(path.join(userData, 'User', 'settings.json'), JSON.stringify({ 'git.openRepositoryInParentFolders': 'never' }));
   const before = fingerprint(path.join(root, 'ws'));
   console.log(`sample workspace: ${workspace}`);
@@ -82,6 +101,8 @@ async function main(): Promise<void> {
     vscodeExecutablePath,
     extensionDevelopmentPath,
     extensionTestsPath,
+    // Points the Claude Code log reader at the fake logs instead of the real user folder.
+    extensionTestsEnv: { CLAUDE_CONFIG_DIR: claudeConfig },
     launchArgs: [workspace, `--user-data-dir=${userData}`, `--extensions-dir=${path.join(root, '.extensions')}`, '--disable-extensions'],
   });
 

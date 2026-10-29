@@ -108,3 +108,17 @@ During Phase 4 the owner asked for a dashboard view of the prompts given, the ag
 **Not verified automatically:** the consent dialog, the title box, the Notes section and the Add note and open clicks in the webview. These need the owner's GUI check.
 
 **Limitations:** notes link to a file by path, so a rename breaks the link until `about:` is edited. Answering "No" is not remembered, so the question comes back next time. There's no command yet to withdraw a "Yes" (VS Code's workspace storage keeps it).
+
+## 2026-10-29: Phase 4b: AI session overview
+
+**Approved:** the owner approved the plan with the recommended choices: a third tab, secrets hidden, no money estimate.
+
+**Log format (checked on this project's own logs, structure only):** one `.jsonl` file per session in `~/.claude/projects/<cwd with non-alphanumerics as '-'>/`. `user` lines with string content are prompts. Messages typed while Claude is working are `attachment` lines of type `queued_command` (this was found when the first version missed the owner's mid-task request). `assistant` lines carry `message.usage`, and one reply is split over several lines sharing `message.id`, so usage is counted once per id. `ai-title` gives the session title, and `cwd` gives the working folder.
+
+**What:** an **AI sessions** tab with project totals and a session list. A session's Details show its times, model, replies, tokens, files changed (outlined in the graph), commits during the session, security mentions, prompts and tips. A new command, **VibeCode Explorer: Reset Permissions**, withdraws the log and notes permissions. **How:** `src/analysis/agentLogs.ts` (pure: summariser, folder naming, project matching, secret hiding, security sentences, tips) and `src/extension/agentSessions.ts` (locate, permission, stream, cache, describe). New validated messages are `sessions`, `allowSessions` and `session` (`a…`). No new dependency.
+
+**Safety:** reads only the open project's log folder (top-level `.jsonl` files, at most 50 MB each), read-only, after a modal Yes. Lines whose `cwd` is outside the project are dropped. Tool results, thinking blocks and sub-agent prompts are never kept. Secret-looking text (API keys, AWS, GitHub and Slack tokens, JWTs, private keys, `password=`-style values) is shown as `[hidden]`. The raw reader is exported to tests only in `ExtensionMode.Test`. AGENTS.md now names this one read outside the project.
+
+**Verified automatically:** lint. 19 unit tests, including a made-up log covering prompts, a queued prompt, token de-duplication, tool output, reasoning, a sub-agent prompt, another project's line, malformed JSON and secret hiding. 42 integration checks with a fake `CLAUDE_CONFIG_DIR`: nothing is read before permission, only this project's log is read (another project's folder and a sub-folder are ignored), and secrets and tool output never appear. A summariser dry run on this project's 4 real sessions printed counts only (for example 10 prompts, 81 replies and 23 edited files in the current session). **Not verified automatically:** the tab, the permission dialog, the session details, and the graph outline in the webview. These need the owner's GUI check.
+
+**Limitations:** Claude Code only. Security mentions are keyword matches, not a review. Secret hiding is pattern-based and may miss unusual formats. Token counts are the agent's own numbers, with no money estimate. Commits during a session are matched by time, and the list isn't clickable. Log format changes in future Claude Code versions may need reader updates.

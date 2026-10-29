@@ -13,7 +13,7 @@ Status key: **Partial** = some of it is delivered and verified. **Constraint** =
 | 3 | Visually explore files, imports, functions, APIs and database relationships. | Partial: a file-import graph for JS/TS relative imports. Phase 2 highlights the files that use a symbol. No API or database relationships yet. |
 | 4 | Understand why important changes were made. | Partial: Phase 3 shows each commit's full message. Phase 4 adds the owner's notes on files and commits (awaiting owner check). |
 | 5 | Preview working websites alongside their code. | Partial: opens a user-configured local URL in Simple Browser. |
-| 6 | Learn programming incrementally while developing. | Planned |
+| 6 | Learn programming incrementally while developing. | Partial (awaiting owner check): Phase 4b shows rule-based tips for each AI session. |
 | 7 | Preserve educational notes, architecture explanations and decisions. | Partial (awaiting owner check): Phase 4 saves the owner's notes (what, why, decision) as Markdown in `.vibecode/notes/`, opt-in. |
 | 8 | Work across projects and programming languages. | Partial: any folder, multi-root, no-Git. Graph is JS/TS only. |
 | 9 | Support Claude, Qwen, Gemini and other agents without proprietary agent APIs. | Constraint: kept. Data comes from Git and files, never from agent APIs. |
@@ -74,6 +74,21 @@ Approved by the owner on 2026-10-29 with the recommended choices: the `.vibecode
 | E | Off in Restricted Mode | Done |
 
 Owner verification is pending. Non-goals: editing inside the dashboard, line-level notes, graph markers, search, sync, following renamed files.
+
+## Phase 4b scope: AI session overview
+
+Requested by the owner and approved on 2026-10-29 with the recommended choices: a third tab, secrets hidden, no money estimate.
+
+| # | Requirement | Status |
+| --- | --- | --- |
+| A | **AI sessions** tab: project totals (sessions, prompts, input, output and cache tokens, most-edited files) and a session list (title, date, prompts, tokens) | Done (UI not auto-tested) |
+| B | Session details: times, model, replies, tokens, files changed (outlined in the graph), commits made during the session, security mentions, prompts (expandable), tips | Done (UI not auto-tested) |
+| C | Reads only `<CLAUDE_CONFIG_DIR or ~/.claude>/projects/<project path with dashes>/*.jsonl` (top level only), read-only, and keeps only lines whose `cwd` is inside the project. Up to 200 sessions, 50 MB per file | Done |
+| D | Never kept: tool output, the agent's reasoning, sub-agent prompts. Secret-looking text is shown as `[hidden]` | Done |
+| E | Modal permission per folder before the first read (only Yes is remembered, in VS Code's storage). The **Reset Permissions** command withdraws it, and the notes permission too. Off in Restricted Mode | Done (dialog not auto-tested) |
+| F | Claude Code reader behind an `AgentLogReader` interface, ready for other agents. No new dependency, no network | Done |
+
+Changed from the plan: commits made during a session are listed as text, with a pointer to the History tab, rather than as links. Owner verification is pending. Non-goals: money cost, live updates, other agents' readers, search, export.
 
 ## Non-goals for Phase 1
 

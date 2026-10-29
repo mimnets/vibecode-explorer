@@ -22,6 +22,11 @@ export type WebviewMessage =
   | { type: 'addNote'; id: string }
   /** Open a note (`n…`) in the editor. */
   | { type: 'openNote'; id: string }
+  /** Load the AI session list (Phase 4b); `allowSessions` first asks the owner for permission. */
+  | { type: 'sessions' }
+  | { type: 'allowSessions' }
+  /** Show one AI session (`a…`). */
+  | { type: 'session'; id: string }
   /** Sent by the webview after drawing the graph, or when a script error occurs. */
   | { type: 'rendered'; nodes: number; edges: number }
   | { type: 'webviewError'; message: string };
@@ -35,6 +40,8 @@ export function parseWebviewMessage(raw: unknown): WebviewMessage | undefined {
     case 'ready':
     case 'refresh':
     case 'preview':
+    case 'sessions':
+    case 'allowSessions':
       return { type: msg.type };
     case 'selectFolder':
       return Number.isInteger(msg.index) && (msg.index as number) >= 0 && (msg.index as number) < 1000
@@ -52,6 +59,7 @@ export function parseWebviewMessage(raw: unknown): WebviewMessage | undefined {
     case 'commitFile':
     case 'addNote':
     case 'openNote':
+    case 'session':
       return typeof msg.id === 'string' && ID_PATTERN.test(msg.id) ? { type: msg.type, id: msg.id } : undefined;
     case 'rendered':
       return Number.isInteger(msg.nodes) && Number.isInteger(msg.edges)

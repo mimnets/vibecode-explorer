@@ -1,4 +1,5 @@
 import * as vscode from 'vscode';
+import { loadSessions, readSessions, resetPermissions } from './agentSessions';
 import { Dashboard, openTarget } from './dashboard';
 import { describeCommit, loadHistory, openCommitFile } from './history';
 import { createNote, listNotes, notesFor } from './notes';
@@ -12,14 +13,18 @@ export function activate(context: vscode.ExtensionContext) {
       Dashboard.show(context.extensionUri, context.workspaceState);
     }),
     vscode.commands.registerCommand('vibecodeExplorer.openPreview', openPreview),
+    vscode.commands.registerCommand('vibecodeExplorer.resetPermissions', async () => {
+      await resetPermissions(context.workspaceState);
+      void vscode.window.showInformationMessage('VibeCode Explorer will ask again before reading AI session logs or saving notes in this workspace.');
+    }),
     // Reconnects a dashboard tab that VS Code restores after a reload or restart.
     vscode.window.registerWebviewPanelSerializer(Dashboard.viewType, {
       deserializeWebviewPanel: async (panel) => Dashboard.revive(panel, context.extensionUri, context.workspaceState),
     }),
   );
 
-  // Small read-only surface used by the integration tests. The note writer is only
-  // exposed when running tests, so other extensions cannot skip the owner's consent.
+  // Small read-only surface used by the integration tests. The note writer and the raw
+  // session reader are only exposed when running tests, so other extensions cannot skip the owner's consent.
   return {
     collectState,
     describeTarget,
@@ -31,6 +36,8 @@ export function activate(context: vscode.ExtensionContext) {
     listNotes,
     notesFor,
     createNote: context.extensionMode === vscode.ExtensionMode.Test ? createNote : undefined,
+    readSessions: context.extensionMode === vscode.ExtensionMode.Test ? readSessions : undefined,
+    loadSessions: (folder: vscode.WorkspaceFolder) => loadSessions(context.workspaceState, folder),
     isDashboardOpen: () => Dashboard.instance !== undefined,
     renderReport: () => Dashboard.instance?.renderReport,
     revivePanel: (panel: vscode.WebviewPanel) => Dashboard.revive(panel, context.extensionUri, context.workspaceState),
