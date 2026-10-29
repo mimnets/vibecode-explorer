@@ -27,19 +27,42 @@ export class Dashboard {
       Dashboard.current.panel.reveal();
       return Dashboard.current;
     }
-    const panel = vscode.window.createWebviewPanel('vibecodeExplorer.dashboard', 'VibeCode Explorer', vscode.ViewColumn.One, {
+    const panel = vscode.window.createWebviewPanel(Dashboard.viewType, 'VibeCode Explorer', vscode.ViewColumn.One, Dashboard.options(extensionUri));
+    Dashboard.current = new Dashboard(panel, extensionUri);
+    return Dashboard.current;
+  }
+
+  static readonly viewType = 'vibecodeExplorer.dashboard';
+
+  private static options(extensionUri: vscode.Uri): vscode.WebviewPanelOptions & vscode.WebviewOptions {
+    return {
       enableScripts: true,
       localResourceRoots: [
         vscode.Uri.joinPath(extensionUri, 'src', 'webview'),
         vscode.Uri.joinPath(extensionUri, 'node_modules', 'cytoscape', 'dist'),
       ],
-    });
+    };
+  }
+
+  /**
+   * Restores a dashboard tab left open before a reload, so it becomes the live dashboard
+   * instead of a stale page. Extra restored tabs are closed: there is only one dashboard.
+   */
+  static revive(panel: vscode.WebviewPanel, extensionUri: vscode.Uri): void {
+    if (Dashboard.current) {
+      panel.dispose();
+      return;
+    }
+    panel.webview.options = Dashboard.options(extensionUri);
     Dashboard.current = new Dashboard(panel, extensionUri);
-    return Dashboard.current;
   }
 
   static get instance(): Dashboard | undefined {
     return Dashboard.current;
+  }
+
+  close(): void {
+    this.panel.dispose();
   }
 
   private constructor(private readonly panel: vscode.WebviewPanel, private readonly extensionUri: vscode.Uri) {

@@ -11,6 +11,10 @@ export function activate(context: vscode.ExtensionContext) {
       Dashboard.show(context.extensionUri);
     }),
     vscode.commands.registerCommand('vibecodeExplorer.openPreview', openPreview),
+    // Reconnects a dashboard tab that VS Code restores after a reload or restart.
+    vscode.window.registerWebviewPanelSerializer(Dashboard.viewType, {
+      deserializeWebviewPanel: async (panel) => Dashboard.revive(panel, context.extensionUri),
+    }),
   );
 
   // Small read-only surface used by the integration tests.
@@ -24,6 +28,8 @@ export function activate(context: vscode.ExtensionContext) {
     openCommitFile,
     isDashboardOpen: () => Dashboard.instance !== undefined,
     renderReport: () => Dashboard.instance?.renderReport,
+    revivePanel: (panel: vscode.WebviewPanel) => Dashboard.revive(panel, context.extensionUri),
+    closeDashboard: () => Dashboard.instance?.close(),
   };
 }
 

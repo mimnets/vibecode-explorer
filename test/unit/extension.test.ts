@@ -51,6 +51,8 @@ test('manifest has no hard extension dependencies', () => {
   // eslint-disable-next-line @typescript-eslint/no-require-imports
   const manifest = require('../../../package.json');
   assert.equal(manifest.extensionDependencies, undefined);
+  // Activates only on its command or when VS Code restores a dashboard tab, never at every startup.
+  assert.deepEqual(manifest.activationEvents, ['onWebviewPanel:vibecodeExplorer.dashboard']);
   assert.ok(manifest.contributes.commands.some((c: { command: string }) => c.command === 'vibecodeExplorer.openDashboard'));
 });
 

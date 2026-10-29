@@ -27,7 +27,7 @@ The owner accepted this on 2026-10-29 after using it in their own VS Code. The k
 
 | # | Requirement | Status |
 | --- | --- | --- |
-| A | Command "VibeCode Explorer: Open Dashboard"; no startup activation | Done |
+| A | Command "VibeCode Explorer: Open Dashboard"; no startup activation (it also activates when VS Code restores a dashboard tab left open) | Done |
 | B | Workspace detection: single/multi-root, no-Git, empty, Windows paths | Done |
 | C | Git changes (added/modified/deleted/untracked, repo, branch, refresh, click-to-open/diff), labelled "workspace changes" | Done |
 | D | Interactive JS/TS file-import graph (inspect, open, zoom, pan, fit, refresh); unresolved imports shown as unknown | Done |

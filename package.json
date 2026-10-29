@@ -18,7 +18,9 @@
     "Other"
   ],
   "main": "./out/src/extension/extension.js",
-  "activationEvents": [],
+  "activationEvents": [
+    "onWebviewPanel:vibecodeExplorer.dashboard"
+  ],
   "capabilities": {
     "untrustedWorkspaces": {
       "supported": "limited",

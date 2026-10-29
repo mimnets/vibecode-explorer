@@ -180,4 +180,25 @@ export async function run(): Promise<void> {
     assert.equal(again.state.git.kind, 'ok');
     assert.equal(again.state.graph.edges.length, state.graph.edges.length);
   });
+
+  // Restoring dashboard tabs after a reload (what VS Code's serializer does).
+  const viewType = 'vibecodeExplorer.dashboard';
+  const extra = vscode.window.createWebviewPanel(viewType, 'VibeCode Explorer', vscode.ViewColumn.One, {});
+  let extraClosed = false;
+  extra.onDidDispose(() => { extraClosed = true; });
+  api.revivePanel(extra);
+  check('a second restored dashboard tab is closed', () => assert.ok(extraClosed && api.isDashboardOpen()));
+
+  api.closeDashboard();
+  check('closing the dashboard clears it', () => assert.ok(!api.isDashboardOpen()));
+  api.revivePanel(vscode.window.createWebviewPanel(viewType, 'VibeCode Explorer', vscode.ViewColumn.One, {}));
+  let revived = api.renderReport();
+  for (let i = 0; i < 100 && !revived; i++) {
+    await new Promise((r) => setTimeout(r, 200));
+    revived = api.renderReport();
+  }
+  check('a restored dashboard tab becomes the live dashboard', () => {
+    assert.ok(api.isDashboardOpen());
+    assert.ok(revived && 'nodes' in revived && revived.nodes > 0, JSON.stringify(revived));
+  });
 }
