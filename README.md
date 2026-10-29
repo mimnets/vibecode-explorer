@@ -6,7 +6,7 @@ A private, local-first VS Code extension for seeing what changed during AI-assis
 - **History:** the latest commits with their messages. Click one to see the files it changed, highlighted in the graph, and open a before/after diff of any of them.
 - **Notes:** attach your own notes (what, why, decision) to a file or a commit. They are saved as Markdown files in `.vibecode/notes/`, only after you allow it.
 - **AI sessions:** your prompts to Claude Code, the security points in its replies, tokens used, files it changed, and short learning tips. Read from Claude Code's own logs on your computer, only after you allow it.
-- **Dependency graph:** an interactive graph of JavaScript/TypeScript files and their local imports. Click a node to inspect it, double-click to open it, and zoom, pan or fit the view.
+- **Dependency graph:** an interactive graph of JavaScript, TypeScript and Python files and their local imports. Click a node to inspect it, double-click to open it, and zoom, pan or fit the view.
 - **Details panel:** path, type, Git status, imports and code symbols for the selected file, with an **In plain words** summary (what it uses, what uses it, its role, history and notes) and code tips.
 - **Learning aids:** click **?** next to a term for a short explanation. Clicking a symbol explains it from its declaration and usages. Circular imports are outlined in red in the graph. No AI is used.
 - **Preview:** opens your configured local app URL in VS Code's Simple Browser.
@@ -41,7 +41,7 @@ What to click:
 - **Workspace changes** (left): click a file to open its diff, or the HEAD version if it was deleted.
 - **History** (left, second tab): the latest 50 commits, and **Load more** shows up to 200. Click a commit to see its full message and changed files in Details. Those files are outlined in blue in the graph. Click a file to open its before/after diff.
 - **Graph** (centre): click a node to see details, double-click to open the file. Use **Fit**, **+**/**−** and **Re-layout**, scroll to zoom and drag to pan.
-- **Details** (right): **Open source** jumps to the file. Click a symbol to jump to it and list where it is used (**Used in**). The files that use it are outlined in purple in the graph. This needs VS Code's language support for that file type (built-in for JS/TS).
+- **Details** (right): **Open source** jumps to the file. Click a symbol to jump to it and list where it is used (**Used in**). The files that use it are outlined in purple in the graph. This needs VS Code's language support for that file type (built-in for JS/TS; for Python, install the Python extension).
 - **Notes** (in Details, for a file or a commit): **Add note** asks once per project whether notes may be saved in `.vibecode/notes/`, asks for a title, then opens the new note in the editor. Click a note to open it. Edit or delete notes like any other file. Whether to commit them is up to you.
 - **AI sessions** (left, third tab): click **Allow reading Claude Code logs** once per project. You'll see totals and a list of sessions. Click one for its prompts, tokens, changed files (outlined in blue in the graph), commits made during it, security mentions and tips. **VibeCode Explorer: Reset Permissions** in the Command Palette makes it ask again (for notes too).
 - **In plain words** (top of Details): facts about the selected file, its role (entry point, hub or leaf), and up to 3 tips (circular import, large file, hub without a test). Click **?** next to any term for an explanation.
@@ -70,7 +70,7 @@ The first integration run downloads an isolated VS Code into `.vscode-test/`. It
 
 ## Known limitations (Phase 1)
 
-- The graph covers JS/TS only. Path aliases (`@/…`, tsconfig `paths`), and `node_modules` packages are not resolved. Aliases and dynamic imports appear as **unknown** nodes, and packages are listed only in the details panel.
+- The graph covers JS/TS and Python. Python imports are found from the project root, a `src/` folder and the file's own folder. `sys.path` changes and installed packages are not followed, and modules that aren't found are listed as packages. Path aliases (`@/…`, tsconfig `paths`), and `node_modules` packages are not resolved. Aliases and dynamic imports appear as **unknown** nodes, and packages are listed only in the details panel.
 - Changes are labelled **workspace changes**. The extension does not know which agent made a change.
 - The graph and Git data refresh only when you press **Refresh**, not live.
 - Symbols depend on the language support installed in VS Code.

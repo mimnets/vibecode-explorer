@@ -52,8 +52,18 @@ export const pong = () => ping;
   write(path.join(plain, 'a.js'), `const b = require('./b');\n`);
   write(path.join(plain, 'b.js'), `module.exports = 1;\n`);
 
+  // Phase 6: a small Python project (no Git), with a package, relative imports, a loop and a test.
+  const py = path.join(root, 'py-project');
+  write(path.join(py, 'app/__init__.py'), '');
+  write(path.join(py, 'app/main.py'), `"""Entry point. import not_real"""\nimport os\nfrom .models import User\nfrom . import ping\n`);
+  write(path.join(py, 'app/models.py'), `class User:\n    pass\n`);
+  write(path.join(py, 'app/ping.py'), `from .pong import pong\ndef ping(): return pong\n`);
+  write(path.join(py, 'app/pong.py'), `from .ping import ping\ndef pong(): return ping\n`);
+  write(path.join(py, 'tests/test_models.py'), `from app.models import User\n`);
+  write(path.join(py, '.venv/lib/site.py'), `import never_read\n`);
+
   const workspace = path.join(root, 'sample.code-workspace');
-  write(workspace, JSON.stringify({ folders: [{ path: 'sample-repo' }, { path: 'plain-folder' }] }));
+  write(workspace, JSON.stringify({ folders: [{ path: 'sample-repo' }, { path: 'plain-folder' }, { path: 'py-project' }] }));
   return workspace;
 }
 

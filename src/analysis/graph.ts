@@ -1,5 +1,6 @@
 import { isExcludedFromAnalysis } from './sensitive';
-import { parseImports, resolveSpecifier, ResolvedImport } from './imports';
+import { ResolvedImport } from './imports';
+import { languageFor } from './languages';
 
 export interface FileAnalysis {
   path: string;
@@ -33,12 +34,12 @@ export async function buildGraph(relPaths: string[], read: ReadFile, maxFiles: n
       files.push({ path: rel, imports: [], dynamicUnknown: 0, skipped: 'not read (too large or unreadable)' });
       continue;
     }
-    const parsed = parseImports(rel, text);
-    files.push({
-      path: rel,
-      imports: parsed.specifiers.map((s) => resolveSpecifier(rel, s, known)),
-      dynamicUnknown: parsed.dynamicUnknown,
-    });
+    const language = languageFor(rel);
+    if (!language) {
+      files.push({ path: rel, imports: [], dynamicUnknown: 0, skipped: 'no import reader for this file type' });
+      continue;
+    }
+    files.push({ path: rel, ...language.analyze(rel, text, known) });
   }
   return { files, truncated: eligible.length > maxFiles };
 }

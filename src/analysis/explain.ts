@@ -156,16 +156,23 @@ export function codeTips(f: FileFacts): string[] {
   if (f.lines && f.lines > LARGE_FILE_LINES) {
     tips.push(`At ${f.lines} lines this file is large. Splitting it by responsibility makes it easier to read and to ask an AI about one part at a time.`);
   }
-  if (f.importedBy.length >= HUB_THRESHOLD && !f.hasTest && !/\.(test|spec)\.[a-z]+$/i.test(f.path)) {
+  if (f.importedBy.length >= HUB_THRESHOLD && !f.hasTest && !isTestFile(f.path)) {
     tips.push(`${plural(f.importedBy.length, 'file')} depend on this file and no test file for it was found. A test protects everything that depends on it.`);
   }
   return tips.slice(0, 3);
 }
 
-/** True when `candidate` looks like a test file for `path` (same base name, .test/.spec). */
+/** True for test files: `x.test.ts` / `x.spec.js`, or Python's `test_x.py` / `x_test.py`. */
+export function isTestFile(path: string): boolean {
+  const name = base(path);
+  return /\.(test|spec)\.[a-z]+$/i.test(name) || /^test_.+\.py$|_test\.py$/.test(name);
+}
+
+/** True when `candidate` looks like a test file for `path` (same base name). */
 export function isTestFor(path: string, candidate: string): boolean {
-  const stem = base(path).replace(/\.[^.]+$/, '');
-  return new RegExp(`^${stem.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}\\.(test|spec)\\.[a-z]+$`, 'i').test(base(candidate));
+  const stem = base(path).replace(/\.[^.]+$/, '').replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+  return new RegExp(`^${stem}\\.(test|spec)\\.[a-z]+$`, 'i').test(base(candidate))
+    || new RegExp(`^test_${stem}\\.py$|^${stem}_test\\.py$`).test(base(candidate));
 }
 
 export interface SymbolFacts {

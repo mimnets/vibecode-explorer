@@ -13,7 +13,7 @@ Before each phase: write a short plan, get owner approval, implement, verify, re
 | 4 | Notes and decisions: attach the owner's notes to files or changes, stored as plain files in the project only if the owner opts in | R4, R6, R7 | Implemented and auto-tested. Awaiting owner check |
 | 4b | AI session overview: the prompts given, the agent's suggestions and feedback (including security), tokens spent, a short overview, and learning tips. Read-only from the agent's own local log files, opt-in. Claude Code first, other agents later | R1, R4, R6, R9, R10 | Implemented and auto-tested (plan approved 2026-10-29). Awaiting owner check |
 | 5 | Learning aids: plain-language explanations built from static facts (what a symbol is, where it is used), no LLM | R6, R2 | Implemented and auto-tested (plan approved 2026-10-29). Awaiting owner check |
-| 6 | More languages: add a second language parser (for example Python) behind the existing per-extension hook | R8, R3 | Planned |
+| 6 | More languages: add a second language parser (for example Python) behind the existing per-extension hook | R8, R3 | Implemented and auto-tested (plan approved 2026-10-29: Python, built-in reader). Awaiting owner check |
 | 7 | API and database relationships: detect routes, HTTP calls and schema or ORM files statically. No database connections | R3 | Planned |
 | 8 | Preview alongside code: link preview pages to the source files that serve them, where this can be proven statically | R5 | Planned |
 

@@ -232,7 +232,7 @@
     cy.on('dbltap', 'node[kind = "file"]', (evt) => send({ type: 'open', id: evt.target.id() }));
     runLayout();
     send({ type: 'rendered', nodes: cy.nodes().length, edges: cy.edges().length });
-    if (graph.nodes.length === 0) $('graphInfo').textContent = 'No JavaScript/TypeScript files found in this folder.';
+    if (graph.nodes.length === 0) $('graphInfo').textContent = 'No JavaScript, TypeScript or Python files found in this folder.';
   }
 
   function clearHighlight() {

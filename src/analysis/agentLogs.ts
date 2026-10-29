@@ -199,7 +199,7 @@ export function sessionTips(s: SessionSummary, editedRelPaths: string[]): string
     tips.push(`This session had ${s.prompts.length} prompts. Starting a new session for each new topic keeps the context small, which saves tokens and keeps answers focused.`);
   }
   const code = editedRelPaths.filter((p) => !/\.(md|txt)$/i.test(p));
-  if (code.length > 0 && !code.some((p) => /(^|\/)(tests?|__tests__|spec)(\/|$)|\.(test|spec)\.[a-z]+$/i.test(p))) {
+  if (code.length > 0 && !code.some((p) => /(^|\/)(tests?|__tests__|spec)(\/|$)|\.(test|spec)\.[a-z]+$|(^|\/)test_[^/]+\.py$|_test\.py$/i.test(p))) {
     tips.push('Code changed but no test files did. Asking the agent to add or run a test is a cheap way to check its work.');
   }
   if (editedRelPaths.some((p) => isSensitiveFile(p))) {

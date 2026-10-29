@@ -3,7 +3,7 @@ import * as vscode from 'vscode';
 import { findCycles } from '../analysis/explain';
 import { GLOSSARY } from '../analysis/glossary';
 import { buildGraph, FileAnalysis } from '../analysis/graph';
-import { SOURCE_EXTENSIONS } from '../analysis/imports';
+import { GRAPH_EXTENSIONS } from '../analysis/languages';
 import { EXCLUDE_GLOB, isSensitiveFile } from '../analysis/sensitive';
 import { summarizeUsages, UsageLocation } from '../analysis/usages';
 import { ChangeGroup } from '../git/status';
@@ -93,8 +93,8 @@ export async function collectState(folderIndex: number, refreshGit: boolean): Pr
     state.git = snapshot;
   }
 
-  // Dependency graph (JS/TS only in Phase 1)
-  const include = new vscode.RelativePattern(folder, `**/*{${SOURCE_EXTENSIONS.join(',')}}`);
+  // Dependency graph: every language in src/analysis/languages.ts
+  const include = new vscode.RelativePattern(folder, `**/*{${GRAPH_EXTENSIONS.join(',')}}`);
   const uris = await vscode.workspace.findFiles(include, EXCLUDE_GLOB, maxFiles * 4);
   const toRel = (u: vscode.Uri): string => path.relative(folder.uri.fsPath, u.fsPath).split(path.sep).join('/');
   const uriByRel = new Map(uris.map((u) => [toRel(u), u]));

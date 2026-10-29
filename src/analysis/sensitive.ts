@@ -4,10 +4,12 @@
 export const EXCLUDED_DIRS = [
   'node_modules', '.git', 'out', 'dist', 'build', 'coverage', '.next', '.nuxt',
   '.svelte-kit', '.turbo', '.cache', '.vscode-test', 'vendor', 'bower_components',
+  // Python
+  '__pycache__', '.venv', 'venv', '.tox', '.nox', '.pytest_cache', '.mypy_cache', '.ruff_cache', 'site-packages', '.eggs',
 ];
 
 /** Glob for `workspace.findFiles` exclusion. */
-export const EXCLUDE_GLOB = `{${EXCLUDED_DIRS.map((d) => `**/${d}/**`).join(',')},**/.env*,**/*.d.ts,**/*.min.js}`;
+export const EXCLUDE_GLOB = `{${EXCLUDED_DIRS.map((d) => `**/${d}/**`).join(',')},**/*.egg-info/**,**/.env*,**/*.d.ts,**/*.min.js}`;
 
 const SENSITIVE_NAME_PATTERNS = [
   /^\.env(\..*)?$/i,
@@ -31,5 +33,5 @@ export function isSensitiveFile(relPath: string): boolean {
 /** True when the path is inside an excluded directory or is sensitive. */
 export function isExcludedFromAnalysis(relPath: string): boolean {
   const parts = segments(relPath);
-  return parts.slice(0, -1).some((p) => EXCLUDED_DIRS.includes(p)) || isSensitiveFile(relPath);
+  return parts.slice(0, -1).some((p) => EXCLUDED_DIRS.includes(p) || p.endsWith('.egg-info')) || isSensitiveFile(relPath);
 }

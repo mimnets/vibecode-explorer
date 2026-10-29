@@ -24,7 +24,7 @@ export async function run(): Promise<void> {
   const api = ext.exports;
   check('extension activates on command', () => assert.ok(ext.isActive));
   check('dashboard opens', () => assert.ok(api.isDashboardOpen()));
-  check('workspace has two folders', () => assert.equal(vscode.workspace.workspaceFolders?.length, 2));
+  check('workspace has three folders', () => assert.equal(vscode.workspace.workspaceFolders?.length, 3));
 
   // The webview reports back after Cytoscape draws (proves scripts load under the CSP).
   let report = api.renderReport();
@@ -190,6 +190,33 @@ export async function run(): Promise<void> {
     assert.equal(symbolText[0], 'util is a function defined on line 1.');
     assert.ok(symbolText.some((x) => x.startsWith('Its declaration: function util(): number')), JSON.stringify(symbolText));
     assert.ok(symbolText.some((x) => /^It appears in \d+ places in 3 files/.test(x)), JSON.stringify(symbolText));
+  });
+
+  // Phase 6: Python in the graph.
+  const py = await api.collectState(2, true);
+  const pyGraph = py.state.graph;
+  const pyId = (p: string) => pyGraph.nodes.find((n) => n.path === p)?.id;
+  const pyEdge = (a: string, b: string) => pyGraph.edges.some((e) => e.source === pyId(a) && e.target === pyId(b));
+  check('Python files and their imports appear in the graph', () => {
+    assert.deepEqual(pyGraph.nodes.filter((n) => n.kind === 'file').map((n) => n.path).sort(),
+      ['app/__init__.py', 'app/main.py', 'app/models.py', 'app/ping.py', 'app/pong.py', 'tests/test_models.py']);
+    assert.ok(pyEdge('app/main.py', 'app/models.py') && pyEdge('app/main.py', 'app/ping.py'));
+    assert.ok(pyEdge('tests/test_models.py', 'app/models.py'));
+    assert.ok(!pyGraph.nodes.some((n) => n.label.includes('not_real') || n.label.includes('never_read')));
+  });
+  check('Python circular imports are marked', () => {
+    assert.deepEqual(pyGraph.cycleNodes.slice().sort(), [pyId('app/ping.py'), pyId('app/pong.py')].sort());
+  });
+  const pyFolder = vscode.workspace.workspaceFolders![2];
+  const modelsTarget = py.targets.get(pyId('app/models.py')!)!;
+  const modelsDescribed = await api.describeTarget(pyId('app/models.py')!, modelsTarget);
+  const modelsExplained = await api.explainTarget(pyFolder, modelsTarget, modelsDescribed.details, py.state, 0);
+  check('a Python file is explained and its imports listed', () => {
+    assert.equal(modelsDescribed.details.fileType, 'PY');
+    assert.equal(modelsExplained.role, 'leaf');
+    assert.ok(modelsExplained.sentences.includes('2 files use it (main.py and test_models.py).'), JSON.stringify(modelsExplained.sentences));
+    const mainImports = py.targets.get(pyId('app/main.py')!)!.analysis!.imports.map((i) => `${i.specifier}:${i.kind}`);
+    assert.deepEqual(mainImports.sort(), ['.models:local', '.ping:local', 'os:external']);
   });
 
   const plain = await api.collectState(1, true);

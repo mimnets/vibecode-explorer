@@ -10,12 +10,12 @@ Status key: **Partial** = some of it is delivered and verified. **Constraint** =
 | --- | --- | --- |
 | 1 | See files created, changed or deleted during AI-assisted coding. | Partial: current working-tree changes against HEAD. Phase 3 adds commit history with the files each commit changed (owner-verified). No per-session view. |
 | 2 | Understand modules, functions, classes and variables. | Partial: a per-file symbol list. Phase 2 adds go-to and "used in" (owner-verified). Phase 5 adds plain-language explanations (awaiting owner check). |
-| 3 | Visually explore files, imports, functions, APIs and database relationships. | Partial: a file-import graph for JS/TS relative imports. Phase 2 highlights the files that use a symbol. No API or database relationships yet. |
+| 3 | Visually explore files, imports, functions, APIs and database relationships. | Partial: a file-import graph for JS/TS relative imports, and Python since Phase 6 (awaiting owner check). Phase 2 highlights the files that use a symbol. No API or database relationships yet. |
 | 4 | Understand why important changes were made. | Partial: Phase 3 shows each commit's full message. Phase 4 adds the owner's notes on files and commits (awaiting owner check). |
 | 5 | Preview working websites alongside their code. | Partial: opens a user-configured local URL in Simple Browser. |
 | 6 | Learn programming incrementally while developing. | Partial (awaiting owner check): Phase 4b shows rule-based tips for each AI session. Phase 5 adds plain-language file and symbol explanations, a glossary and code tips. |
 | 7 | Preserve educational notes, architecture explanations and decisions. | Partial (awaiting owner check): Phase 4 saves the owner's notes (what, why, decision) as Markdown in `.vibecode/notes/`, opt-in. |
-| 8 | Work across projects and programming languages. | Partial: any folder, multi-root, no-Git. Graph is JS/TS only. |
+| 8 | Work across projects and programming languages. | Partial: any folder, multi-root, no-Git. Graph covers JS/TS and Python (Phase 6, awaiting owner check), with a language list for adding more. |
 | 9 | Support Claude, Qwen, Gemini and other agents without proprietary agent APIs. | Constraint: kept. Data comes from Git and files, never from agent APIs. |
 | 10 | Save tokens through local static analysis and Git data. | Constraint: kept. No LLM calls. |
 | 11 | Minimise cost with free, open-source dependencies. | Constraint: kept. Runtime deps are MIT/Apache-2.0 only. |
@@ -104,6 +104,21 @@ Approved by the owner on 2026-10-29 with the recommended choices: inline glossar
 | F | Static facts only: no AI, no network, no new dependency, read-only | Done |
 
 Owner verification is pending. Non-goals: AI-written explanations, tutorials, other languages, line-by-line explanations.
+
+## Phase 6 scope: a second language (Python)
+
+Approved by the owner on 2026-10-29 with the recommended choices: Python, and a small built-in import reader with no new dependency.
+
+| # | Requirement | Status |
+| --- | --- | --- |
+| A | Python files in the graph with their imports. Mixed JS/TS and Python projects work, and so do Python-only ones | Done (UI not auto-tested) |
+| B | Reader: `import a.b`, `import a as x, b`, relative `from .`/`..` imports, imports in parentheses over several lines, `\` continuations, one-line `if`/`try` bodies, and `importlib.import_module`/`__import__` with a fixed name. Comments, strings and docstrings are ignored. Computed dynamic imports count as unknown | Done |
+| C | Resolution: relative imports from the file's package. Absolute ones from the folder root, `src/` and the file's own folder (`a/b.py` or `a/b/__init__.py`). `from pkg import sub` checks for a submodule first. Anything not found is a package. The package `__init__.py` is linked only when a name comes from it | Done |
+| D | Python build folders skipped (`__pycache__`, `.venv`, `venv`, `.tox`, `.nox`, caches, `site-packages`, `*.egg-info`, `.eggs`) | Done |
+| E | Roles, circular imports, tips and explanations work for Python. `test_x.py` and `x_test.py` count as tests | Done |
+| F | Languages sit behind `src/analysis/languages.ts` (`LanguageSupport`: extensions plus analyze), and JS/TS behaviour is unchanged | Done |
+
+Owner verification is pending. Non-goals: more languages, `sys.path` or tsconfig `paths` handling, installed-package resolution, call graphs.
 
 ## Non-goals for Phase 1
 
