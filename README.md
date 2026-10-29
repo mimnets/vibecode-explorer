@@ -21,10 +21,10 @@ Nothing is uploaded and no AI is called. The extension only reads your project a
 ```bash
 npm install
 npm run package                                  # builds vibecode-explorer.vsix
-code --install-extension vibecode-explorer.vsix   # installs into your VS Code
+code --install-extension vibecode-explorer.vsix --force   # installs into your VS Code
 ```
 
-To update, rebuild and run the install command again. To remove it, open the Extensions view and uninstall **VibeCode Explorer**.
+To update, rebuild and run the install command again, then run **Developer: Reload Window**. Always rebuild after pulling changes: an old `.vsix` keeps its old manifest. The changes pane needs VS Code's built-in **Git** extension to be enabled. Without it the graph still works and Git is shown as unavailable. To remove it, open the Extensions view and uninstall **VibeCode Explorer**.
 
 ## Run during development
 
