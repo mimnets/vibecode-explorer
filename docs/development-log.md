@@ -62,3 +62,7 @@
 ## 2026-10-29: GitHub repository renamed
 
 The owner renamed the GitHub repository to `mimnets/vibecode-explorer`. The `origin` remote and the `repository.url` field in `package.json` now point to it. The local folder is still named `vibedev-explorer`.
+
+## 2026-10-29: Phase 2 owner check
+
+The owner installed the rebuilt VSIX, restarted VS Code and reported that Phase 2 works. Their screenshot shows the dashboard on this repository with `src/extension/dashboard.ts` selected: Details lists "Imports (7)" and "Symbols (64)" with the hint "Click a symbol to jump to it and see where it is used", and the graph legend includes "uses selected symbol". This covers the GUI items the automated tests could not: the symbol click handlers, the "Used in" list and the graph highlight. Phase 2 is marked Done. Phase 3 (change history) is next and needs the owner's approval before work starts.

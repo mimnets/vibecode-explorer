@@ -8,7 +8,7 @@ Before each phase: write a short plan, get owner approval, implement, verify, re
 | --- | --- | --- | --- |
 | 0 | Governance, docs, TypeScript tooling | — | Done |
 | 1 | MVP dashboard: workspace changes, JS/TS file-import graph, details panel, local preview | R1, R2, R3, R5, R8 (partial) | Done, owner-verified 2026-10-29 |
-| 2 | Inside files: clickable functions and classes per file, and where each one is used (VS Code reference provider) | R2, R3 | Implemented and auto-tested. Awaiting owner check |
+| 2 | Inside files: clickable functions and classes per file, and where each one is used (VS Code reference provider) | R2, R3 | Done, owner-verified 2026-10-29 |
 | 3 | Change history: browse commits, see the files each one touched and the commit message | R1, R4 | Planned |
 | 4 | Notes and decisions: attach the owner's notes to files or changes, stored as plain files in the project only if the owner opts in | R4, R6, R7 | Planned |
 | 5 | Learning aids: plain-language explanations built from static facts (what a symbol is, where it is used), no LLM | R6, R2 | Planned |

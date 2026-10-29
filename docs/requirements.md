@@ -9,7 +9,7 @@ Status key: **Partial** = some of it is delivered and verified. **Constraint** =
 | # | Requirement | Status after Phase 1 |
 | --- | --- | --- |
 | 1 | See files created, changed or deleted during AI-assisted coding. | Partial: current working-tree changes against HEAD. No history or per-session view yet. |
-| 2 | Understand modules, functions, classes and variables. | Partial: a per-file symbol list. Phase 2 adds go-to and "used in" (awaiting owner check). No explanations yet. |
+| 2 | Understand modules, functions, classes and variables. | Partial: a per-file symbol list. Phase 2 adds go-to and "used in" (owner-verified). No explanations yet. |
 | 3 | Visually explore files, imports, functions, APIs and database relationships. | Partial: a file-import graph for JS/TS relative imports. Phase 2 highlights the files that use a symbol. No API or database relationships yet. |
 | 4 | Understand why important changes were made. | Planned |
 | 5 | Preview working websites alongside their code. | Partial: opens a user-configured local URL in Simple Browser. |
@@ -40,11 +40,11 @@ The owner accepted this on 2026-10-29 after using it in their own VS Code. The k
 | --- | --- | --- |
 | A | Symbols in Details are clickable: jump to the definition | Done |
 | B | "Used in" list for the clicked symbol, from `vscode.executeReferenceProvider`. Each entry opens at its line | Done |
-| C | Graph highlights the files that use the symbol | Done (UI not auto-tested) |
+| C | Graph highlights the files that use the symbol | Done (owner-verified in the GUI) |
 | D | Opaque `s…`/`r…` ids only. Results inside the folder only, excluded and sensitive paths hidden, capped at 100 | Done |
 | E | Clear message when no language support answers | Done |
 
-Owner verification is pending. Non-goals: a function call graph, code explanations, new language parsers.
+Owner-verified 2026-10-29 (see the development log). Non-goals: a function call graph, code explanations, new language parsers.
 
 ## Non-goals for Phase 1
 
