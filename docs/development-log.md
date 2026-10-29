@@ -58,3 +58,7 @@
 **Not verified automatically:** the webview click handlers, the "Used in" rendering and the graph highlight. These need the owner's GUI check.
 
 **Limitations:** usages depend on the installed language support. For JS/TS that's VS Code's built-in TypeScript extension, and if it's disabled the panel says usages are not available. The first lookup can be slow while the TypeScript server starts. A list of more than 100 places is cut off.
+
+## 2026-10-29: GitHub repository renamed
+
+The owner renamed the GitHub repository to `mimnets/vibecode-explorer`. The `origin` remote and the `repository.url` field in `package.json` now point to it. The local folder is still named `vibedev-explorer`.
