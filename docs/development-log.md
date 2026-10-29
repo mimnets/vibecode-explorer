@@ -79,3 +79,9 @@ The owner installed the rebuilt VSIX, restarted VS Code and reported that Phase 
 **Not verified automatically:** the History tab, clicking commits and files in the webview, **Load more** and the blue graph outline. These need the owner's GUI check.
 
 **Limitations:** the Git extension API can only compare two commits (its `diffBetween` runs `git diff a...b`), and its empty-tree helper isn't public. So the first commit of a repository shows its message but not its files. Merge commits are compared with their first parent. Sensitive files in a commit are listed but never opened. Without the built-in Git extension the tab says Git is unavailable.
+
+## 2026-10-29: Phase 3 owner check
+
+The owner installed the rebuilt VSIX and checked History on this repository. Their screenshot shows the History tab listing all 10 commits newest first, with short id, author and date. **Load more** is hidden, correctly, because there are fewer than 50 commits. Selecting `feat: add Phase 3 change history` shows its full message and "Files changed (16)" (2 added, 14 modified), which matches the commit, and the commit's JS/TS files are outlined in blue in the graph. The owner also confirmed that clicking a file opens the before/after diff. **Load more** with more than 50 commits was not exercised in the GUI. Phase 3 is marked Done.
+
+**Noticed:** after reloading the extension, a stale dashboard tab from the previous session can stay open next to the new one. This is a candidate for a small fix (a webview panel serializer) and is not part of Phase 3.

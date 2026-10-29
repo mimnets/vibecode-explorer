@@ -8,10 +8,10 @@ Status key: **Partial** = some of it is delivered and verified. **Constraint** =
 
 | # | Requirement | Status after Phase 1 |
 | --- | --- | --- |
-| 1 | See files created, changed or deleted during AI-assisted coding. | Partial: current working-tree changes against HEAD. Phase 3 adds commit history with the files each commit changed (awaiting owner check). No per-session view. |
+| 1 | See files created, changed or deleted during AI-assisted coding. | Partial: current working-tree changes against HEAD. Phase 3 adds commit history with the files each commit changed (owner-verified). No per-session view. |
 | 2 | Understand modules, functions, classes and variables. | Partial: a per-file symbol list. Phase 2 adds go-to and "used in" (owner-verified). No explanations yet. |
 | 3 | Visually explore files, imports, functions, APIs and database relationships. | Partial: a file-import graph for JS/TS relative imports. Phase 2 highlights the files that use a symbol. No API or database relationships yet. |
-| 4 | Understand why important changes were made. | Partial (awaiting owner check): Phase 3 shows each commit's full message. No notes yet. |
+| 4 | Understand why important changes were made. | Partial: Phase 3 shows each commit's full message. No notes yet. |
 | 5 | Preview working websites alongside their code. | Partial: opens a user-configured local URL in Simple Browser. |
 | 6 | Learn programming incrementally while developing. | Planned |
 | 7 | Preserve educational notes, architecture explanations and decisions. | Planned (in-product). The repo's `docs/` covers this project only. |
@@ -52,14 +52,14 @@ Approved by the owner on 2026-10-29.
 
 | # | Requirement | Status |
 | --- | --- | --- |
-| A | History tab next to Workspace changes: latest 50 commits (headline, author, date, short id). **Load more** up to 200 | Done (UI not auto-tested) |
+| A | History tab next to Workspace changes: latest 50 commits (headline, author, date, short id). **Load more** up to 200 | Done (owner-verified in the GUI) |
 | B | Click a commit to show its full message and the files it touched (added, modified, deleted, renamed) | Done |
-| C | Graph highlights the files of the selected commit | Done (UI not auto-tested) |
+| C | Graph highlights the files of the selected commit | Done (owner-verified in the GUI) |
 | D | Click a file to open VS Code's read-only before/after diff. Added files open the new version, deleted files the previous one | Done |
 | E | Built-in Git extension API only (`log`, `diffBetween`, `toGitUri`). No shell, no new dependency, read-only | Done |
 | F | Opaque `k…` (commit) and `h…` (file) ids. Sensitive files listed but never opened. Files outside the folder hidden. Caps: 200 commits, 300 files per commit. Off in Restricted Mode | Done |
 
-Changed from the plan: commit ids use `k…` because `c…` is already used by the changes list. The first commit's files can't be listed (see the development log). Owner verification is pending. Non-goals: diffs drawn inside the dashboard, blame, branch graphs, search, guessing which AI session made a change, notes.
+Changed from the plan: commit ids use `k…` because `c…` is already used by the changes list. The first commit's files can't be listed (see the development log). Owner-verified 2026-10-29. Non-goals: diffs drawn inside the dashboard, blame, branch graphs, search, guessing which AI session made a change, notes.
 
 ## Non-goals for Phase 1
 
