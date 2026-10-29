@@ -19,9 +19,6 @@
   ],
   "main": "./out/src/extension/extension.js",
   "activationEvents": [],
-  "extensionDependencies": [
-    "vscode.git"
-  ],
   "capabilities": {
     "untrustedWorkspaces": {
       "supported": "limited",

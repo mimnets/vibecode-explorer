@@ -12,7 +12,13 @@ function check(name: string, fn: () => void): void {
 
 export async function run(): Promise<void> {
   const ext = vscode.extensions.getExtension<Api>('mimnets.vibecode-explorer');
-  assert.ok(ext, 'extension is installed in the development host');
+  check('extension is loaded in the development host', () => assert.ok(ext, 'extension not loaded (disabled or invalid manifest)'));
+  if (!ext) return;
+  // The Command Palette lists contributed commands of loaded extensions (before activation).
+  check('dashboard command is contributed', () => {
+    const contributed: { command: string }[] = ext.packageJSON.contributes.commands;
+    assert.ok(contributed.some((c) => c.command === 'vibecodeExplorer.openDashboard'));
+  });
 
   await vscode.commands.executeCommand('vibecodeExplorer.openDashboard');
   const api = ext.exports;

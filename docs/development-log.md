@@ -24,3 +24,7 @@
 - The webview reports back after rendering so the integration test can verify that the graph really draws under the CSP.
 
 **Rename:** the owner renamed the project from *VibeDev Explorer* to *VibeCode Explorer* before the first commit. That changed the extension id to `mimnets.vibecode-explorer`, the commands and settings to `vibecodeExplorer.*`, and the VSIX to `vibecode-explorer.vsix`. The GitHub repository and the local folder are still named `vibedev-explorer` until the owner renames them on GitHub.
+
+## 2026-10-29: Fix: dashboard command missing in the Extension Development Host
+
+**Cause:** the owner's VS Code profile has built-in Git disabled (`extensionsIdentifiers/disabled` contains `vscode.git`). Because the manifest declared `extensionDependencies: ["vscode.git"]`, VS Code marked VibeCode Explorer *DisabledByExtensionDependency* (`_isDisabledByExtensionDependency` in the workbench), so none of its commands were contributed. **Fix:** removed the hard dependency. Git is optional, and without it the changes pane reports Git as unavailable while the graph still works. **Testing:** test runs keep extension enablement in memory, so the disabled-Git state can't be reproduced automatically. A unit test now guards the manifest.

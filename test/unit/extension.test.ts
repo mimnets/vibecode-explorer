@@ -35,3 +35,12 @@ test('git status codes map to change groups', () => {
   assert.equal(moreSignificant('added', 'modified'), 'added');
   assert.equal(moreSignificant('modified', 'deleted'), 'deleted');
 });
+
+test('manifest has no hard extension dependencies', () => {
+  // VS Code disables an extension whose dependency is disabled, hiding all its commands.
+  // Git is optional: gitChanges.ts reports it as unavailable instead.
+  // eslint-disable-next-line @typescript-eslint/no-require-imports
+  const manifest = require('../../../package.json');
+  assert.equal(manifest.extensionDependencies, undefined);
+  assert.ok(manifest.contributes.commands.some((c: { command: string }) => c.command === 'vibecodeExplorer.openDashboard'));
+});
