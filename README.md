@@ -14,12 +14,61 @@ A private, local-first VS Code extension for seeing what changed during AI-assis
 
 Nothing is uploaded and no AI is called. The extension only reads your project. The one exception is your own notes, which it saves in `.vibecode/notes/` only after you allow it.
 
-## How to use it with other projects
+## User guide
 
-1. Install VibeCode Explorer into VS Code from a locally built VSIX package (see below).
-2. Open Assurer, OpenHRApp or another project's folder.
-3. Run **VibeCode Explorer: Open Dashboard** from the Command Palette (`Ctrl+Shift+P`).
-4. Explore changes and code relationships without moving or copying that project's source files.
+All commands are in the Command Palette: press `Ctrl+Shift+P` and type **VibeCode**.
+
+### Open it in VS Code
+
+1. Open a project folder (**File → Open Folder**). Any project works: VibeCode Explorer reads it where it is and never copies or moves its files.
+2. If VS Code asks whether you trust the folder, click **Yes, I trust the authors**. In Restricted Mode the dashboard shows a banner and no data.
+3. Press `Ctrl+Shift+P`, type **VibeCode Explorer: Open Dashboard**, and press Enter.
+4. The dashboard opens as an editor tab. Running the command again brings that tab to the front.
+
+### Close it in VS Code
+
+- Click the **×** on the dashboard's tab, or click the tab and press `Ctrl+F4`.
+- Closing the dashboard doesn't stop the browser view. Stop that separately (see below).
+
+### Use it
+
+- **Workspace changes** (left, first tab): click a file to open its diff, or the HEAD version if it was deleted.
+- **History** (left, second tab): the latest 50 commits, and **Load more** shows up to 200. Click a commit to see its full message and changed files in Details. Those files are outlined in blue in the graph. Click a file to open its before/after diff.
+- **AI sessions** (left, third tab): click **Allow reading Claude Code logs** once per project. You'll see totals and a list of sessions. Click one for its prompts, tokens, changed files (outlined in blue in the graph), commits made during it, security mentions and tips.
+- **Graph** (centre): click a node to see details, double-click to open the file. Use **Fit**, **+**/**−** and **Re-layout**, scroll to zoom and drag to pan. Circular imports are outlined in red.
+- **Details** (right): **In plain words** at the top describes the selected file, its role (entry point, hub or leaf), and up to 3 tips. Click **?** next to a term for an explanation. **Open source** jumps to the file. Click a symbol to jump to it, see an explanation, and list where it is used (**Used in**). The files that use it are outlined in purple in the graph. Symbols need VS Code's language support for that file type (built-in for JS/TS; for Python, install the Python extension).
+- **Notes** (in Details, for a file or a commit): **Add note** asks once per project whether notes may be saved in `.vibecode/notes/`, asks for a title, then opens the new note in the editor. Click a note to open it. Edit or delete notes like any other file. Whether to commit them is up to you.
+- **Refresh** (toolbar) re-reads Git status and rescans imports. The dashboard doesn't update by itself. **Folder** switches between workspace folders.
+- **Open Preview** (toolbar): first set `vibecodeExplorer.previewUrl` (for example `http://localhost:3000`) in Settings, and start your app yourself.
+
+### Open it in the browser
+
+1. Keep VS Code open with the project. The browser view only works while VS Code runs.
+2. Click **Open in Browser** in the dashboard toolbar, or run **VibeCode Explorer: Open Dashboard in Browser**.
+3. If VS Code asks whether to open the link, click **Open**.
+4. Your default browser opens a private `http://127.0.0.1:<port>/<secret key>/` link. Only this computer can reach it, and each click makes a new secret link. Don't share the link.
+
+### Use it in the browser
+
+- The page works like the VS Code dashboard: same tabs, graph and Details.
+- Files, diffs and notes you click open **in VS Code**, not in the browser. Switch to VS Code to see them.
+- Permission questions (notes, AI session logs) also appear in VS Code.
+- Colours follow your system's light or dark setting, not the VS Code theme. Up to 5 browser tabs can be open at once.
+
+### Close the browser view
+
+- Run **VibeCode Explorer: Stop Browser View**. The page shows "The browser view has stopped". Closing the browser tab alone leaves the view running until it stops by itself.
+- It also stops by itself when VS Code closes, or after 30 minutes without use.
+- To open it again, click **Open in Browser** again. Old links stop working.
+
+### Permissions
+
+- VibeCode Explorer asks before it reads Claude Code's logs and before it saves the first note in a project. Only a "Yes" is remembered.
+- **VibeCode Explorer: Reset Permissions** makes it ask again for both.
+
+### Uninstall
+
+Open the Extensions view (`Ctrl+Shift+X`), find **VibeCode Explorer**, and click **Uninstall**.
 
 ## Install from a VSIX
 
@@ -29,7 +78,7 @@ npm run package                                  # builds vibecode-explorer.vsix
 code --install-extension vibecode-explorer.vsix --force   # installs into your VS Code
 ```
 
-To update, rebuild and run the install command again, then run **Developer: Reload Window**. Always rebuild after pulling changes: an old `.vsix` keeps its old manifest. The changes pane needs VS Code's built-in **Git** extension to be enabled. Without it the graph still works and Git is shown as unavailable. To remove it, open the Extensions view and uninstall **VibeCode Explorer**.
+To update, rebuild and run the install command again, then run **Developer: Reload Window**. Always rebuild after pulling changes: an old `.vsix` keeps its old manifest. The changes pane needs VS Code's built-in **Git** extension to be enabled. Without it the graph still works and Git is shown as unavailable.
 
 ## Run during development
 
@@ -38,17 +87,7 @@ To update, rebuild and run the install command again, then run **Developer: Relo
 3. In the new **Extension Development Host** window, open any project folder (File → Open Folder).
 4. `Ctrl+Shift+P` → **VibeCode Explorer: Open Dashboard**.
 
-What to click:
-- **Workspace changes** (left): click a file to open its diff, or the HEAD version if it was deleted.
-- **History** (left, second tab): the latest 50 commits, and **Load more** shows up to 200. Click a commit to see its full message and changed files in Details. Those files are outlined in blue in the graph. Click a file to open its before/after diff.
-- **Graph** (centre): click a node to see details, double-click to open the file. Use **Fit**, **+**/**−** and **Re-layout**, scroll to zoom and drag to pan.
-- **Details** (right): **Open source** jumps to the file. Click a symbol to jump to it and list where it is used (**Used in**). The files that use it are outlined in purple in the graph. This needs VS Code's language support for that file type (built-in for JS/TS; for Python, install the Python extension).
-- **Notes** (in Details, for a file or a commit): **Add note** asks once per project whether notes may be saved in `.vibecode/notes/`, asks for a title, then opens the new note in the editor. Click a note to open it. Edit or delete notes like any other file. Whether to commit them is up to you.
-- **AI sessions** (left, third tab): click **Allow reading Claude Code logs** once per project. You'll see totals and a list of sessions. Click one for its prompts, tokens, changed files (outlined in blue in the graph), commits made during it, security mentions and tips. **VibeCode Explorer: Reset Permissions** in the Command Palette makes it ask again (for notes too).
-- **In plain words** (top of Details): facts about the selected file, its role (entry point, hub or leaf), and up to 3 tips (circular import, large file, hub without a test). Click **?** next to any term for an explanation.
-- **Open in Browser** (toolbar) or **VibeCode Explorer: Open Dashboard in Browser**: opens a private `http://127.0.0.1:…` link in your default browser. Each click makes a new secret link. Files, diffs and notes you click open in VS Code, and permission questions appear there too. It stops when VS Code closes, after 30 minutes without use, or with **VibeCode Explorer: Stop Browser View**.
-- **Refresh** re-reads Git status and rescans imports. **Folder** switches between workspace folders.
-- **Open Preview**: first set `vibecodeExplorer.previewUrl` (for example `http://localhost:3000`) in Settings and start your app yourself.
+Then use it as described in the [User guide](#user-guide).
 
 ## Test
 
