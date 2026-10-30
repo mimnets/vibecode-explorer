@@ -273,12 +273,15 @@ The owner found VS Code crowded with the agent chat, code and dashboard together
 
 With the owner's approval, a small demo was created **outside this repository**, at `Documentsibecode-api-demo` (10 files, no Git, never run). It has an Express server with two routers mounted at `/api`, a web client with `fetch` calls (one to a missing route, one to another server), Prisma models used through the client, and a SQL table. A dry run of the readers on it found the expected 6 routes (with the `/api` mounts), 6 calls and 3 models. The VSIX with Phase 7 was installed with the owner's yes.
 
+## 2026-10-30: Owner GUI check of Phase 7
+
+**Owner evidence:** with `Documentsibecode-api-demo` open, the APIs tab showed the routes, HTTP calls and database models; the owner reported that all check steps worked (lists and counts, graph outline and "Called from", unmatched and other-server calls, model users, double-click opening the line). Phase 7 is owner-verified.
+
 ## Handoff for the next session (updated 2026-10-30)
 
-**Where things stand:** Phases 0–6d are Done and owner-verified. Phase 7 (APIs tab) is implemented and auto-tested, **awaiting the owner's GUI check**. GitHub is up to date to `17e672f`; later commits are local (pushing needs the owner's yes).
+**Where things stand:** Phases 0–7 are Done and owner-verified. GitHub is up to date to `17e672f`; later commits are local (pushing needs the owner's yes).
 
 **Next:**
-1. Reinstall the VSIX (ask first) and the owner's Phase 7 check: the APIs tab on a real project of theirs (they mentioned Assurer and OpenHRApp; opening those needs their approval), and on `api-project`-like code.
-2. Then plan **Phase 8** (preview alongside code: link preview pages to the source files that serve them, where provable statically).
+1. Plan **Phase 8** (preview alongside code: link preview pages to the source files that serve them, where provable statically).
 
 **Open ideas, not scheduled:** notes written fully in the browser; syntax colours; a "No" answer to the notes question isn't remembered; notes break on file rename; AI sessions read Claude Code logs only; clicking a listed note wasn't explicitly owner-checked.
