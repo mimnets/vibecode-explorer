@@ -301,7 +301,7 @@ With the owner's approval, a small demo was created **outside this repository**,
 
 ## Handoff for the next session (updated 2026-10-30)
 
-**Where things stand:** Phases 0–7 are Done and owner-verified. Phase 8 (pages and preview alongside code) is implemented and auto-tested, **awaiting the owner's GUI check** with `Documents\vibecode-api-demo` (`node preview-server.js`, preview URL `http://localhost:5173`). That completes every phase on the roadmap. GitHub is up to date to `791d2d9`; later commits are local (pushing needs the owner's yes).
+**Where things stand:** every phase on the roadmap (0–8) is Done and owner-verified. The Phase 8 check used `Documents\vibecode-api-demo` (`node preview-server.js`, preview URL `http://localhost:5173`). GitHub is up to date to `791d2d9`; later commits are local (pushing needs the owner's yes).
 
 **Next:** ask the owner what comes after the roadmap (for example the open ideas below, or the saved future plans for project tracking and learning aids).
 
