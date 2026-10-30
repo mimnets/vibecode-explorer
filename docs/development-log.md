@@ -241,6 +241,12 @@ The owner found VS Code crowded with the agent chat, code and dashboard together
 
 **Limitations:** the listing refreshes with **Refresh** or when the tab is opened, not live. No file icons or search. At most 5,000 files. Explanations for non-code files are short, because the graph knows nothing about them.
 
+## 2026-10-30: Owner GUI check of Phase 6d, and select-and-centre from the tree
+
+**Owner evidence:** after reinstalling the VSIX, the Files tab, its folders, opening and closing, and the file and folder clicks all worked. Phase 6d is owner-verified.
+
+**Owner request, done straight away (small, within 6d):** clicking a file in the tree should show it selected in the graph. Now a click on a graph file brings the graph back (in the browser it may have been showing code), selects the file, and centres it with a short animation. A folder click also zooms to fit its files. Webview-only change. **Verified automatically:** lint and the existing tests. **Not verified automatically:** the selection and animation in the webview.
+
 ## Handoff for the next session (updated 2026-10-30)
 
 **Where things stand:** Phases 0–6b are Done and owner-verified. Phase 6c (code and diffs in the browser) is owner-verified except the startup setting. Phase 6d (Files tab) is implemented and auto-tested, **awaiting the owner's GUI check**. Nothing is pushed to GitHub yet (pushing needs the owner's yes).

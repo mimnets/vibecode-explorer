@@ -570,6 +570,7 @@
       summary.addEventListener('click', () => {
         clearTreeSelection();
         summary.classList.add('selected');
+        showGraph();
         highlightNodes(graphIdsIn(n));
       });
       const children = el('div', undefined, 'tree-children');
@@ -592,10 +593,14 @@
       clearTreeSelection();
       btn.classList.add('selected');
       if (n.inGraph && cy) {
+        // Show the graph (the browser may be showing code) and bring the file into view, selected.
+        showGraph();
         selectedId = n.id;
         const node = cy.getElementById(n.id);
-        cy.elements().removeClass('used inCommit').addClass('faded');
+        cy.elements().unselect().removeClass('used inCommit').addClass('faded');
+        node.select();
         node.closedNeighborhood().removeClass('faded');
+        cy.animate({ center: { eles: node }, zoom: Math.max(cy.zoom(), 1.2) }, { duration: 250 });
       } else {
         clearHighlight();
       }
@@ -614,9 +619,12 @@
   /** Outlines the given graph nodes (a folder's files) and fades the rest. */
   function highlightNodes(nodeIds) {
     if (!cy) return;
-    cy.elements().removeClass('used inCommit').addClass('faded');
-    for (const id of nodeIds) cy.getElementById(id).removeClass('faded').addClass('inCommit');
+    cy.elements().unselect().removeClass('used inCommit').addClass('faded');
+    const nodes = cy.collection(nodeIds.map((id) => cy.getElementById(id)));
+    nodes.removeClass('faded').addClass('inCommit');
     if (nodeIds.length === 0) cy.elements().removeClass('faded');
+    // Fit the folder's files into view.
+    else cy.animate({ fit: { eles: nodes, padding: 60 } }, { duration: 250 });
   }
 
   const fmt = (n) => Number(n).toLocaleString();
