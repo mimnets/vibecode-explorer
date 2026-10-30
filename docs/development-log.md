@@ -181,9 +181,13 @@ The VSIX was rebuilt (`npm run package`) and, with the owner's yes, installed in
 
 **Owner evidence:** in the browser view, the graph labels no longer overlap; clicking a file opened it in VS Code; **Stop Browser View** stopped the page. Phase 6b is now owner-verified. Next: the Phase 4 notes check.
 
+## 2026-10-30: Owner GUI check of Phase 4 (notes)
+
+**Owner evidence:** in the VS Code dashboard, **Add note** on a file showed the "Save notes in .vibecode/notes/" question once; after **Yes** a new Markdown note opened in the editor; Details then listed it as Notes (1); a second **Add note** skipped the question. The note was created as `.vibecode/notes/2026-10-30-note-about-agentlogs-test-ts-testing-notes.md`, and no other file changed. It is left uncommitted, as designed. Not explicitly checked: clicking a listed note to open it. Phase 4 is now owner-verified. Next: the Phase 4b AI sessions check.
+
 ## Handoff for the next session (written 2026-10-29)
 
-**Where things stand:** Phases 0–3 are Done and owner-verified. Phases 4, 4b, 5 and 6 are implemented (6b owner-verified 2026-10-30) and auto-tested but **awaiting the owner's GUI check**. Nothing is pushed to GitHub yet (pushing needs the owner's yes). The working tree is clean after the last commit.
+**Where things stand:** Phases 0–3 are Done and owner-verified. Phases 4b, 5 and 6 are implemented (4 and 6b owner-verified 2026-10-30) and auto-tested but **awaiting the owner's GUI check**. Nothing is pushed to GitHub yet (pushing needs the owner's yes). The working tree is clean after the last commit.
 
 **Start tomorrow with, in this order:**
 1. Rebuild and reinstall the VSIX (`npm run package`, then install `vibecode-explorer.vsix` in VS Code and reload). Ask the owner first, as AGENTS.md requires for installs into their VS Code.
