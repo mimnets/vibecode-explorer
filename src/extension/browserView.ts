@@ -12,6 +12,7 @@ import { DashboardSession } from './session';
 // carry a secret key (see browserGuard.ts). Each browser tab gets its own DashboardSession,
 // so it works exactly like the VS Code panel. Read-only; it never runs a shell.
 
+/** Stops this long after the last browser tab closed (or after a link was never opened). */
 const IDLE_MS = 30 * 60 * 1000;
 const MAX_TABS = 5;
 const MAX_BODY_BYTES = 64 * 1024;
@@ -34,7 +35,8 @@ export class BrowserView {
     idleMs: number,
   ) {
     this.idleTimer = setInterval(() => {
-      if (Date.now() - this.lastActivity > idleMs) BrowserView.stop();
+      // Keeps running while a tab is open; stops once no tab has been open for `idleMs`.
+      if (this.tabs.size === 0 && Date.now() - this.lastActivity > idleMs) BrowserView.stop();
     }, Math.min(60_000, idleMs));
   }
 
@@ -149,6 +151,7 @@ export class BrowserView {
       (message) => res.write(`data: ${JSON.stringify(message)}\n\n`),
       this.memento,
       () => void vscode.window.showInformationMessage('This dashboard is already open in your browser.'),
+      true,
     );
     // A comment line every 25 s keeps proxies and the browser from closing an idle stream.
     const keepAlive = setInterval(() => res.write(': keep-alive\n\n'), 25_000);
@@ -157,6 +160,7 @@ export class BrowserView {
       clearInterval(keepAlive);
       session.dispose();
       this.tabs.delete(client);
+      this.lastActivity = Date.now();
     });
   }
 

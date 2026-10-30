@@ -51,7 +51,7 @@ ${browser ? `<link rel="stylesheet" href="${o.asset('src', 'webview', 'browser.c
     <div id="sessionsView" hidden></div>
   </section>
   <section class="pane graph-pane">
-    <div class="graph-tools">
+    <div class="graph-tools" id="graphTools">
       <h2>File dependencies</h2>
       <button id="fit" title="Fit graph to screen">Fit</button>
       <button id="zoomIn" title="Zoom in">+</button>
@@ -60,10 +60,19 @@ ${browser ? `<link rel="stylesheet" href="${o.asset('src', 'webview', 'browser.c
       <span id="graphInfo" class="muted"></span>
     </div>
     <div id="graph"></div>
-    <div class="legend muted">
+    <div class="legend muted" id="legend">
       <span class="dot file"></span>file <span class="dot changed"></span>changed <span class="dot untracked"></span>new <span class="dot unknown"></span>unknown import <span class="dot used"></span>uses selected symbol <span class="dot commit"></span>in selected commit or session <span class="dot cycle"></span>circular import
     </div>
-  </section>
+${browser ? `    <div id="codeView" class="code-view" hidden>
+      <div class="graph-tools">
+        <button id="codeBack" title="Show the dependency graph again">Back to graph</button>
+        <button id="codeEditor" title="Open the same file or comparison in VS Code">Open in VS Code</button>
+        <strong id="codeTitle" class="mono"></strong>
+      </div>
+      <p id="codeNote" class="muted code-note" hidden></p>
+      <div id="codeBody" class="code-body" role="region" aria-label="Code"></div>
+    </div>
+` : ''}  </section>
   <aside class="pane" id="info"><h2>Details</h2><p class="muted">Select a file in the graph or the changes list.</p></aside>
 </main>
 ${browser ? `<script nonce="${o.nonce}" src="${o.asset('src', 'webview', 'browserBridge.js')}"></script>\n` : ''}<script nonce="${o.nonce}" src="${o.asset('node_modules', 'cytoscape', 'dist', 'cytoscape.min.js')}"></script>

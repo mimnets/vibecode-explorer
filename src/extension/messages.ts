@@ -22,6 +22,8 @@ export type WebviewMessage =
   | { type: 'commitFile'; id: string }
   /** Add a note to the file or commit shown in Details (its `f…`/`c…`/`k…` id). */
   | { type: 'addNote'; id: string }
+  /** Browser view (Phase 6c): open a file, commit file or symbol (`f…`/`c…`/`h…`/`s…`/`r…`) in VS Code's editor rather than on the page. */
+  | { type: 'openInEditor'; id: string }
   /** Open a note (`n…`) in the editor. */
   | { type: 'openNote'; id: string }
   /** Load the AI session list (Phase 4b); `allowSessions` first asks the owner for permission. */
@@ -62,6 +64,7 @@ export function parseWebviewMessage(raw: unknown): WebviewMessage | undefined {
     case 'commitFile':
     case 'addNote':
     case 'openNote':
+    case 'openInEditor':
     case 'session':
       return typeof msg.id === 'string' && ID_PATTERN.test(msg.id) ? { type: msg.type, id: msg.id } : undefined;
     case 'rendered':

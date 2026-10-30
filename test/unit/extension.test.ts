@@ -29,12 +29,14 @@ test('webview messages are validated strictly', () => {
   assert.deepEqual(parseWebviewMessage({ type: 'commitFile', id: 'h0' }), { type: 'commitFile', id: 'h0' });
   assert.deepEqual(parseWebviewMessage({ type: 'addNote', id: 'k1' }), { type: 'addNote', id: 'k1' });
   assert.deepEqual(parseWebviewMessage({ type: 'openNote', id: 'n0' }), { type: 'openNote', id: 'n0' });
+  assert.deepEqual(parseWebviewMessage({ type: 'openInEditor', id: 'h3' }), { type: 'openInEditor', id: 'h3' });
   for (const bad of [null, 'open', 42, {}, { type: 'exec', cmd: 'rm -rf /' }, { type: 'open', id: '../../.env' },
     { type: 'open', id: 'C:\\secret' }, { type: 'open' }, { type: 'inspect', id: 7 }, { type: 'symbol', id: 'util' },
     { type: 'goto', id: 'src/util.ts:3' }, { type: 'goto' }, { type: 'selectFolder', index: -1 },
     { type: 'selectFolder', index: 1.5 }, { type: 'selectFolder', index: '0' }, { type: 'history' },
     { type: 'history', limit: 0 }, { type: 'history', limit: 201 }, { type: 'history', limit: '50' },
     { type: 'commit', id: 'HEAD~1' }, { type: 'commit', id: 'a1b2c3d4e5f6' }, { type: 'commitFile', id: 'src/.env' },
+    { type: 'openInEditor', id: 'src/util.ts' }, { type: 'openInEditor', path: 'src/util.ts' },
     { type: 'addNote', id: '.vibecode/notes/x.md' }, { type: 'openNote', id: 'C:/notes/a.md' }]) {
     assert.equal(parseWebviewMessage(bad), undefined, JSON.stringify(bad));
   }
@@ -57,8 +59,10 @@ test('manifest has no hard extension dependencies', () => {
   // Read as a file, not imported, so the project's own graph shows no import leaving the project.
   const manifest = JSON.parse(readFileSync(join(__dirname, '..', '..', '..', 'package.json'), 'utf8'));
   assert.equal(manifest.extensionDependencies, undefined);
-  // Activates only on its command or when VS Code restores a dashboard tab, never at every startup.
-  assert.deepEqual(manifest.activationEvents, ['onWebviewPanel:vibecodeExplorer.dashboard']);
+  // Activates on its commands, when VS Code restores a dashboard tab, or after startup has
+  // finished (for the opt-in browser view on startup), never during startup itself.
+  assert.deepEqual(manifest.activationEvents, ['onWebviewPanel:vibecodeExplorer.dashboard', 'onStartupFinished']);
+  assert.equal(manifest.contributes.configuration.properties['vibecodeExplorer.openBrowserOnStartup'].default, false);
   assert.ok(manifest.contributes.commands.some((c: { command: string }) => c.command === 'vibecodeExplorer.openDashboard'));
 });
 

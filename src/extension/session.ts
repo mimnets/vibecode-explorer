@@ -1,6 +1,7 @@
 import * as vscode from 'vscode';
 import { CommitEntry } from '../git/gitChanges';
 import { askToAllowSessions, describeSession, loadSessions, StoredSession } from './agentSessions';
+import { codeForCommitFile, codeForLocation, codeForTarget } from './codeView';
 import { openTarget, revealLocation, SIDE } from './open';
 import { explainSymbolAt, explainTarget } from './explain';
 import { describeCommit, HistoryFile, loadHistory, openCommitFile } from './history';
@@ -37,6 +38,8 @@ export class DashboardSession {
     private readonly send: (message: unknown) => void,
     private readonly memento: vscode.Memento,
     private readonly onOpenInBrowser?: () => void,
+    /** Browser view (Phase 6c): show code and diffs on the page instead of in VS Code's editor. */
+    private readonly codeInPage = false,
   ) {
     const watcher = vscode.workspace.createFileSystemWatcher('**/.vibecode/notes/**');
     const notesChanged = (): void => {
@@ -125,7 +128,10 @@ export class DashboardSession {
       case 'inspect': {
         const target = this.targets.get(msg.id);
         if (!target) return; // Only ids issued in the current state are accepted.
-        if (msg.type === 'open') await openTarget(target);
+        if (msg.type === 'open') {
+          if (this.codeInPage) this.post({ type: 'code', view: await codeForTarget(msg.id, target) });
+          else await openTarget(target);
+        }
         const { details, symbols } = await describeTarget(msg.id, target);
         this.locations = symbols;
         this.post({ type: 'details', details });
@@ -165,7 +171,18 @@ export class DashboardSession {
       }
       case 'commitFile': {
         const file = this.historyFiles.get(msg.id);
-        if (file) await openCommitFile(file);
+        if (!file) return;
+        if (this.codeInPage) this.post({ type: 'code', view: await codeForCommitFile(msg.id, file) });
+        else await openCommitFile(file);
+        break;
+      }
+      case 'openInEditor': {
+        const target = this.targets.get(msg.id);
+        const file = this.historyFiles.get(msg.id);
+        const loc = this.locations.get(msg.id);
+        if (target) await openTarget(target);
+        else if (file) await openCommitFile(file);
+        else if (loc) await revealLocation(loc);
         break;
       }
       case 'allowSessions': {
@@ -201,14 +218,14 @@ export class DashboardSession {
       }
       case 'goto': {
         const loc = this.locations.get(msg.id);
-        if (loc) await revealLocation(loc);
+        if (loc) await this.reveal(msg.id, loc);
         break;
       }
       case 'symbol': {
         const loc = msg.id.startsWith('s') ? this.locations.get(msg.id) : undefined;
         const folder = vscode.workspace.workspaceFolders?.[this.state?.folderIndex ?? 0];
         if (!loc || !folder) return;
-        await revealLocation(loc);
+        await this.reveal(msg.id, loc);
         this.post({ type: 'usagesLoading', symbol: loc.name });
         const { result, locations } = await findUsages(folder.uri, loc);
         // Usage ids replace older usage ids; the current file's symbol ids stay valid.
@@ -222,6 +239,12 @@ export class DashboardSession {
         break;
       }
     }
+  }
+
+  /** Shows a symbol or usage: on the page in the browser view, else in VS Code's editor. */
+  private async reveal(id: string, loc: CodeLocation): Promise<void> {
+    if (this.codeInPage) this.post({ type: 'code', view: await codeForLocation(id, loc) });
+    else await revealLocation(loc);
   }
 
   private folder(): vscode.WorkspaceFolder | undefined {

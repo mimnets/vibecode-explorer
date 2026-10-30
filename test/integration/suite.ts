@@ -167,6 +167,44 @@ export async function run(): Promise<void> {
     assert.ok(!(input instanceof vscode.TabInputText && input.uri.path.endsWith('.env')));
   });
 
+  // Phase 6c: code and before/after views for the browser, read without opening an editor.
+  const noSecret = (v: unknown) => !JSON.stringify(v).includes('do-not-read');
+  const utilDiff = await api.codeForTarget('c0', targets.get(idOf('src/util.ts', 'c') as string)!);
+  check('the browser view compares a modified file with HEAD', () => {
+    assert.equal(utilDiff.mode, 'diff', JSON.stringify(utilDiff));
+    assert.ok(utilDiff.rows?.some((r) => r.k === '-' && r.t.includes('return 1')));
+    assert.ok(utilDiff.rows?.some((r) => r.k === '+' && r.t.includes('return 2')));
+  });
+  const oldView = await api.codeForTarget('c1', targets.get(idOf('src/old.ts', 'c') as string)!);
+  const newView = await api.codeForTarget('c2', targets.get(idOf('src/new.ts', 'c') as string)!);
+  check("the browser view shows a deleted file's HEAD version and a new file's contents", () => {
+    assert.equal(oldView.mode, 'file');
+    assert.deepEqual(oldView.lines, ['export const old = true;']);
+    assert.equal(newView.mode, 'file');
+    assert.ok(newView.lines?.some((l) => l.includes('util')));
+  });
+  const envView = await api.codeForTarget('c3', targets.get(idOf('.env', 'c') as string)!);
+  const envCommitView = await api.codeForCommitFile('h0', latest.files.get(fileOf('.env')!.id)!);
+  check('the browser view never shows a sensitive file, now or in a commit', () => {
+    assert.equal(envView.mode, 'none');
+    assert.equal(envCommitView.mode, 'none');
+    assert.ok(noSecret(envView) && noSecret(envCommitView));
+  });
+  const renamedView = await api.codeForCommitFile('h1', latest.files.get(fileOf('src/helpers.ts')!.id)!);
+  const deletedView = await api.codeForCommitFile('h2', latest.files.get(fileOf('src/temp.ts')!.id)!);
+  check('the browser view shows what a commit changed in a file', () => {
+    assert.ok(renamedView.mode === 'diff' || renamedView.mode === 'file', JSON.stringify(renamedView));
+    assert.match(renamedView.title, /\^ ↔ /);
+    assert.equal(deletedView.mode, 'file', JSON.stringify(deletedView));
+    assert.match(deletedView.title, /previous version/);
+  });
+  const symbolView = await api.codeForLocation('s0', described.symbols.get(utilSymbol!.id)!);
+  check("the browser view highlights a symbol's line", () => {
+    assert.equal(symbolView.mode, 'file');
+    assert.equal(symbolView.highlight, 1);
+    assert.match(symbolView.lines?.[0] ?? '', /function util/);
+  });
+
   // Phase 5: plain-language explanations from static facts.
   const nodeOf = (p: string) => state.graph.nodes.find((n) => n.path === p)?.id as string;
   check('circular imports are marked in the graph', () => {
@@ -355,12 +393,32 @@ export async function run(): Promise<void> {
     assert.ok(bState && bState.graph.nodes.some((n) => n.path === 'src/util.ts'));
   });
   const utilNode = bState?.graph.nodes.find((n) => n.path === 'src/util.ts')?.id;
+  // Close the text editors only (closing all editors would also close the dashboard).
+  const textTabs = () => vscode.window.tabGroups.all.flatMap((g) => g.tabs).filter((t) => t.input instanceof vscode.TabInputText || t.input instanceof vscode.TabInputTextDiff);
+  await vscode.window.tabGroups.close(textTabs());
   await send({ type: 'open', id: utilNode });
-  await waitFor(() => received.some((m) => m.type === 'details'));
-  check('a click in the browser opens the file in VS Code', () => {
+  await waitFor(() => received.some((m) => m.type === 'details') && received.some((m) => m.type === 'code'));
+  const code = received.find((m) => m.type === 'code')?.view as { for: string; mode: string; lines?: string[] } | undefined;
+  check('a click in the browser shows the code on the page, not in VS Code', () => {
+    assert.equal(code?.for, utilNode);
+    assert.equal(code?.mode, 'file');
+    assert.ok(code?.lines?.some((l) => l.includes('function util')), JSON.stringify(code));
+    assert.ok(received.some((m) => m.type === 'details'));
+    assert.equal(textTabs().length, 0, 'no editor was opened');
+  });
+  await send({ type: 'openInEditor', id: utilNode });
+  await waitFor(() => textTabs().length > 0);
+  check('"Open in VS Code" in the browser opens the file in VS Code', () => {
     const input = activeTab();
     assert.ok(input instanceof vscode.TabInputText && input.uri.fsPath.endsWith('util.ts'), String(input));
-    assert.ok(received.some((m) => m.type === 'details'));
+  });
+  const envChange = bState?.git.kind === 'ok' ? bState.git.changes.find((c) => c.path === '.env')?.id : undefined;
+  await send({ type: 'open', id: envChange });
+  await waitFor(() => received.some((m) => m.type === 'code' && (m.view as { for: string }).for === envChange));
+  check("the browser never receives a sensitive file's contents", () => {
+    const envCode = received.find((m) => m.type === 'code' && (m.view as { for: string }).for === envChange)?.view as { mode: string } | undefined;
+    assert.equal(envCode?.mode, 'none');
+    assert.ok(!received.some((m) => JSON.stringify(m).includes('do-not-read')));
   });
   const lanAddress = Object.values(os.networkInterfaces()).flat().find((a) => a && a.family === 'IPv4' && !a.internal)?.address;
   const fromNetwork = lanAddress
@@ -385,6 +443,26 @@ export async function run(): Promise<void> {
     s.on('error', (e: NodeJS.ErrnoException) => resolve(e.code ?? 'error'));
   });
   check('the browser view stops by itself when idle', () => assert.equal(afterIdle, 'ECONNREFUSED'));
+
+  // An open tab keeps it running past the idle time; it stops once the last tab has closed.
+  const busyLink = new URL(await api.browserLink!(300));
+  const reachable = () => new Promise<string>((resolve) => {
+    const s = net.connect({ host: '127.0.0.1', port: Number(busyLink.port) }, () => { s.destroy(); resolve('connected'); });
+    s.on('error', (e: NodeJS.ErrnoException) => resolve(e.code ?? 'error'));
+  });
+  const busyStream = await new Promise<http.IncomingMessage>((resolve) => {
+    http.get({ host: '127.0.0.1', port: Number(busyLink.port), path: `${busyLink.pathname}events` }, resolve);
+  });
+  busyStream.resume();
+  await new Promise((r) => setTimeout(r, 1200));
+  const whileOpen = await reachable();
+  busyStream.destroy();
+  await new Promise((r) => setTimeout(r, 1200));
+  const afterClose = await reachable();
+  check('an open browser tab keeps the view running; it stops after the last tab closes', () => {
+    assert.equal(whileOpen, 'connected');
+    assert.equal(afterClose, 'ECONNREFUSED');
+  });
 
   // Restoring dashboard tabs after a reload (what VS Code's serializer does).
   const viewType = 'vibecodeExplorer.dashboard';

@@ -19,7 +19,8 @@
   ],
   "main": "./out/src/extension/extension.js",
   "activationEvents": [
-    "onWebviewPanel:vibecodeExplorer.dashboard"
+    "onWebviewPanel:vibecodeExplorer.dashboard",
+    "onStartupFinished"
   ],
   "capabilities": {
     "untrustedWorkspaces": {
@@ -63,6 +64,11 @@
           "type": "string",
           "default": "",
           "markdownDescription": "Local app URL to preview (for example `http://localhost:3000`). Only `http`/`https` URLs on `localhost`, `127.0.0.1` or `[::1]` are allowed. VibeCode Explorer never starts your server."
+        },
+        "vibecodeExplorer.openBrowserOnStartup": {
+          "type": "boolean",
+          "default": false,
+          "markdownDescription": "Open the dashboard in your web browser when a trusted project opens in VS Code, so the browser can be your main screen. The browser view runs on this computer only (`127.0.0.1`) and stops when VS Code closes."
         },
         "vibecodeExplorer.maxGraphFiles": {
           "type": "number",

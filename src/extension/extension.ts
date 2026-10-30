@@ -1,6 +1,7 @@
 import * as vscode from 'vscode';
 import { loadSessions, readSessions, resetPermissions } from './agentSessions';
 import { BrowserView, openInBrowser } from './browserView';
+import { codeForCommitFile, codeForLocation, codeForTarget } from './codeView';
 import { Dashboard } from './dashboard';
 import { openTarget } from './open';
 import { explainSymbolAt, explainTarget } from './explain';
@@ -9,8 +10,19 @@ import { createNote, listNotes, notesFor } from './notes';
 import { openPreview } from './preview';
 import { collectState, describeTarget, findUsages } from './state';
 
-// Activated only when one of our commands runs (no startup cost).
+// Activated when one of our commands runs, or after VS Code has finished starting (for the
+// optional "open in the browser on startup"). Startup itself is not slowed down.
 export function activate(context: vscode.ExtensionContext) {
+  // Phase 6c: opt-in, and only for a trusted folder. Trusting the folder later also opens it.
+  const openOnStartup = (): void => {
+    const wanted = vscode.workspace.getConfiguration('vibecodeExplorer').get<boolean>('openBrowserOnStartup', false);
+    if (wanted && vscode.workspace.isTrusted && vscode.workspace.workspaceFolders?.length && !BrowserView.instance) {
+      void openInBrowser(context.extensionUri, context.workspaceState);
+    }
+  };
+  openOnStartup();
+  context.subscriptions.push(vscode.workspace.onDidGrantWorkspaceTrust(openOnStartup));
+
   context.subscriptions.push(
     vscode.commands.registerCommand('vibecodeExplorer.openDashboard', () => {
       Dashboard.show(context.extensionUri, context.workspaceState);
@@ -42,6 +54,9 @@ export function activate(context: vscode.ExtensionContext) {
     loadHistory,
     describeCommit,
     openCommitFile,
+    codeForTarget,
+    codeForCommitFile,
+    codeForLocation,
     explainTarget,
     explainSymbolAt,
     listNotes,

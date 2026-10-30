@@ -63,6 +63,8 @@ test('the browser page keeps the strict CSP and swaps the VS Code button for the
   const vscodePage = dashboardHtml({ mode: 'vscode', nonce: 'N', csp: 'x', asset });
   assert.ok(browser.includes('./a/browserBridge.js') && browser.includes('./a/browser.css') && !browser.includes('id="openBrowser"'));
   assert.ok(!vscodePage.includes('browserBridge.js') && vscodePage.includes('id="openBrowser"'));
+  // Phase 6c: only the browser page shows code on the page; VS Code uses its own editor.
+  assert.ok(browser.includes('id="codeView"') && browser.includes('id="codeEditor"') && !vscodePage.includes('id="codeView"'));
   assert.ok(browser.indexOf('browserBridge.js') < browser.indexOf('dashboard.js'), 'bridge loads first');
   assert.equal((browser.match(/<script /g) ?? []).length, (browser.match(/nonce="N"/g) ?? []).length, 'every script has the nonce');
 });

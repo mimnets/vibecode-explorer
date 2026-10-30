@@ -207,12 +207,26 @@ The owner found VS Code crowded with the agent chat, code and dashboard together
 
 **Owner evidence:** with `Documentsibecode-python-demo` open, the graph showed the `shop` package's Python files and the test, `orders.py` and `payments.py` were outlined in red as a circular import, and the remaining steps (the circular-import tip, 1 workspace change, 2 commits) worked. Phase 6 is owner-verified, and so is Phase 5's red outline. All implemented phases (0–6b) are now owner-verified. Next: plan Phase 6c.
 
+## 2026-10-30: Phase 6c: code and diffs in the browser
+
+**Approved:** the owner approved the plan with these choices: our own line comparison instead of the `diff` package, and the browser view stopping 30 minutes after its last tab closes, instead of after 30 minutes without requests. Earlier choices: code and diffs, plain text with line numbers, open-on-startup option.
+
+**What:** in the browser view, opening a file, a change, a commit's file, a symbol or a usage now shows it on the page in place of the graph. That is code with line numbers, or a one-column before/after comparison (red removed, green added, distant unchanged lines folded), with the line highlighted for symbols and usages. **Back to graph** and **Open in VS Code** sit above it. A new setting, **Open browser view on startup** (off by default), opens the browser view when a trusted project opens. The VS Code panel works as before. **How:** `DashboardSession` takes a `codeInPage` flag (set for browser tabs), and `codeView.ts` builds the views. Files are read with `workspace.fs` and older versions through VS Code Git's `git:` URIs. `src/analysis/codeText.ts` is pure: line splitting, binary detection, size caps, and Myers' shortest-edit comparison (trimming common start and end lines first, at most 2,000 changed lines, memory kept small). A new `openInEditor` message reuses the existing editor helpers. No new dependency.
+
+**Changed from the plan:** to open on startup, the extension now activates on `onStartupFinished`, after VS Code has started, so startup itself is not slowed. To keep that light in every window, `imports.ts` now loads the TypeScript parser on first use (about 250 ms saved per window). The manifest unit test now expects the two activation events.
+
+**Safety:** sensitive files are refused before reading, in the working tree and in commits, including a rename's old name. Binary files are not shown. Files are cut off at 1 MB or 20,000 lines. Code reaches the page only over the existing keyed 127.0.0.1 connection and is drawn with `textContent`, so nothing in a file can run. The page still sends opaque ids only. The idle stop now waits for the last tab to close, so a page left open for reading keeps working. It still stops on VS Code exit and by command.
+
+**Verified automatically:** lint. 42 unit tests: line endings, binary files, size caps, 400 random comparisons checked against a longest-common-subsequence reference (correct and smallest), the give-up limit, folding and numbering, a 20,000-line file compared in about 20 ms, the `openInEditor` message, and the code view existing only on the browser page. 66 integration checks: a modified file compared with HEAD, a deleted file's HEAD version, a new file, a renamed and a deleted commit file, a symbol's highlighted line, `.env` never shown (working tree, commit, or over the browser stream), a browser click delivering code without opening an editor, **Open in VS Code** opening `util.ts`, and an open tab keeping the server alive past the idle time until it closes. **Not verified automatically:** the code view in a real browser (layout, colours, scrolling to the line, Back to graph) and the startup setting. These need the owner's GUI check.
+
+**Limitations:** no syntax colours. Comparisons are one column, not side by side. Very different versions show only the new version. Text that isn't UTF-8 may show odd characters. With the startup setting on, each VS Code window (and each Reload Window) opens a new browser tab.
+
 ## Handoff for the next session (updated 2026-10-30)
 
-**Where things stand:** Phases 0–6b are Done and owner-verified (the last GUI checks were on 2026-10-30). The installed VSIX matches commit `358b314`'s code; only docs changed since. Nothing is pushed to GitHub yet (pushing needs the owner's yes).
+**Where things stand:** Phases 0–6b are Done and owner-verified. Phase 6c (code and diffs in the browser) is implemented and auto-tested, **awaiting the owner's GUI check**. Nothing is pushed to GitHub yet (pushing needs the owner's yes).
 
 **Next:**
-1. Plan **Phase 6c** (code and diffs shown in the browser view, plain text with line numbers, plus an option to open the browser view automatically) and get the owner's approval before building it.
+1. Rebuild and reinstall the VSIX (ask first), then the owner's Phase 6c GUI check: in the browser, a file's code, a changed file's comparison, a commit file, a symbol's highlighted line, **Back to graph**, **Open in VS Code**, and the **Open browser view on startup** setting.
 2. Then plan **Phase 7** (API and database relationships, static only).
 
-**Open ideas, not scheduled:** notes written fully in the browser; a "No" answer to the notes question isn't remembered; notes break on file rename; AI sessions read Claude Code logs only; clicking a listed note wasn't explicitly owner-checked.
+**Open ideas, not scheduled:** notes written fully in the browser; syntax colours; a "No" answer to the notes question isn't remembered; notes break on file rename; AI sessions read Claude Code logs only; clicking a listed note wasn't explicitly owner-checked.

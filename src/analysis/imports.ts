@@ -1,5 +1,11 @@
 import * as path from 'path';
-import * as ts from 'typescript';
+import type * as TS from 'typescript';
+
+// Loaded on first use: the extension also starts after VS Code's startup (for the optional
+// browser view on startup), and that should not load the 9 MB parser in every window.
+let tsModule: typeof TS | undefined;
+// eslint-disable-next-line @typescript-eslint/no-require-imports
+const loadTs = (): typeof TS => (tsModule ??= require('typescript') as typeof TS);
 
 export const SOURCE_EXTENSIONS = ['.ts', '.tsx', '.mts', '.cts', '.js', '.jsx', '.mjs', '.cjs'];
 
@@ -10,7 +16,8 @@ export interface ParsedImports {
   dynamicUnknown: number;
 }
 
-function scriptKind(fileName: string): ts.ScriptKind {
+function scriptKind(fileName: string): TS.ScriptKind {
+  const ts = loadTs();
   const ext = path.extname(fileName).toLowerCase();
   if (ext === '.tsx') return ts.ScriptKind.TSX;
   if (ext === '.jsx') return ts.ScriptKind.JSX;
@@ -20,11 +27,12 @@ function scriptKind(fileName: string): ts.ScriptKind {
 
 /** Extracts imports with the TypeScript parser (syntax only, no type checking). */
 export function parseImports(fileName: string, source: string): ParsedImports {
+  const ts = loadTs();
   const sf = ts.createSourceFile(fileName, source, ts.ScriptTarget.Latest, false, scriptKind(fileName));
   const specifiers = new Set<string>();
   let dynamicUnknown = 0;
 
-  const visit = (node: ts.Node): void => {
+  const visit = (node: TS.Node): void => {
     if ((ts.isImportDeclaration(node) || ts.isExportDeclaration(node)) && node.moduleSpecifier && ts.isStringLiteral(node.moduleSpecifier)) {
       specifiers.add(node.moduleSpecifier.text);
     } else if (ts.isImportEqualsDeclaration(node) && ts.isExternalModuleReference(node.moduleReference)

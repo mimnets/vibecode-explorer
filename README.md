@@ -9,7 +9,7 @@ A private, local-first VS Code extension for seeing what changed during AI-assis
 - **Dependency graph:** an interactive graph of JavaScript, TypeScript and Python files and their local imports. Click a node to inspect it, double-click to open it, and zoom, pan or fit the view.
 - **Details panel:** path, type, Git status, imports and code symbols for the selected file, with an **In plain words** summary (what it uses, what uses it, its role, history and notes) and code tips.
 - **Learning aids:** click **?** next to a term for a short explanation. Clicking a symbol explains it from its declaration and usages. Circular imports are outlined in red in the graph. No AI is used.
-- **Open in Browser:** shows the same dashboard in your web browser (this computer only) while VS Code runs. Clicks on files still open them in VS Code.
+- **Open in Browser:** shows the same dashboard in your web browser (this computer only) while VS Code runs. Files, changes and symbols you click are shown right on the page, with line numbers and before/after comparisons, so the browser can be your main screen.
 - **Preview:** opens your configured local app URL in VS Code's Simple Browser.
 
 Nothing is uploaded and no AI is called. The extension only reads your project. The one exception is your own notes, which it saves in `.vibecode/notes/` only after you allow it.
@@ -51,14 +51,26 @@ All commands are in the Command Palette: press `Ctrl+Shift+P` and type **VibeCod
 ### Use it in the browser
 
 - The page works like the VS Code dashboard: same tabs, graph and Details.
-- Files, diffs and notes you click open **in VS Code**, not in the browser. Switch to VS Code to see them.
-- Permission questions (notes, AI session logs) also appear in VS Code.
+- **Code shows on the page.** Double-click a file in the graph, click **Open source**, or click a file under Workspace changes. The graph area then shows the code with line numbers.
+- **Changes show as a comparison.** A changed file, or a file in a commit (History tab), shows removed lines in red and added lines in green. Unchanged lines far from a change are folded into "… N unchanged lines".
+- **Symbols jump to their line.** Click a symbol or a "Used in" place in Details: the file opens on the page with that line highlighted.
+- Click **Back to graph** to see the graph again, or **Open in VS Code** to open the same file or comparison in VS Code.
+- Sensitive files (`.env`, keys and so on) and binary files are never shown. Very large files show only their first part.
+- Notes still open in VS Code, and permission questions (notes, AI session logs) also appear there.
 - Colours follow your system's light or dark setting, not the VS Code theme. Up to 5 browser tabs can be open at once.
+
+### Make the browser your main screen
+
+1. Open Settings (`Ctrl+,`) and search for **VibeCode**.
+2. Tick **Open Browser On Startup**.
+3. From now on, when you open a trusted project in VS Code, the dashboard opens in your browser by itself. Keep VS Code open in the background (for the agent chat and editing) and work in the browser, for example on a second monitor.
+
+Each VS Code window, and each **Reload Window**, opens a new browser tab.
 
 ### Close the browser view
 
-- Run **VibeCode Explorer: Stop Browser View**. The page shows "The browser view has stopped". Closing the browser tab alone leaves the view running until it stops by itself.
-- It also stops by itself when VS Code closes, or after 30 minutes without use.
+- Run **VibeCode Explorer: Stop Browser View**. The page shows "The browser view has stopped". Closing the browser tab alone leaves the view running for 30 more minutes, then it stops by itself.
+- It also stops by itself when VS Code closes, or 30 minutes after its last browser tab was closed. While a tab is open it keeps running.
 - To open it again, click **Open in Browser** again. Old links stop working.
 
 ### Permissions
@@ -107,6 +119,7 @@ The first integration run downloads an isolated VS Code into `.vscode-test/`. It
 | Setting | Default | Purpose |
 | --- | --- | --- |
 | `vibecodeExplorer.previewUrl` | `""` | Local URL for **Open Preview**. Only http/https on localhost, 127.0.0.1 or [::1]. |
+| `vibecodeExplorer.openBrowserOnStartup` | `false` | Open the browser view by itself when a trusted project opens. |
 | `vibecodeExplorer.maxGraphFiles` | `500` | Upper bound on files scanned for the graph. |
 
 ## Known limitations (Phase 1)
@@ -119,7 +132,7 @@ The first integration run downloads an isolated VS Code into `.vscode-test/`. It
 - History needs VS Code's built-in Git extension. It can't list the files of a repository's first commit, because there is no earlier commit to compare with. Merge commits are compared with their first parent.
 - Notes are linked to a file by its path. If the file is renamed or moved, its notes lose the link (edit `about:` in the note to fix it).
 - AI sessions read Claude Code only for now. Security mentions are found by keywords, not by reviewing your code. Token counts come from the logs, and there's no money estimate. Secret hiding uses patterns and can miss unusual formats.
-- The browser view needs VS Code running and uses its own light/dark colours (it follows your system setting, not the VS Code theme). Up to 5 browser tabs at once.
+- The browser view needs VS Code running and uses its own light/dark colours (it follows your system setting, not the VS Code theme). Up to 5 browser tabs at once. Code in the browser has no syntax colours, comparisons are one column, and versions that differ in more than 2,000 lines show only the new version.
 - Preview uses VS Code's Simple Browser. It does not start servers or inject code into your app.
 
 See [docs/architecture.md](docs/architecture.md) and [docs/requirements.md](docs/requirements.md).

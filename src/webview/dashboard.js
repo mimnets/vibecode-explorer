@@ -61,7 +61,12 @@
     return getComputedStyle(document.body).getPropertyValue(name).trim() || fallback;
   }
 
+  /** Browser view only: the click whose code or comparison should be shown (stale replies are ignored). */
+  let pendingCode = '';
+  const CODE_REQUESTS = new Set(['open', 'commitFile', 'symbol', 'goto']);
+
   function send(msg) {
+    if (CODE_REQUESTS.has(msg.type)) pendingCode = msg.id;
     vscode.postMessage(msg);
   }
 
@@ -78,6 +83,8 @@
   $('tabChanges').addEventListener('click', () => showTab('changes'));
   $('tabHistory').addEventListener('click', () => showTab('history'));
   $('tabSessions').addEventListener('click', () => showTab('sessions'));
+  document.getElementById('codeBack')?.addEventListener('click', () => showGraph());
+  document.getElementById('codeEditor')?.addEventListener('click', () => { if (codeFor) send({ type: 'openInEditor', id: codeFor }); });
   $('moreHistory').addEventListener('click', () => {
     historyLimit = Math.min(historyLimit + HISTORY_PAGE, 200);
     requestHistory();
@@ -127,7 +134,61 @@
     else if (msg.type === 'sessions') renderSessions(msg.result);
     else if (msg.type === 'sessionsError') $('sessionsView').replaceChildren(el('p', 'Could not read the session logs: ' + msg.message, 'muted'));
     else if (msg.type === 'session') renderSession(msg.details, msg.nodeIds);
+    else if (msg.type === 'code') renderCode(msg.view);
   });
+
+  // ---- code and before/after views (browser view only, Phase 6c) ----
+  /** Id of the file, commit file or symbol shown in the code view. */
+  let codeFor = '';
+
+  function showGraph() {
+    const view = document.getElementById('codeView');
+    if (!view) return;
+    view.hidden = true;
+    for (const id of ['graphTools', 'graph', 'legend']) $(id).hidden = false;
+    // The graph was hidden, so it needs to measure its container again.
+    if (cy) cy.resize();
+  }
+
+  function codeRow(className, cells) {
+    const row = el('div', undefined, 'code-row ' + className);
+    for (const [text, cls] of cells) row.append(el('span', text, cls));
+    return row;
+  }
+
+  function renderCode(v) {
+    const view = document.getElementById('codeView');
+    if (!view || v.for !== pendingCode) return;
+    codeFor = v.for;
+    for (const id of ['graphTools', 'graph', 'legend']) $(id).hidden = true;
+    view.hidden = false;
+    $('codeTitle').textContent = v.title;
+    const note = $('codeNote');
+    note.textContent = v.note || '';
+    note.hidden = !v.note;
+    const body = $('codeBody');
+    body.classList.toggle('diff', v.mode === 'diff');
+    const rows = document.createDocumentFragment();
+    /** @type {HTMLElement | undefined} */
+    let highlighted;
+    if (v.mode === 'file') {
+      v.lines.forEach((line, i) => {
+        const row = codeRow(i + 1 === v.highlight ? 'hl' : '', [[String(i + 1), 'ln'], [line, 'text']]);
+        if (i + 1 === v.highlight) highlighted = row;
+        rows.append(row);
+      });
+    } else if (v.mode === 'diff') {
+      for (const r of v.rows) {
+        if (r.k === '…') rows.append(el('div', `… ${r.count} unchanged line${r.count === 1 ? '' : 's'}`, 'code-row skip'));
+        else if (r.k === '+') rows.append(codeRow('add', [['', 'ln'], [String(r.n), 'ln'], ['+', 'sign'], [r.t, 'text']]));
+        else if (r.k === '-') rows.append(codeRow('del', [[String(r.o), 'ln'], ['', 'ln'], ['−', 'sign'], [r.t, 'text']]));
+        else rows.append(codeRow('', [[String(r.o), 'ln'], [String(r.n), 'ln'], ['', 'sign'], [r.t, 'text']]));
+      }
+    }
+    body.replaceChildren(rows);
+    body.scrollTop = 0;
+    if (highlighted) highlighted.scrollIntoView({ block: 'center' });
+  }
 
   function renderState(state) {
     glossary = state.glossary || {};
@@ -147,6 +208,7 @@
     else if (!state.trusted) showBanner('This workspace is not trusted. VibeCode Explorer does not read Git data or analyze files in Restricted Mode. Trust the workspace to continue.');
 
     renderChanges(state.git);
+    showGraph();
     renderGraph(state.graph);
     // A refresh invalidates commit and session ids, so the active tab reloads.
     if (activeTab === 'history') requestHistory();
