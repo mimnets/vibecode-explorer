@@ -251,12 +251,14 @@ The owner found VS Code crowded with the agent chat, code and dashboard together
 
 **Owner evidence:** with **Open Browser On Startup** ticked, reloading VS Code opened the dashboard in the browser by itself. Phase 6c is now fully owner-verified. The owner also reported that clicking files in the Files tab didn't change the graph. That was on the version installed before the select-and-centre change (`76c3518`), which has now been installed for a re-check.
 
+## 2026-10-30: Owner check of select-and-centre
+
+**Owner evidence:** after reinstalling, clicking a graph file in the Files tab selected and centred it in the graph. The earlier "graph won't change" report was from the previous version. Phases 0–6d are now all owner-verified.
+
 ## Handoff for the next session (updated 2026-10-30)
 
-**Where things stand:** Phases 0–6b are Done and owner-verified. Phase 6c (code and diffs in the browser) is owner-verified except the startup setting. Phase 6d (Files tab) is implemented and auto-tested, **awaiting the owner's GUI check**. Nothing is pushed to GitHub yet (pushing needs the owner's yes).
+**Where things stand:** Phases 0–6d are Done and owner-verified, including the browser view's code and diffs, its startup setting, and the Files tab with select-and-centre. The installed VSIX matches commit `76c3518`'s code. Nothing is pushed to GitHub yet (pushing needs the owner's yes).
 
-**Next:**
-1. Rebuild and reinstall the VSIX (ask first), then the owner's GUI checks: the Phase 6d Files tab (open and close folders, expand/collapse all, click a file and a folder, double-click a file) and the Phase 6c **Open browser view on startup** setting.
-2. Then plan **Phase 7** (API and database relationships, static only).
+**Next:** plan **Phase 7** (API and database relationships, static only) and get the owner's approval before building it.
 
 **Open ideas, not scheduled:** notes written fully in the browser; syntax colours; a "No" answer to the notes question isn't remembered; notes break on file rename; AI sessions read Claude Code logs only; clicking a listed note wasn't explicitly owner-checked.
