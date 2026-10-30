@@ -199,9 +199,13 @@ The owner also asked whether notes could be done fully in the browser. Today **A
 
 The owner found VS Code crowded with the agent chat, code and dashboard together, and asked whether to drop the VS Code side and use only the browser. Explained: the browser view depends on the extension for Git, symbols and usages, permissions and opening files; browser-only means option B (rejected 2026-10-29: several phases, needs `git` commands, fewer symbol features). **Owner decision:** keep the extension running in the background and make the browser the main screen. Phase 6c now also includes an option to open the browser view automatically when the project opens. Option B stays not planned.
 
+## 2026-10-30: Owner GUI check of Phase 5 (learning aids)
+
+**Owner evidence (in the browser view):** for `src/extension/explain.ts`, the **In plain words** box, the inline **?** explanations and the **About <symbol>** details all showed. This repository has no circular imports in its real code, so the red outline is checked with the Python demo in the Phase 6 check. Phase 5 is now owner-verified apart from that.
+
 ## Handoff for the next session (written 2026-10-29)
 
-**Where things stand:** Phases 0–3 are Done and owner-verified. Phases 5 and 6 are implemented (4, 4b and 6b owner-verified 2026-10-30) and auto-tested but **awaiting the owner's GUI check**. Nothing is pushed to GitHub yet (pushing needs the owner's yes). The working tree is clean after the last commit.
+**Where things stand:** Phases 0–3 are Done and owner-verified. Phase 6 is implemented (4, 4b, 5 and 6b owner-verified 2026-10-30) and auto-tested but **awaiting the owner's GUI check**. Nothing is pushed to GitHub yet (pushing needs the owner's yes). The working tree is clean after the last commit.
 
 **Start tomorrow with, in this order:**
 1. Rebuild and reinstall the VSIX (`npm run package`, then install `vibecode-explorer.vsix` in VS Code and reload). Ask the owner first, as AGENTS.md requires for installs into their VS Code.
