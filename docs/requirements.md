@@ -180,7 +180,7 @@ Approved by the owner on 2026-10-30 with the recommended display (an APIs tab) a
 | E | Databases: `CREATE TABLE` in `.sql` files, Prisma `model` blocks (with `@@map`), TypeORM `@Entity`, Sequelize, Mongoose, SQLAlchemy, Flask-SQLAlchemy, SQLModel and Django models (with `__tablename__` / `db_table`). Users: importers of a model's file, and `prisma.<model>.<operation>()` calls | Done |
 | F | Read-only: source text only, nothing is run, no server is called, no database is opened. Sensitive files are skipped. Files over 512 KB are skipped, at most 200 schema files and 2,000 items per list. No new dependency | Done |
 
-Owner-verified 2026-10-30 with `Documentsibecode-api-demo` (see the development log). Non-goals: GraphQL and gRPC, OpenAPI files, routes registered in loops or from configuration, query-level table use, request and response shapes.
+Owner-verified 2026-10-30 with `Documents\vibecode-api-demo` (see the development log). Non-goals: GraphQL and gRPC, OpenAPI files, routes registered in loops or from configuration, query-level table use, request and response shapes.
 
 ## Phase 8 scope: preview alongside code
 
@@ -195,7 +195,7 @@ Approved by the owner on 2026-10-30 with the recommended choices: a Pages sectio
 | E | Browser view CSP: `frame-src` allows only the configured loopback preview origin, never the dashboard's own port, otherwise `'none'`. The frame is sandboxed (`allow-scripts allow-same-origin allow-forms allow-popups`) with `no-referrer`. The page checks the address again before showing it | Done |
 | F | Read-only; never starts the app. Names only for listing; `package.json` and HTML files (at most 20 and 300, 512 KB each) are read. Sensitive files skipped. No new dependency | Done |
 
-Owner-verified 2026-10-30 with `Documentsibecode-api-demo` (see the development log). Non-goals: following clicks inside the running app, starting dev servers, guessing values for `:id`, Svelte/Nuxt/Astro file routes, server-side includes inside templates.
+Owner-verified 2026-10-30 with `Documents\vibecode-api-demo` (see the development log). Non-goals: following clicks inside the running app, starting dev servers, guessing values for `:id`, Svelte/Nuxt/Astro file routes, server-side includes inside templates.
 
 ## Phase 9 scope: Health tab
 
@@ -203,7 +203,7 @@ Chosen by the owner on 2026-10-30 from the saved "safety and learning" ideas (th
 
 | # | Requirement | Status |
 | --- | --- | --- |
-| A | **Health** tab (sixth): Checklist, Problems, Secret-looking text, Possibly unused files, Near-duplicate names, Safe points. Glossary terms for each | Done (UI not auto-tested) |
+| A | **Health** tab (sixth): Checklist, Problems, Secret-looking text, Possibly unused files, Near-duplicate names, Safe points. Glossary terms for each | Done (owner-verified in the GUI) |
 | B | Problems: errors and warnings VS Code already reported (`languages.getDiagnostics`), per file, with a plain explanation of common messages; graph files get a red or yellow halo; clicking opens the line. Messages are passed through the secret filter. Nothing extra is checked or run | Done |
 | C | Checklist: README, `.gitignore` covering `.env` and `node_modules`/`.venv`, license, linter, tests, lock file, and `.env` files ignored by Git (VS Code Git's `checkIgnore`; example env files skipped). Reads file names, plus the root `.gitignore`, `package.json` and `pyproject.toml` | Done |
 | D | Secret-looking text in project text files: file, line and kind only, never the value; one finding per line; placeholders and types (`password: string`) skipped; sensitive-named files never opened; a finding opens only in VS Code's editor, never on the browser page | Done |
@@ -211,7 +211,7 @@ Chosen by the owner on 2026-10-30 from the saved "safety and learning" ideas (th
 | F | Safe points: tags, the last commit before each AI session (only when session logs are already allowed), and commits marked with **Mark as safe point** in History (a small note in `.vibecode/notes/` with `safe: true`, under the existing notes permission). Each shows plain steps with `git` commands to copy; nothing is run | Done |
 | G | Read-only apart from the opt-in safe-point note. No new dependency | Done |
 
-Owner verification is pending. Non-goals: running tests or linters, fixing problems, deleting files, removing secrets, checking out commits.
+Owner-verified 2026-10-30 on this repository (see the development log). Non-goals: running tests or linters, fixing problems, deleting files, removing secrets, checking out commits.
 
 ## Non-goals for Phase 1
 

@@ -205,7 +205,7 @@ The owner found VS Code crowded with the agent chat, code and dashboard together
 
 ## 2026-10-30: Owner GUI check of Phase 6 (Python), and Phase 5's red outline
 
-**Owner evidence:** with `Documentsibecode-python-demo` open, the graph showed the `shop` package's Python files and the test, `orders.py` and `payments.py` were outlined in red as a circular import, and the remaining steps (the circular-import tip, 1 workspace change, 2 commits) worked. Phase 6 is owner-verified, and so is Phase 5's red outline. All implemented phases (0–6b) are now owner-verified. Next: plan Phase 6c.
+**Owner evidence:** with `Documents\vibecode-python-demo` open, the graph showed the `shop` package's Python files and the test, `orders.py` and `payments.py` were outlined in red as a circular import, and the remaining steps (the circular-import tip, 1 workspace change, 2 commits) worked. Phase 6 is owner-verified, and so is Phase 5's red outline. All implemented phases (0–6b) are now owner-verified. Next: plan Phase 6c.
 
 ## 2026-10-30: Phase 6c: code and diffs in the browser
 
@@ -271,11 +271,11 @@ The owner found VS Code crowded with the agent chat, code and dashboard together
 
 ## 2026-10-30: API demo project for the Phase 7 check
 
-With the owner's approval, a small demo was created **outside this repository**, at `Documentsibecode-api-demo` (10 files, no Git, never run). It has an Express server with two routers mounted at `/api`, a web client with `fetch` calls (one to a missing route, one to another server), Prisma models used through the client, and a SQL table. A dry run of the readers on it found the expected 6 routes (with the `/api` mounts), 6 calls and 3 models. The VSIX with Phase 7 was installed with the owner's yes.
+With the owner's approval, a small demo was created **outside this repository**, at `Documents\vibecode-api-demo` (10 files, no Git, never run). It has an Express server with two routers mounted at `/api`, a web client with `fetch` calls (one to a missing route, one to another server), Prisma models used through the client, and a SQL table. A dry run of the readers on it found the expected 6 routes (with the `/api` mounts), 6 calls and 3 models. The VSIX with Phase 7 was installed with the owner's yes.
 
 ## 2026-10-30: Owner GUI check of Phase 7
 
-**Owner evidence:** with `Documentsibecode-api-demo` open, the APIs tab showed the routes, HTTP calls and database models; the owner reported that all check steps worked (lists and counts, graph outline and "Called from", unmatched and other-server calls, model users, double-click opening the line). Phase 7 is owner-verified.
+**Owner evidence:** with `Documents\vibecode-api-demo` open, the APIs tab showed the routes, HTTP calls and database models; the owner reported that all check steps worked (lists and counts, graph outline and "Called from", unmatched and other-server calls, model users, double-click opening the line). Phase 7 is owner-verified.
 
 ## 2026-10-30: Phase 8: preview alongside code
 
@@ -295,7 +295,7 @@ With the owner's approval, a small demo was created **outside this repository**,
 
 ## 2026-10-30: Owner GUI check of Phase 8, and a final look at this repository
 
-**Owner evidence:** with `Documentsibecode-api-demo` open, the owner's own preview server running and the preview URL set, the Pages list and the previews worked in VS Code (Simple Browser beside the code) and in the browser view (code and page side by side). Phase 8 is owner-verified, which completes every phase on the roadmap.
+**Owner evidence:** with `Documents\vibecode-api-demo` open, the owner's own preview server running and the preview URL set, the Pages list and the previews worked in VS Code (Simple Browser beside the code) and in the browser view (code and page side by side). Phase 8 is owner-verified, which completes every phase on the roadmap.
 
 **Owner screenshot of this repository in the browser view:** the Pages & APIs tab shows Pages (0), Routes (0) and Database (0), which is correct for an extension. It shows one HTTP call, `POST ./message?c=*` from `src/webview/browserBridge.js:12`, marked "no matching route found": the browser page's own call to the extension's server, as the dry run predicted. The tabs wrap onto two rows, and the graph shows 53 files and 121 imports. Cosmetic note, not changed: the four files without imports sit in a row at the top right, and two of their labels touch.
 
@@ -320,10 +320,14 @@ History's commit details have a new **Mark as safe point** button.
 
 **Limitations:** TypeScript reports problems mostly for files that have been opened. Secret detection is pattern-based, so it can miss unusual formats and will also list fake keys in tests. "Possibly unused" can't see files loaded by scripts, configs or frameworks it doesn't know. Safe points before AI sessions need the session logs to be allowed first. Whether a commit's tests passed is not known, because the extension never runs tests.
 
+## 2026-10-30: Owner GUI check of Phase 9
+
+**Owner evidence:** after reloading VS Code with the new VSIX, the owner went through the six Health checks on this repository and reported "all okay": the checklist marks, the Problems section, secret-looking text shown as file and line only (opening in VS Code's editor), short possibly-unused and near-duplicate lists, and **Mark as safe point** in History adding the commit to Safe points with its go-back steps. Phase 9 is owner-verified.
+
 ## Handoff for the next session (updated 2026-10-30)
 
-**Where things stand:** Phases 0–8 are Done and owner-verified. Phase 9 (Health tab) is implemented and auto-tested, **awaiting the owner's GUI check**. GitHub is up to date to `fe0eda5`; later commits are local (pushing needs the owner's yes).
+**Where things stand:** Phases 0–9 are Done and owner-verified. GitHub is up to date to `fe0eda5`; later commits are local (pushing needs the owner's yes).
 
-**Next:** the Phase 9 GUI check (Health tab on this repository and on `Documents\vibecode-api-demo`; **Mark as safe point** in History). Then the remaining saved ideas: the read-only Project status tab, and the rest of the learning list (reading order, test map, copy context for AI, folder rules, commit message check, TODO list, package list, hotspots, how-to-run card, prompt tips).
+**Next:** the owner picks from the remaining saved ideas: the read-only Project status tab, and the rest of the learning list (reading order, test map, copy context for AI, folder rules, commit message check, TODO list, package list, hotspots, how-to-run card, prompt tips).
 
 **Open ideas, not scheduled:** notes written fully in the browser; syntax colours; a "No" answer to the notes question isn't remembered; notes break on file rename; AI sessions read Claude Code logs only; clicking a listed note wasn't explicitly owner-checked; Svelte/Nuxt/Astro pages; labels of unconnected graph files can touch.

@@ -19,7 +19,7 @@ Before each phase: write a short plan, get owner approval, implement, verify, re
 | 6d | Files tab: the project's folders and files as a tree that opens and closes, with changed and sensitive files marked. Clicking a file shows its details, a folder highlights its files in the graph | R3, R2 | Done, owner-verified 2026-10-30 |
 | 7 | API and database relationships: detect routes, HTTP calls and schema or ORM files statically. No database connections | R3 | Done, owner-verified 2026-10-30 |
 | 8 | Preview alongside code: link preview pages to the source files that serve them, where this can be proven statically | R5 | Done, owner-verified 2026-10-30 |
-| 9 | Safety and learning checks: a Health tab with VS Code's problems in plain words, a project checklist, secret-looking text (location only), possibly unused and near-duplicate files, and safe points to go back to | R6, R12, R1 | Implemented and auto-tested (plan approved 2026-10-30). Awaiting owner check |
+| 9 | Safety and learning checks: a Health tab with VS Code's problems in plain words, a project checklist, secret-looking text (location only), possibly unused and near-duplicate files, and safe points to go back to | R6, R12, R1 | Done, owner-verified 2026-10-30 |
 
 ## Guardrails for every phase
 
