@@ -65,8 +65,21 @@ export const pong = () => ping;
   write(path.join(py, 'README.md'), `# Demo\n\n## Setup\n`);
   fs.writeFileSync(path.join(py, 'logo.png'), Buffer.from([0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a, 0, 0, 0, 0x0d]));
 
+  // Phase 7: routes, calls and models (no Git).
+  const apiDir = path.join(root, 'api-project');
+  write(path.join(apiDir, 'server.js'), `const express = require('express');\nconst users = require('./routes/users');\nconst app = express();\napp.use('/api', users);\napp.get('/health', (req, res) => res.send('ok'));\n`);
+  write(path.join(apiDir, 'routes/users.js'), `const router = require('express').Router();\nrouter.get('/users/:id', (req, res) => {});\nrouter.post('/users', (req, res) => {});\nmodule.exports = router;\n`);
+  write(path.join(apiDir, 'web/client.js'), `export const load = (id) => fetch(\`/api/users/\${id}\`);\nexport const missing = () => fetch('/api/missing');\nexport const other = () => fetch('https://example.com/x');\n`);
+  write(path.join(apiDir, 'app/api/items/route.ts'), `export async function GET() { return new Response('[]'); }\n`);
+  write(path.join(apiDir, 'models.ts'), `@Entity('people')\nexport class Person {}\n`);
+  write(path.join(apiDir, 'service.ts'), `import { Person } from './models';\nexport const p = Person;\nawait prisma.post.findMany();\n`);
+  write(path.join(apiDir, 'schema.prisma'), `model Post {\n  id Int @id\n}\n`);
+  write(path.join(apiDir, 'db/schema.sql'), `-- CREATE TABLE ignored (id int);\nCREATE TABLE orders (id int);\n`);
+  write(path.join(apiDir, 'py/main.py'), `from fastapi import APIRouter\nrouter = APIRouter(prefix="/shop")\n\n@router.get("/cart/{cid}")\ndef cart(cid: int): ...\n\nrequests.get("http://localhost:8000/shop/cart/7")\n`);
+  write(path.join(apiDir, '.env'), `DATABASE_URL=postgres://do-not-read\n`);
+
   const workspace = path.join(root, 'sample.code-workspace');
-  write(workspace, JSON.stringify({ folders: [{ path: 'sample-repo' }, { path: 'plain-folder' }, { path: 'py-project' }] }));
+  write(workspace, JSON.stringify({ folders: [{ path: 'sample-repo' }, { path: 'plain-folder' }, { path: 'py-project' }, { path: 'api-project' }] }));
   return workspace;
 }
 

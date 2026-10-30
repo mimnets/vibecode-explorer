@@ -16,7 +16,7 @@
   /** Symbol whose usages are being looked up; stale replies are ignored. */
   let pendingSymbol = '';
   const HISTORY_PAGE = 50;
-  /** 'changes' | 'history' | 'sessions' | 'files' */
+  /** 'changes' | 'history' | 'sessions' | 'files' | 'apis' */
   let activeTab = 'changes';
   /** AI session whose details are being loaded; stale replies are ignored. */
   let pendingSession = '';
@@ -63,7 +63,7 @@
 
   /** Browser view only: the click whose code or comparison should be shown (stale replies are ignored). */
   let pendingCode = '';
-  const CODE_REQUESTS = new Set(['open', 'commitFile', 'symbol', 'goto']);
+  const CODE_REQUESTS = new Set(['open', 'commitFile', 'symbol', 'goto', 'apiItem']);
 
   function send(msg) {
     if (CODE_REQUESTS.has(msg.type)) pendingCode = msg.id;
@@ -84,6 +84,7 @@
   $('tabHistory').addEventListener('click', () => showTab('history'));
   $('tabSessions').addEventListener('click', () => showTab('sessions'));
   $('tabFiles').addEventListener('click', () => showTab('files'));
+  $('tabApis').addEventListener('click', () => showTab('apis'));
   $('expandAll').addEventListener('click', () => { for (const d of $('fileTree').querySelectorAll('details')) /** @type {HTMLDetailsElement} */ (d).open = true; });
   $('collapseAll').addEventListener('click', () => { for (const d of $('fileTree').querySelectorAll('details')) /** @type {HTMLDetailsElement} */ (d).open = false; });
   document.getElementById('codeBack')?.addEventListener('click', () => showGraph());
@@ -95,7 +96,7 @@
 
   function showTab(name) {
     activeTab = name;
-    for (const [tab, view, key] of [['tabChanges', 'changesView', 'changes'], ['tabHistory', 'historyView', 'history'], ['tabSessions', 'sessionsView', 'sessions'], ['tabFiles', 'filesView', 'files']]) {
+    for (const [tab, view, key] of [['tabChanges', 'changesView', 'changes'], ['tabHistory', 'historyView', 'history'], ['tabSessions', 'sessionsView', 'sessions'], ['tabFiles', 'filesView', 'files'], ['tabApis', 'apisView', 'apis']]) {
       $(tab).classList.toggle('active', key === name);
       $(tab).setAttribute('aria-selected', String(key === name));
       $(view).hidden = key !== name;
@@ -104,6 +105,12 @@
     if (name === 'history') requestHistory();
     else if (name === 'sessions') requestSessions();
     else if (name === 'files') requestFiles();
+    else if (name === 'apis') requestApis();
+  }
+
+  function requestApis() {
+    $('apisView').replaceChildren(el('p', 'Looking for routes, HTTP calls and database models…', 'muted'));
+    send({ type: 'apis' });
   }
 
   function requestFiles() {
@@ -145,6 +152,7 @@
     else if (msg.type === 'session') renderSession(msg.details, msg.nodeIds);
     else if (msg.type === 'code') renderCode(msg.view);
     else if (msg.type === 'files') renderFiles(msg.result);
+    else if (msg.type === 'apis') renderApis(msg.result);
   });
 
   // ---- code and before/after views (browser view only, Phase 6c) ----
@@ -224,6 +232,7 @@
     if (activeTab === 'history') requestHistory();
     else if (activeTab === 'sessions') requestSessions();
     else if (activeTab === 'files') requestFiles();
+    else if (activeTab === 'apis') requestApis();
   }
 
   function showBanner(text) {
@@ -625,6 +634,101 @@
     if (nodeIds.length === 0) cy.elements().removeClass('faded');
     // Fit the folder's files into view.
     else cy.animate({ fit: { eles: nodes, padding: 60 } }, { duration: 250 });
+  }
+
+  // ---- APIs tab (Phase 7) ----
+  function renderApis(r) {
+    const view = $('apisView');
+    view.replaceChildren();
+    if (r.state === 'restricted') { view.append(el('p', 'APIs are off in Restricted Mode. Trust the workspace to see them.', 'muted')); return; }
+    if (r.state !== 'ok') { view.append(el('p', 'No folder is open.', 'muted')); return; }
+    view.append(el('p', 'Found by reading the code: nothing is run, called or connected. Click an item to see its files in the graph, double-click to open its code.', 'muted small'));
+    if (r.truncated) view.append(el('p', 'This project has many items; only the first ones are listed.', 'muted small'));
+    const routeById = new Map(r.routes.map((x) => [x.id, x]));
+    const routeLabel = (id) => { const rt = routeById.get(id); return rt ? `${rt.method} ${rt.path}` : ''; };
+    const section = (title, term, items, empty, row) => {
+      view.append(withHelp(el('h3', `${title} (${items.length})`), term));
+      if (items.length === 0) { view.append(el('p', empty, 'muted small')); return; }
+      const ul = el('ul', undefined, 'commits api-list');
+      for (const item of items) {
+        const li = el('li');
+        const [label, sub] = row(item);
+        const btn = el('button', label, 'link mono');
+        btn.title = 'Click: show in the graph. Double-click: open the code.';
+        btn.addEventListener('click', () => {
+          for (const b of view.querySelectorAll('button.selected')) b.classList.remove('selected');
+          btn.classList.add('selected');
+          showGraph();
+          highlightNodes(item.nodes);
+          renderApiDetails(item, routeById);
+        });
+        btn.addEventListener('dblclick', () => send({ type: 'apiItem', id: item.id }));
+        li.append(btn, el('div', sub, 'muted small'));
+        ul.append(li);
+      }
+      view.append(ul);
+    };
+    const where = (x) => `${x.file}:${x.line}`;
+    const plural = (n, word) => `${n} ${word}${n === 1 ? '' : 's'}`;
+    section('Routes', 'route', r.routes, 'No routes found (Express, Fastify, Hono, Next.js, FastAPI, Flask, Django).',
+      (x) => [`${x.method} ${x.path}`, `${x.framework} · ${where(x)} · ${plural(x.callers.length, 'calling file')}`]);
+    section('HTTP calls', 'http call', r.calls, 'No fetch, axios, requests or httpx calls found.',
+      (x) => [`${x.method} ${x.url || '(address computed while running)'}`,
+        `${x.client} · ${where(x)} · ` + (x.routes.length ? `→ ${x.routes.map(routeLabel).join(', ')}` : x.external ? 'another server' : 'no matching route found')]);
+    section('Database', 'database model', r.models, 'No SQL tables, Prisma models or ORM models found.',
+      (x) => [`${x.name}${x.table && x.table !== x.name ? ` (table ${x.table})` : ''}`, `${x.kind} · ${where(x)}` + (x.usedBy.length ? ` · used by ${plural(x.usedBy.length, 'file')}` : '')]);
+  }
+
+  function renderApiDetails(item, routeById) {
+    currentSubject = '';
+    pendingSymbol = '';
+    pendingCommit = '';
+    pendingSession = '';
+    const info = $('info');
+    const rows = el('dl');
+    const row = (k, v) => rows.append(el('dt', k), el('dd', v));
+    const list = (title, files) => {
+      info.append(el('h3', `${title} (${files.length})`));
+      const ul = el('ul', undefined, 'files');
+      for (const f of files) ul.append(el('li', f, 'mono'));
+      info.append(ul);
+    };
+    const open = el('button', 'Open code');
+    open.addEventListener('click', () => send({ type: 'apiItem', id: item.id }));
+    if (item.id.startsWith('w')) {
+      info.replaceChildren(withHelp(el('h2', 'Route'), 'route'));
+      rows.append(withHelp(el('dt', 'Method'), 'http method'), el('dd', item.method));
+      row('Path', item.path);
+      row('Framework', item.framework);
+      row('Defined in', `${item.file}:${item.line}`);
+      info.append(rows, open);
+      list('Called from', item.callers);
+      if (item.callers.length === 0) info.append(el('p', 'No call to this route was found in this folder. It may be called by another app, or with an address built while the program runs.', 'muted small'));
+    } else if (item.id.startsWith('x')) {
+      info.replaceChildren(withHelp(el('h2', 'HTTP call'), 'http call'));
+      rows.append(withHelp(el('dt', 'Method'), 'http method'), el('dd', item.method));
+      row('Address', item.url || '(computed while running)');
+      row('Client', item.client);
+      row('In', `${item.file}:${item.line}`);
+      info.append(rows, open);
+      info.append(el('h3', `Matching routes (${item.routes.length})`));
+      const ul = el('ul', undefined, 'files');
+      for (const id of item.routes) {
+        const rt = routeById.get(id);
+        if (rt) ul.append(el('li', `${rt.method} ${rt.path} (${rt.file}:${rt.line})`, 'mono'));
+      }
+      info.append(ul);
+      if (item.routes.length === 0) info.append(el('p', item.external ? 'This calls another server, not this project.' : 'No route in this folder matches. The server may be another project, or the address is built while the program runs. A * stands for a part computed while running.', 'muted small'));
+    } else {
+      info.replaceChildren(withHelp(el('h2', 'Database model'), 'database model'));
+      row('Name', item.name);
+      if (item.table) row('Table', item.table);
+      row('Kind', item.kind);
+      row('Defined in', `${item.file}:${item.line}`);
+      info.append(rows, open);
+      list('Used by', item.usedBy);
+      if (item.kind === 'SQL table') info.append(el('p', 'Files that use a SQL table are not traced: queries are text inside the code.', 'muted small'));
+    }
   }
 
   const fmt = (n) => Number(n).toLocaleString();

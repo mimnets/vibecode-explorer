@@ -57,6 +57,11 @@ export const GLOSSARY: Readonly<Record<string, string>> = {
   session: 'One conversation with an AI agent, from start until you clear it or start a new one.',
   'security mentions': 'Sentences in the agent\'s replies that mention a security topic. They are found by keywords, not by reviewing your code.',
   'restricted mode': 'VS Code\'s safe mode for folders you have not trusted. VibeCode Explorer reads nothing there.',
+  // Phase 7: APIs and databases.
+  route: 'An address your server answers, such as GET /users/:id: an HTTP method plus a path. A function (the handler) runs when a request arrives there.',
+  'http call': 'Code that sends a request to a server address, for example fetch("/api/users"). It is matched to a route here when the address can be read from the code.',
+  'database model': 'A table or a class that stands for one, such as User. ORM libraries (Prisma, SQLAlchemy, Django, TypeORM…) turn rows into objects.',
+  'http method': 'The kind of request: GET reads, POST creates, PUT or PATCH changes, DELETE removes. ANY means the route accepts every method.',
 };
 
 export function glossaryEntry(term: string): string | undefined {

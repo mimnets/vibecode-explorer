@@ -39,6 +39,7 @@ ${browser ? `<link rel="stylesheet" href="${o.asset('src', 'webview', 'browser.c
       <button id="tabHistory" class="tab" role="tab" aria-selected="false">History</button>
       <button id="tabSessions" class="tab" role="tab" aria-selected="false">AI sessions</button>
       <button id="tabFiles" class="tab" role="tab" aria-selected="false">Files</button>
+      <button id="tabApis" class="tab" role="tab" aria-selected="false">APIs</button>
     </div>
     <div id="changesView">
       <div id="repo" class="muted"></div>
@@ -58,6 +59,7 @@ ${browser ? `<link rel="stylesheet" href="${o.asset('src', 'webview', 'browser.c
       <div id="filesInfo" class="muted"></div>
       <div id="fileTree" class="file-tree" role="tree"></div>
     </div>
+    <div id="apisView" hidden></div>
   </section>
   <section class="pane graph-pane">
     <div class="graph-tools" id="graphTools">

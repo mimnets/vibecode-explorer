@@ -45,7 +45,7 @@ select {
 .dot.cycle { background: none; border: 2px solid #f14c4c; width: 7px; height: 7px; }
 .dot.commit { background: none; border: 2px solid #4fc1ff; width: 7px; height: 7px; }
 
-.tabs { display: flex; gap: 2px; margin-bottom: 8px; border-bottom: 1px solid var(--vscode-panel-border); }
+.tabs { display: flex; flex-wrap: wrap; gap: 2px; margin-bottom: 8px; border-bottom: 1px solid var(--vscode-panel-border); }
 .tab { background: none; color: var(--vscode-descriptionForeground); font-weight: 600; padding: 4px 8px; border-bottom: 2px solid transparent; border-radius: 0; }
 .tab:hover { background: none; color: var(--vscode-foreground); }
 .tab.active { color: var(--vscode-foreground); border-bottom-color: var(--vscode-focusBorder); }

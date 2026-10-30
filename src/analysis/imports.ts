@@ -5,7 +5,7 @@ import type * as TS from 'typescript';
 // browser view on startup), and that should not load the 9 MB parser in every window.
 let tsModule: typeof TS | undefined;
 // eslint-disable-next-line @typescript-eslint/no-require-imports
-const loadTs = (): typeof TS => (tsModule ??= require('typescript') as typeof TS);
+export const loadTs = (): typeof TS => (tsModule ??= require('typescript') as typeof TS);
 
 export const SOURCE_EXTENSIONS = ['.ts', '.tsx', '.mts', '.cts', '.js', '.jsx', '.mjs', '.cjs'];
 

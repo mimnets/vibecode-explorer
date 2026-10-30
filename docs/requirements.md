@@ -10,7 +10,7 @@ Status key: **Partial** = some of it is delivered and verified. **Constraint** =
 | --- | --- | --- |
 | 1 | See files created, changed or deleted during AI-assisted coding. | Partial: current working-tree changes against HEAD. Phase 3 adds commit history with the files each commit changed (owner-verified). Phase 4b adds the files changed in each Claude Code session (owner-verified). |
 | 2 | Understand modules, functions, classes and variables. | Partial: a per-file symbol list. Phase 2 adds go-to and "used in" (owner-verified). Phase 5 adds plain-language explanations (owner-verified). |
-| 3 | Visually explore files, imports, functions, APIs and database relationships. | Partial: a file-import graph for JS/TS relative imports, and Python since Phase 6 (owner-verified). Phase 2 highlights the files that use a symbol. No API or database relationships yet. |
+| 3 | Visually explore files, imports, functions, APIs and database relationships. | Partial: a file-import graph for JS/TS relative imports, and Python since Phase 6 (owner-verified). Phase 2 highlights the files that use a symbol. Phase 7 adds routes, HTTP calls and database models with their files (awaiting owner check). |
 | 4 | Understand why important changes were made. | Partial: Phase 3 shows each commit's full message. Phase 4 adds the owner's notes on files and commits (owner-verified). |
 | 5 | Preview working websites alongside their code. | Partial: opens a user-configured local URL in Simple Browser. |
 | 6 | Learn programming incrementally while developing. | Partial: Phase 4b shows rule-based tips for each AI session (owner-verified). Phase 5 adds plain-language file and symbol explanations, a glossary and code tips (owner-verified). |
@@ -166,6 +166,21 @@ Requested by the owner on 2026-10-30, and approved the same day with the recomme
 | F | No new dependency | Done |
 
 Owner-verified 2026-10-30 (see the development log). Non-goals: renaming, moving or deleting files, search, file icons, opening files outside the folder.
+
+## Phase 7 scope: APIs and databases
+
+Approved by the owner on 2026-10-30 with the recommended display (an APIs tab) and all four areas: JS/TS servers, Python web frameworks, HTTP calls, and databases.
+
+| # | Requirement | Status |
+| --- | --- | --- |
+| A | **APIs** tab with Routes, HTTP calls and Database sections. Click: outline the files involved in the graph and show details. Double-click or **Open code**: open the line (on the page in the browser, in the editor in VS Code) | Done (UI not auto-tested) |
+| B | JS/TS routes: Express-style `app.get('/x', handler)` and `router.post(...)` (Express, Koa router, Hono), `app.route('/x').get(...)`, Fastify `route({ method, url })`, Next.js `app/**/route.ts` exports and `pages/api/**`. Mounts: `app.use('/api', router)`, Hono `app.route('/api', x)`, Fastify `register(x, { prefix })`, followed across files | Done |
+| C | Python routes: FastAPI and Flask decorators with `APIRouter(prefix=…)` / `Blueprint(url_prefix=…)`, `include_router` / `register_blueprint` prefixes, Django `path()` / `re_path()` with `include("x.urls")` | Done |
+| D | HTTP calls: `fetch`, `axios` (and `axios.create` instances), `requests`, `httpx`. Computed parts become `*`. Calls to `localhost` or relative paths are matched to routes by method and path (`:id`, `{id}`, `<int:id>`, `[id]`, `[...slug]`); other servers are marked as such | Done |
+| E | Databases: `CREATE TABLE` in `.sql` files, Prisma `model` blocks (with `@@map`), TypeORM `@Entity`, Sequelize, Mongoose, SQLAlchemy, Flask-SQLAlchemy, SQLModel and Django models (with `__tablename__` / `db_table`). Users: importers of a model's file, and `prisma.<model>.<operation>()` calls | Done |
+| F | Read-only: source text only, nothing is run, no server is called, no database is opened. Sensitive files are skipped. Files over 512 KB are skipped, at most 200 schema files and 2,000 items per list. No new dependency | Done |
+
+Owner verification is pending. Non-goals: GraphQL and gRPC, OpenAPI files, routes registered in loops or from configuration, query-level table use, request and response shapes.
 
 ## Non-goals for Phase 1
 

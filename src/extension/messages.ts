@@ -31,6 +31,10 @@ export type WebviewMessage =
   | { type: 'allowSessions' }
   /** List the folder's files for the Files tab (Phase 6d). */
   | { type: 'files' }
+  /** Find routes, HTTP calls and database models for the APIs tab (Phase 7). */
+  | { type: 'apis' }
+  /** Show where a route (`w…`), call (`x…`) or model (`m…`) is defined. */
+  | { type: 'apiItem'; id: string }
   /** Show one AI session (`a…`). */
   | { type: 'session'; id: string }
   /** Sent by the webview after drawing the graph, or when a script error occurs. */
@@ -50,6 +54,7 @@ export function parseWebviewMessage(raw: unknown): WebviewMessage | undefined {
     case 'sessions':
     case 'allowSessions':
     case 'files':
+    case 'apis':
       return { type: msg.type };
     case 'selectFolder':
       return Number.isInteger(msg.index) && (msg.index as number) >= 0 && (msg.index as number) < 1000
@@ -68,6 +73,7 @@ export function parseWebviewMessage(raw: unknown): WebviewMessage | undefined {
     case 'addNote':
     case 'openNote':
     case 'openInEditor':
+    case 'apiItem':
     case 'session':
       return typeof msg.id === 'string' && ID_PATTERN.test(msg.id) ? { type: msg.type, id: msg.id } : undefined;
     case 'rendered':

@@ -255,10 +255,26 @@ The owner found VS Code crowded with the agent chat, code and dashboard together
 
 **Owner evidence:** after reinstalling, clicking a graph file in the Files tab selected and centred it in the graph. The earlier "graph won't change" report was from the previous version. Phases 0–6d are now all owner-verified.
 
+## 2026-10-30: Phase 7: APIs and databases
+
+**Approved:** the owner approved the plan with the recommended display (an **APIs** tab) and all four areas: JS/TS servers, Python web frameworks, HTTP calls and databases. The 14 local commits were pushed to GitHub with the owner's yes (`358b314..17e672f`).
+
+**What:** a fifth tab, **APIs**, lists the routes the project defines (method, path, framework, file:line, calling files), the HTTP calls it makes (method, address with `*` for computed parts, matched routes, or "another server" / "no matching route found"), and its database tables and models (kind, table name, file, users). Clicking an item outlines its files in the graph and shows details on the right. Double-clicking, or **Open code**, opens the exact line. Four glossary terms were added: route, HTTP call, HTTP method, database model.
+
+**How:** `src/extension/apis.ts` gathers the text; the readers are pure and unit-tested. JS/TS uses the TypeScript parser already used for imports (`loadTs` is now shared). Route rules: a method call whose first argument is a path starting with `/`, with a function argument or a server/router-like receiver. `axios` and its instances count as clients, not routers. Python reuses the comment- and string-aware scanner, which now also reports where each line and string starts. Mount prefixes are followed across files (up to 5 levels) using the existing JS and Python import resolution. Calls are matched by method and path across parameter styles. No new dependency.
+
+**Safety:** read-only. Nothing is executed, no server is called, no database is opened. Sensitive files are never read (the test project's `.env` with a database URL is checked). Size caps as listed in the requirements.
+
+**Verified automatically:** lint. 61 unit tests, 13 of them new: path joining and matching (`:id`, `{id}`, `<int:id>`, `[id]`, catch-alls, partly computed segments), call addresses (relative, `localhost`, other servers), Express/Fastify/route-chain routes with false positives rejected (`app.get('env')`, `map.get('/x')`), fetch and axios calls including instances and config objects, Next.js app and pages routes (route groups dropped), TypeORM/Sequelize/Mongoose models and Prisma uses, the scanner's line numbers, FastAPI/Flask prefixes and included routers, Django patterns and `include`, requests/httpx calls and Python ORM models (Pydantic `BaseModel` rejected), SQL and Prisma with comments ignored, and a cross-file combination. 73 integration checks: a new fourth sample folder `api-project` (Express with a mounted router, a Next.js route, FastAPI with a prefix, fetch and requests calls, SQL, Prisma and TypeORM) checks the routes with prefixes, a call matched to `GET /api/users/:id`, an unmatched call, another server, models with their users, the `.env` never read, a route opening at its line, and a browser tab receiving the listing. A dry run on this repository found one real call (the browser page's own `fetch('./message…')`, shown as unmatched) and no false routes or models. The Python demo has none, as expected. **Not verified automatically:** the APIs tab in the webview.
+
+**Limitations:** pattern-based, so routes registered in loops, from configuration or through wrappers are missed, and unusual receivers named like a router may be counted. Addresses built entirely while running are listed without a match. SQL table use inside query strings is not traced. GraphQL, gRPC and OpenAPI files are not read.
+
 ## Handoff for the next session (updated 2026-10-30)
 
-**Where things stand:** Phases 0–6d are Done and owner-verified, including the browser view's code and diffs, its startup setting, and the Files tab with select-and-centre. The installed VSIX matches commit `76c3518`'s code. Nothing is pushed to GitHub yet (pushing needs the owner's yes).
+**Where things stand:** Phases 0–6d are Done and owner-verified. Phase 7 (APIs tab) is implemented and auto-tested, **awaiting the owner's GUI check**. GitHub is up to date to `17e672f`; later commits are local (pushing needs the owner's yes).
 
-**Next:** plan **Phase 7** (API and database relationships, static only) and get the owner's approval before building it.
+**Next:**
+1. Reinstall the VSIX (ask first) and the owner's Phase 7 check: the APIs tab on a real project of theirs (they mentioned Assurer and OpenHRApp; opening those needs their approval), and on `api-project`-like code.
+2. Then plan **Phase 8** (preview alongside code: link preview pages to the source files that serve them, where provable statically).
 
 **Open ideas, not scheduled:** notes written fully in the browser; syntax colours; a "No" answer to the notes question isn't remembered; notes break on file rename; AI sessions read Claude Code logs only; clicking a listed note wasn't explicitly owner-checked.

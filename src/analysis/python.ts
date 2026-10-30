@@ -21,19 +21,35 @@ export interface ParsedPython {
   dynamicUnknown: number;
 }
 
-const STR = '\u0001';
+/** Marks a string placeholder in logical lines: STR + index + STR. */
+export const STR = '\u0001';
 
-/** Splits source into logical lines with comments removed and strings replaced by placeholders. */
-export function logicalLines(source: string): { lines: string[]; strings: string[] } {
+/**
+ * Splits source into logical lines with comments removed and strings replaced by placeholders.
+ * `starts` holds each logical line's 1-based starting line in the source, `stringLines` each string's.
+ */
+export function logicalLines(source: string): { lines: string[]; strings: string[]; starts: number[]; stringLines: number[] } {
   const lines: string[] = [];
   const strings: string[] = [];
+  /** 1-based line where each string starts. */
+  const stringLines: number[] = [];
+  const starts: number[] = [];
   let cur = '';
   let depth = 0;
   const n = source.length;
   let i = 0;
+  let line = 1;
+  let start = 0;
   const flush = (): void => {
-    if (cur.trim()) lines.push(cur.trim());
+    if (cur.trim()) {
+      lines.push(cur.trim());
+      starts.push(start || line);
+    }
     cur = '';
+    start = 0;
+  };
+  const mark = (): void => {
+    if (!start) start = line;
   };
   while (i < n) {
     const c = source[i];
@@ -42,18 +58,22 @@ export function logicalLines(source: string): { lines: string[]; strings: string
       continue;
     }
     if (c === '"' || c === "'") {
+      mark();
+      stringLines.push(line);
       const triple = source.startsWith(c.repeat(3), i);
       const quote = triple ? c.repeat(3) : c;
       let j = i + quote.length;
       let text = '';
       while (j < n) {
         if (source[j] === '\\') {
+          if (source[j + 1] === '\n') line++;
           text += source.slice(j, j + 2);
           j += 2;
           continue;
         }
         if (source.startsWith(quote, j)) break;
         if (!triple && source[j] === '\n') break; // unterminated single-line string
+        if (source[j] === '\n') line++;
         text += source[j];
         j++;
       }
@@ -64,6 +84,7 @@ export function logicalLines(source: string): { lines: string[]; strings: string
     }
     if (c === '\\' && (source[i + 1] === '\n' || (source[i + 1] === '\r' && source[i + 2] === '\n'))) {
       i += source[i + 1] === '\r' ? 3 : 2;
+      line++;
       cur += ' ';
       continue;
     }
@@ -72,15 +93,17 @@ export function logicalLines(source: string): { lines: string[]; strings: string
     if (c === '\n' || c === '\r') {
       if (depth > 0) cur += ' ';
       else flush();
+      if (c === '\n') line++;
     } else if (c === ';' && depth === 0) {
       flush();
     } else {
+      if (c !== ' ' && c !== '\t') mark();
       cur += c;
     }
     i++;
   }
   flush();
-  return { lines, strings };
+  return { lines, strings, starts, stringLines };
 }
 
 const MODULE = /^\.*[A-Za-z_][\w.]*$|^\.+$/;

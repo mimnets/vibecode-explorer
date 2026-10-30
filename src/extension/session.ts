@@ -1,5 +1,6 @@
 import * as vscode from 'vscode';
 import { CommitEntry } from '../git/gitChanges';
+import { loadApis } from './apis';
 import { askToAllowSessions, describeSession, loadSessions, StoredSession } from './agentSessions';
 import { codeForCommitFile, codeForLocation, codeForTarget } from './codeView';
 import { openTarget, revealLocation, SIDE } from './open';
@@ -28,6 +29,8 @@ export class DashboardSession {
   private allNotes: NoteEntry[] | undefined;
   /** The file or commit shown in Details; its id is what the webview sends with "Add note". */
   private subject: { id: string; label: string; value: NoteSubject } | undefined;
+  /** Routes (`w…`), calls (`x…`) and models (`m…`) in the APIs tab. */
+  private apiLocations = new Map<string, CodeLocation>();
   /** AI sessions in the AI sessions tab (`a…`). */
   private sessions = new Map<string, StoredSession>();
   private state: DashboardState | undefined;
@@ -83,6 +86,7 @@ export class DashboardSession {
           this.allNotes = undefined;
           this.subject = undefined;
           this.sessions.clear();
+          this.apiLocations.clear();
           this.commits.clear();
           this.historyFiles.clear();
           this.post({ type: 'state', state });
@@ -180,7 +184,7 @@ export class DashboardSession {
       case 'openInEditor': {
         const target = this.targets.get(msg.id);
         const file = this.historyFiles.get(msg.id);
-        const loc = this.locations.get(msg.id);
+        const loc = this.locations.get(msg.id) ?? this.apiLocations.get(msg.id);
         if (target) await openTarget(target);
         else if (file) await openCommitFile(file);
         else if (loc) await revealLocation(loc);
@@ -196,6 +200,22 @@ export class DashboardSession {
       case 'sessions':
         await this.postSessions();
         break;
+      case 'apis': {
+        const folder = this.folder();
+        if (!folder || !this.state) {
+          this.post({ type: 'apis', result: { state: 'none' } });
+          return;
+        }
+        const { result, locations } = await loadApis(folder, this.state, this.targets);
+        this.apiLocations = locations;
+        this.post({ type: 'apis', result });
+        break;
+      }
+      case 'apiItem': {
+        const loc = this.apiLocations.get(msg.id);
+        if (loc) await this.reveal(msg.id, loc);
+        break;
+      }
       case 'files': {
         const folder = this.folder();
         if (!folder) {

@@ -27,7 +27,7 @@ export async function run(): Promise<void> {
   const api = ext.exports;
   check('extension activates on command', () => assert.ok(ext.isActive));
   check('dashboard opens', () => assert.ok(api.isDashboardOpen()));
-  check('workspace has three folders', () => assert.equal(vscode.workspace.workspaceFolders?.length, 3));
+  check('workspace has four folders', () => assert.equal(vscode.workspace.workspaceFolders?.length, 4));
 
   // The webview reports back after Cytoscape draws (proves scripts load under the CSP).
   let report = api.renderReport();
@@ -296,6 +296,42 @@ export async function run(): Promise<void> {
     assert.deepEqual(readmeView.lines, ['# Demo', '', '## Setup']);
   });
 
+  // Phase 7: routes, HTTP calls and database models, read statically.
+  const apiFolder = vscode.workspace.workspaceFolders![3];
+  const apiState = await api.collectState(3, true);
+  const apis = await api.loadApis(apiFolder, apiState.state, apiState.targets);
+  const apiMap = apis.result.state === 'ok' ? apis.result : undefined;
+  const route = (label: string) => apiMap?.routes.find((r) => `${r.method} ${r.path}` === label);
+  check('routes are found across frameworks, with mount prefixes', () => {
+    assert.ok(apiMap, JSON.stringify(apis.result));
+    for (const label of ['GET /health', 'GET /api/users/:id', 'POST /api/users', 'GET /api/items', 'GET /shop/cart/{cid}']) assert.ok(route(label), `${label}: ${JSON.stringify(apiMap?.routes.map((r) => `${r.method} ${r.path}`))}`);
+  });
+  check('HTTP calls are matched to routes, and other servers are told apart', () => {
+    const byUrl = (u: string) => apiMap!.calls.find((c) => c.url === u);
+    assert.deepEqual(byUrl('/api/users/*')?.routes, [route('GET /api/users/:id')!.id]);
+    assert.deepEqual(route('GET /api/users/:id')!.callers, ['web/client.js']);
+    assert.deepEqual(byUrl('/api/missing')?.routes, []);
+    assert.ok(byUrl('https://example.com/x')?.external);
+    assert.deepEqual(byUrl('http://localhost:8000/shop/cart/7')?.routes, [route('GET /shop/cart/{cid}')!.id]);
+  });
+  check('database models come from SQL, Prisma and ORM code, with the files that use them', () => {
+    const model = (n: string) => apiMap!.models.find((m) => m.name === n);
+    assert.equal(model('orders')?.kind, 'SQL table');
+    assert.equal(model('ignored'), undefined, 'commented-out tables are skipped');
+    assert.deepEqual(model('Post')?.usedBy, ['service.ts']);
+    assert.equal(model('Person')?.table, 'people');
+    assert.deepEqual(model('Person')?.usedBy, ['service.ts']);
+    assert.ok(!JSON.stringify(apis.result).includes('do-not-read'), 'the .env file is never read');
+  });
+  const healthLoc = apis.locations.get(route('GET /health')!.id)!;
+  const healthView = await api.codeForLocation(route('GET /health')!.id, healthLoc);
+  check('a route opens at its line, and items carry graph ids to outline', () => {
+    assert.equal(healthLoc.relPath, 'server.js');
+    assert.equal(healthView.highlight, 5);
+    const serverId = apiState.state.graph.nodes.find((n) => n.path === 'server.js')?.id;
+    assert.ok(serverId && route('GET /health')!.nodes.includes(serverId));
+  });
+
   const plain = await api.collectState(1, true);
   const plainHistory = await api.loadHistory(vscode.workspace.workspaceFolders![1], 50);
   check('no-Git folder has no history', () => assert.equal(plainHistory.result.git.kind, 'noGit'));
@@ -463,6 +499,10 @@ export async function run(): Promise<void> {
     assert.equal(files?.state, 'ok');
     assert.ok(files && flatten(files.tree).some((f) => f.path === 'src/util.ts' && f.inGraph));
   });
+  await send({ type: 'apis' });
+  await waitFor(() => received.some((m) => m.type === 'apis'));
+  const bApis = received.find((m) => m.type === 'apis')?.result as { state: string; calls: { id: string }[]; routes: { id: string }[] } | undefined;
+  check('a browser tab gets the APIs tab listing', () => assert.equal(bApis?.state, 'ok'));
   const lanAddress = Object.values(os.networkInterfaces()).flat().find((a) => a && a.family === 'IPv4' && !a.internal)?.address;
   const fromNetwork = lanAddress
     ? await new Promise<string>((resolve) => {
