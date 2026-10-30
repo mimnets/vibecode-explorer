@@ -221,6 +221,12 @@ The owner found VS Code crowded with the agent chat, code and dashboard together
 
 **Limitations:** no syntax colours. Comparisons are one column, not side by side. Very different versions show only the new version. Text that isn't UTF-8 may show odd characters. With the startup setting on, each VS Code window (and each Reload Window) opens a new browser tab.
 
+## 2026-10-30: Owner GUI check of Phase 6c, and a file-tree request
+
+**Owner evidence:** after reinstalling the VSIX, in the browser view: a file's code with line numbers, **Back to graph**, a commit file's red/green comparison, a symbol's highlighted line and **Open in VS Code** all worked. The **Open Browser On Startup** step was unclear to the owner and is not checked yet. It gets clearer steps.
+
+**Owner request:** a file and folder hierarchy that can be opened and closed when needed, so the project's structure can be seen and files chosen from it. Plan to be proposed for approval.
+
 ## Handoff for the next session (updated 2026-10-30)
 
 **Where things stand:** Phases 0–6b are Done and owner-verified. Phase 6c (code and diffs in the browser) is implemented and auto-tested, **awaiting the owner's GUI check**. Nothing is pushed to GitHub yet (pushing needs the owner's yes).

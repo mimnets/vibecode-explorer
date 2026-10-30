@@ -141,16 +141,16 @@ Requested by the owner on 2026-10-30, and approved the same day with these choic
 
 | # | Requirement | Status |
 | --- | --- | --- |
-| A | In the browser view, opening a file (graph double-click, **Open source**, changes list) shows its code with line numbers in place of the graph. A changed file shows its comparison with HEAD; a deleted file its HEAD version. **Back to graph** returns | Done (page not auto-tested) |
-| B | A commit's file shows what the commit changed (added: new version, deleted: previous version, else a comparison). Removed lines red, added lines green, both line numbers, unchanged lines more than 3 lines from a change folded | Done (page not auto-tested) |
-| C | Clicking a symbol or a "Used in" place shows the file with that line highlighted and scrolled into view | Done (page not auto-tested) |
-| D | **Open in VS Code** opens the same file, comparison or line in VS Code (`openInEditor`, opaque ids only). The VS Code panel is unchanged | Done |
+| A | In the browser view, opening a file (graph double-click, **Open source**, changes list) shows its code with line numbers in place of the graph. A changed file shows its comparison with HEAD; a deleted file its HEAD version. **Back to graph** returns | Done (owner-verified in the GUI) |
+| B | A commit's file shows what the commit changed (added: new version, deleted: previous version, else a comparison). Removed lines red, added lines green, both line numbers, unchanged lines more than 3 lines from a change folded | Done (owner-verified in the GUI) |
+| C | Clicking a symbol or a "Used in" place shows the file with that line highlighted and scrolled into view | Done (owner-verified in the GUI) |
+| D | **Open in VS Code** opens the same file, comparison or line in VS Code (`openInEditor`, opaque ids only). The VS Code panel is unchanged | Done (owner-verified in the GUI) |
 | E | Read-only. Sensitive files (now or in a commit, including a rename's old name) are never read or sent. Binary files are not shown. Over 1 MB or 20,000 lines is cut off with a note. Over 2,000 changed lines shows the new version with a note. Text is shown with `textContent` only | Done |
 | F | Setting `vibecodeExplorer.openBrowserOnStartup` (default off) opens the browser view when a trusted folder opens, or when the folder becomes trusted | Done (not auto-tested) |
 | G | The browser view keeps running while a tab is open and stops 30 minutes after the last tab closes (or a link is never opened), on VS Code exit, or by command | Done |
 | H | No new dependency | Done |
 
-Owner verification is pending. Non-goals: syntax colours, editing in the browser, notes in the browser, side-by-side comparisons, search.
+Owner-verified 2026-10-30 except F, the startup setting (see the development log). Non-goals: syntax colours, editing in the browser, notes in the browser, side-by-side comparisons, search.
 
 ## Non-goals for Phase 1
 
