@@ -55,14 +55,34 @@ export function notesFor(notes: NoteEntry[], subject: NoteSubject): NoteEntry[] 
 
 const allowKey = (folder: vscode.WorkspaceFolder): string => `notesAllowed:${folder.uri.toString()}`;
 
-/** Asks once per folder before the first write. Only "Yes" is remembered (in VS Code's storage, not the project). */
+/** True when the owner answered "No" to saving notes in this folder (Phase 12). */
+export function notesDeclined(memento: vscode.Memento, folder: vscode.WorkspaceFolder): boolean {
+  return memento.get<boolean>(allowKey(folder)) === false;
+}
+
+/** Forgets a "No", so the next note asks again (the owner clicked "Ask me again"). */
+export async function forgetNotesAnswer(memento: vscode.Memento, folder: vscode.WorkspaceFolder): Promise<void> {
+  if (notesDeclined(memento, folder)) await memento.update(allowKey(folder), undefined);
+}
+
+/**
+ * Asks once per folder before the first write. "Yes" and "No" are remembered (in VS Code's
+ * storage, not the project); closing the question without an answer asks again next time.
+ */
 export async function ensureNotesAllowed(memento: vscode.Memento, folder: vscode.WorkspaceFolder): Promise<boolean> {
-  if (memento.get<boolean>(allowKey(folder))) return true;
+  const saved = memento.get<boolean>(allowKey(folder));
+  if (saved === true) return true;
+  if (saved === false) {
+    void vscode.window.showInformationMessage(`Notes are turned off for "${folder.name}". Click "Ask me again" under Notes in the dashboard to change that.`);
+    return false;
+  }
   const yes = 'Yes, save notes here';
+  const no = 'No, don\'t ask again';
   const answer = await vscode.window.showInformationMessage(
     `Save notes in ${NOTES_DIR}/ in "${folder.name}"?`,
     { modal: true, detail: 'VibeCode Explorer will create Markdown files in that folder only. It never changes other files and never commits. You decide whether to commit the notes.' },
-    yes);
+    yes, no);
+  if (answer === no) await memento.update(allowKey(folder), false);
   if (answer !== yes) return false;
   await memento.update(allowKey(folder), true);
   return true;

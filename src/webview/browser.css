@@ -26,6 +26,9 @@
   --vscode-gitDecoration-untrackedResourceForeground: #73c991;
   --vscode-gitDecoration-conflictingResourceForeground: #e4676b;
   color-scheme: dark;
+  --vscode-debugTokenExpression-name: #569cd6;
+  --vscode-debugTokenExpression-string: #ce9178;
+  --vscode-debugTokenExpression-number: #b5cea8;
 }
 @media (prefers-color-scheme: light) {
   :root {
@@ -50,6 +53,9 @@
     --vscode-gitDecoration-deletedResourceForeground: #ad0707;
     --vscode-gitDecoration-untrackedResourceForeground: #007100;
     --vscode-gitDecoration-conflictingResourceForeground: #ad0707;
+    --vscode-debugTokenExpression-name: #0000ff;
+    --vscode-debugTokenExpression-string: #a31515;
+    --vscode-debugTokenExpression-number: #098658;
     color-scheme: light;
   }
 }

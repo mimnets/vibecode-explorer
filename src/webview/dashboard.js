@@ -63,7 +63,7 @@
 
   /** Browser view only: the click whose code or comparison should be shown (stale replies are ignored). */
   let pendingCode = '';
-  const CODE_REQUESTS = new Set(['open', 'commitFile', 'symbol', 'goto', 'apiItem', 'previewPage', 'projectItem', 'learnItem']);
+  const CODE_REQUESTS = new Set(['open', 'commitFile', 'symbol', 'goto', 'apiItem', 'previewPage', 'projectItem', 'learnItem', 'openNote']);
 
   function send(msg) {
     if (CODE_REQUESTS.has(msg.type)) pendingCode = msg.id;
@@ -165,6 +165,7 @@
     else if (msg.type === 'learn') renderLearn(msg.result);
     else if (msg.type === 'hotspots') renderHotspots(msg.result);
     else if (msg.type === 'contextCopied') renderContextCopied(msg);
+    else if (msg.type === 'noteSaved') renderNoteSaved(msg);
     else if (msg.type === 'rulesCreated') { if (activeTab === 'health') requestHealth(); }
     else if (msg.type === 'issueSaved') { const p = document.getElementById('issueStatus'); if (p) p.textContent = msg.message; }
     else if (msg.type === 'markedSafe') { const b = document.getElementById('markSafe'); if (b) { b.textContent = 'Marked as a safe point'; b.setAttribute('disabled', ''); } }
@@ -208,23 +209,136 @@
     const rows = document.createDocumentFragment();
     /** @type {HTMLElement | undefined} */
     let highlighted;
+    const lang = langFor(v.path);
+    const state = { open: null };
     if (v.mode === 'file') {
       v.lines.forEach((line, i) => {
-        const row = codeRow(i + 1 === v.highlight ? 'hl' : '', [[String(i + 1), 'ln'], [line, 'text']]);
+        const row = codeRow(i + 1 === v.highlight ? 'hl' : '', [[String(i + 1), 'ln']]);
+        row.append(codeCell(line, lang, state));
         if (i + 1 === v.highlight) highlighted = row;
         rows.append(row);
       });
     } else if (v.mode === 'diff') {
       for (const r of v.rows) {
+        // Each diff line is coloured on its own: a comment can't run on across skipped lines.
+        const fresh = { open: null };
         if (r.k === '…') rows.append(el('div', `… ${r.count} unchanged line${r.count === 1 ? '' : 's'}`, 'code-row skip'));
-        else if (r.k === '+') rows.append(codeRow('add', [['', 'ln'], [String(r.n), 'ln'], ['+', 'sign'], [r.t, 'text']]));
-        else if (r.k === '-') rows.append(codeRow('del', [[String(r.o), 'ln'], ['', 'ln'], ['−', 'sign'], [r.t, 'text']]));
-        else rows.append(codeRow('', [[String(r.o), 'ln'], [String(r.n), 'ln'], ['', 'sign'], [r.t, 'text']]));
+        else if (r.k === '+') rows.append(codeRow('add', [['', 'ln'], [String(r.n), 'ln'], ['+', 'sign']]));
+        else if (r.k === '-') rows.append(codeRow('del', [[String(r.o), 'ln'], ['', 'ln'], ['−', 'sign']]));
+        else rows.append(codeRow('', [[String(r.o), 'ln'], [String(r.n), 'ln'], ['', 'sign']]));
+        if (r.k !== '…') /** @type {HTMLElement} */ (rows.lastChild).append(codeCell(r.t, lang, fresh));
       }
     }
     body.replaceChildren(rows);
     body.scrollTop = 0;
     if (highlighted) highlighted.scrollIntoView({ block: 'center' });
+  }
+
+  // ---- Syntax colours for the code view (Phase 12) ----
+  // A small line-by-line tokenizer: keywords, strings, comments and numbers. It only adds
+  // colour; text is always set with textContent.
+  const JS_WORDS = new Set(('abstract as async await break case catch class const continue debugger declare default delete do else enum export extends false finally for from function get if implements import in instanceof interface let new null of private protected public readonly return set static super switch this throw true try type typeof undefined var void while with yield').split(' '));
+  const PY_WORDS = new Set(('False None True and as assert async await break class continue def del elif else except finally for from global if import in is lambda nonlocal not or pass raise return self try while with yield match case').split(' '));
+  const LANGS = {
+    js: { words: JS_WORDS, line: '//', block: ['/*', '*/'], quotes: '\'"`' },
+    py: { words: PY_WORDS, line: '#', block: null, quotes: '\'"', triple: true },
+    css: { words: new Set(['important', 'media', 'import', 'from', 'to']), line: null, block: ['/*', '*/'], quotes: '\'"' },
+    // Only double quotes: an apostrophe in page text ("don't") must not colour the rest of the line.
+    html: { words: new Set(), line: null, block: ['<!--', '-->'], quotes: '"', tags: true },
+    json: { words: new Set(['true', 'false', 'null']), line: null, block: null, quotes: '"' },
+    sh: { words: new Set(('if then else elif fi for do done while case esac function in export return local echo').split(' ')), line: '#', block: null, quotes: '\'"' },
+  };
+
+  function langFor(path) {
+    const ext = (/\.([a-z0-9]+)$/i.exec(path || '') || ['', ''])[1].toLowerCase();
+    if (/^(m|c)?[jt]sx?$/.test(ext)) return LANGS.js;
+    if (ext === 'py') return LANGS.py;
+    if (/^(css|scss|less)$/.test(ext)) return LANGS.css;
+    if (/^(html?|vue|svelte|xml|svg|ejs)$/.test(ext)) return LANGS.html;
+    if (ext === 'json') return LANGS.json;
+    if (/^(sh|bash|ps1|ya?ml|toml|ini|env)$/.test(ext)) return LANGS.sh;
+    return null;
+  }
+
+  /**
+   * Splits one line into [text, class] parts. `state` carries an open block comment or
+   * Python triple-quoted string to the next line.
+   */
+  function tokenize(line, lang, state) {
+    const parts = [];
+    let i = 0;
+    const push = (text, cls) => { if (text) parts.push([text, cls]); };
+    if (state.open) {
+      const end = line.indexOf(state.open.close);
+      if (end < 0) { push(line, state.open.cls); return parts; }
+      push(line.slice(0, end + state.open.close.length), state.open.cls);
+      i = end + state.open.close.length;
+      state.open = null;
+    }
+    let plain = '';
+    const flush = () => { push(plain, ''); plain = ''; };
+    while (i < line.length) {
+      const rest = line.slice(i);
+      if (lang.line && rest.startsWith(lang.line) && !(lang === LANGS.sh && i > 0 && /\S/.test(line[i - 1]))) { flush(); push(rest, 'tok-c'); return parts; }
+      if (lang.block && rest.startsWith(lang.block[0])) {
+        flush();
+        const end = rest.indexOf(lang.block[1], lang.block[0].length);
+        if (end < 0) { push(rest, 'tok-c'); state.open = { close: lang.block[1], cls: 'tok-c' }; return parts; }
+        push(rest.slice(0, end + lang.block[1].length), 'tok-c');
+        i += end + lang.block[1].length;
+        continue;
+      }
+      const ch = line[i];
+      if (lang.triple && (rest.startsWith('"""') || rest.startsWith('\'\'\''))) {
+        flush();
+        const q = rest.slice(0, 3);
+        const end = rest.indexOf(q, 3);
+        if (end < 0) { push(rest, 'tok-s'); state.open = { close: q, cls: 'tok-s' }; return parts; }
+        push(rest.slice(0, end + 3), 'tok-s');
+        i += end + 3;
+        continue;
+      }
+      if (lang.quotes.includes(ch)) {
+        flush();
+        let j = i + 1;
+        while (j < line.length && line[j] !== ch) j += line[j] === '\\' ? 2 : 1;
+        push(line.slice(i, j + 1), 'tok-s');
+        i = j + 1;
+        continue;
+      }
+      if (lang.tags && ch === '<' && /^<\/?[A-Za-z]/.test(rest)) {
+        flush();
+        const m = /^<\/?[A-Za-z][\w:-]*/.exec(rest);
+        push(m[0], 'tok-k');
+        i += m[0].length;
+        continue;
+      }
+      if (/[A-Za-z_$]/.test(ch)) {
+        const m = /^[A-Za-z_$][\w$]*/.exec(rest);
+        if (lang.words.has(m[0])) { flush(); push(m[0], 'tok-k'); } else plain += m[0];
+        i += m[0].length;
+        continue;
+      }
+      if (/\d/.test(ch) && !/[\w$]/.test(line[i - 1] || '')) {
+        const m = /^(0x[\da-f]+|\d[\d_]*(\.\d+)?(e[+-]?\d+)?)/i.exec(rest);
+        flush();
+        push(m[0], 'tok-n');
+        i += m[0].length;
+        continue;
+      }
+      plain += ch;
+      i++;
+    }
+    flush();
+    return parts;
+  }
+
+  /** The code cell of a row: coloured parts when the language is known, else plain text. */
+  function codeCell(text, lang, state) {
+    if (!lang || text.length > 2000) return el('span', text, 'text');
+    const cell = el('span', undefined, 'text');
+    for (const [t, cls] of tokenize(text, lang, state)) cell.append(cls ? el('span', t, cls) : document.createTextNode(t));
+    return cell;
   }
 
   function renderState(state) {
@@ -360,7 +474,20 @@
   function runLayout() {
     if (!cy) return;
     // Counting labels in each node's size keeps file names from landing on top of each other.
-    cy.layout({ name: 'cose', animate: false, nodeDimensionsIncludeLabels: true, nodeRepulsion: 12000, idealEdgeLength: 70, padding: 30 }).run();
+    // Files without imports are laid out in a grid below the rest, so their labels never touch (Phase 12).
+    const isolated = cy.nodes().filter((n) => n.degree(false) === 0);
+    const connected = cy.elements().not(isolated);
+    if (connected.nodes().length) connected.layout({ name: 'cose', animate: false, nodeDimensionsIncludeLabels: true, nodeRepulsion: 12000, idealEdgeLength: 70, padding: 30 }).run();
+    if (isolated.length) {
+      const bb = connected.nodes().length ? connected.boundingBox() : { x1: 0, y2: 0, w: 0 };
+      const widest = Math.max(...isolated.map((n) => String(n.data('label')).length)) * 6 + 30;
+      const width = Math.max(bb.w, 500);
+      const cols = Math.max(1, Math.floor(width / widest));
+      const rows = Math.ceil(isolated.length / cols);
+      isolated.layout({ name: 'grid', animate: false, cols, avoidOverlap: true, nodeDimensionsIncludeLabels: true, condense: false,
+        boundingBox: { x1: bb.x1, y1: bb.y2 + 50, w: cols * widest, h: rows * 45 } }).run();
+    }
+    cy.fit(undefined, 30);
   }
 
   function renderUnknown(label) {
@@ -578,10 +705,51 @@
       if (n.created) li.append(el('span', n.created, 'muted small note-date'));
       ul.append(li);
     }
+    box.append(ul);
+    // Phase 12: after a "No", notes stay off until the owner asks for the question again.
+    if (msg.declined) {
+      const again = el('button', 'Ask me again');
+      again.title = 'You chose not to save notes in this folder. Click to be asked again.';
+      again.addEventListener('click', () => send({ type: 'askNotesAgain' }));
+      box.append(el('p', 'Notes are turned off for this folder.', 'muted small'), again);
+      return;
+    }
+    // Phase 12: in the browser the note is written right here, on the page.
+    if (msg.inPage) {
+      const subject = msg.subject;
+      const form = el('div', undefined, 'note-form');
+      const title = /** @type {HTMLInputElement} */ (el('input'));
+      title.placeholder = 'Note title';
+      title.maxLength = 200;
+      title.setAttribute('aria-label', 'Note title');
+      const text = /** @type {HTMLTextAreaElement} */ (el('textarea'));
+      text.placeholder = 'What changed, why, and what you decided';
+      text.rows = 4;
+      text.maxLength = 8000;
+      text.setAttribute('aria-label', 'Note text');
+      const save = el('button', 'Save note');
+      save.title = 'Saved as a Markdown file in .vibecode/notes/';
+      const status = el('p', '', 'muted small note-status');
+      save.addEventListener('click', () => {
+        if (!title.value.trim()) { status.textContent = 'Write a title first.'; return; }
+        status.textContent = 'Saving…';
+        send({ type: 'saveNote', id: subject, title: title.value.trim(), text: text.value });
+      });
+      form.append(title, text, save, status);
+      box.append(form);
+      return;
+    }
     const add = el('button', 'Add note');
     add.title = 'Write down what, why and the decision. Saved as a Markdown file in .vibecode/notes/';
     add.addEventListener('click', () => send({ type: 'addNote', id: currentSubject }));
-    box.append(ul, add);
+    box.append(add);
+  }
+
+  /** The message after saving a note written on the page; the list above is refreshed separately. */
+  function renderNoteSaved(msg) {
+    if (msg.subject !== currentSubject) return;
+    const status = $('info').querySelector('.notes .note-status');
+    if (status) status.textContent = msg.message;
   }
 
   // ---- Files tab (Phase 6d) ----

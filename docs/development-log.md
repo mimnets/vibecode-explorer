@@ -378,10 +378,28 @@ Also:
 - Hotspots look at the latest 100 commits only.
 - Folder rules match whole folders and package names, not patterns.
 
+## 2026-10-30: Phase 12: small fixes
+
+**What:** four fixes from the open ideas:
+1. **Notes in the browser:** write and save a note on the page, and read notes there too.
+2. **Syntax colours** in the code view and in diffs.
+3. **A "No" to the notes question is remembered:** **No, don't ask again**, then **Ask me again**.
+4. **Graph labels:** files without imports are laid out in a spaced grid, so their labels no longer touch.
+
+**How:** no new dependency.
+- Notes from the page go through the same `createNote`, with the text cleaned like issues.
+- The tokenizer is about 100 lines in the webview. It works line by line and keeps an open block comment or Python triple-quoted string for the next line. In HTML only double quotes count as strings, so "don't" in page text is safe. A diff line is coloured on its own.
+- The browser theme got token colours for light and dark.
+- The tokenizer was tried on sample lines: TS with an escaped quote, a block comment across lines, a Python docstring, hex numbers, HTML tags and comments, shell `#` comments, JSON.
+
+**Verified automatically:** lint. 92 unit tests, including stricter message checks for issues, page notes and the new ids. 89 integration checks; the webview still draws the graph without script errors with the new layout. **Not verified automatically:** the note form, the colours, the No/Ask me again flow and the label spacing.
+
+**Limitations:** colours come from simple rules, not a real parser, so a rare line may be coloured wrongly. Existing notes are still edited in VS Code.
+
 ## Handoff for the next session (updated 2026-10-30)
 
-**Where things stand:** Phases 0–9 are Done and owner-verified. Phases 10 (Project tab) and 11 (learning aids) are implemented and auto-tested, awaiting the owner's check; Phase 12 is approved. GitHub is up to date to `fe0eda5`; later commits are local (pushing needs the owner's yes).
+**Where things stand:** Phases 0–9 are Done and owner-verified. Phases 10 (Project tab), 11 (learning aids) and 12 (small fixes) are implemented and auto-tested, awaiting the owner's GUI check. GitHub is up to date to `fe0eda5`; later commits are local (pushing needs the owner's yes).
 
 **Next:** the owner picks from the remaining saved ideas: the read-only Project status tab, and the rest of the learning list (reading order, test map, copy context for AI, folder rules, commit message check, TODO list, package list, hotspots, how-to-run card, prompt tips).
 
-**Open ideas, not scheduled:** notes written fully in the browser; syntax colours; a "No" answer to the notes question isn't remembered; notes break on file rename; AI sessions read Claude Code logs only; clicking a listed note wasn't explicitly owner-checked; Svelte/Nuxt/Astro pages; labels of unconnected graph files can touch.
+**Open ideas, not scheduled:** editing the AI's memory and rule files from the dashboard (saved idea, needs its own approval); notes break on file rename; AI sessions read Claude Code logs only; clicking a listed note wasn't explicitly owner-checked; Svelte/Nuxt/Astro pages.

@@ -37,9 +37,16 @@ test('webview messages are validated strictly', () => {
     { type: 'history', limit: 0 }, { type: 'history', limit: 201 }, { type: 'history', limit: '50' },
     { type: 'commit', id: 'HEAD~1' }, { type: 'commit', id: 'a1b2c3d4e5f6' }, { type: 'commitFile', id: 'src/.env' },
     { type: 'openInEditor', id: 'src/util.ts' }, { type: 'openInEditor', path: 'src/util.ts' },
-    { type: 'addNote', id: '.vibecode/notes/x.md' }, { type: 'openNote', id: 'C:/notes/a.md' }]) {
+    { type: 'addNote', id: '.vibecode/notes/x.md' }, { type: 'openNote', id: 'C:/notes/a.md' },
+    // Phases 10–12: text from the page is limited, and ids stay opaque.
+    { type: 'addIssue', title: '   ', text: '' }, { type: 'addIssue', title: 'x'.repeat(201), text: '' }, { type: 'addIssue', title: 'ok', text: 'x'.repeat(8001) },
+    { type: 'addIssue', title: 'ok' }, { type: 'saveNote', id: 'src/a.ts', title: 'ok', text: '' }, { type: 'saveNote', id: 'f1', title: '', text: '' },
+    { type: 'projectItem', id: 'docs/roadmap.md' }, { type: 'learnItem', id: '../x' }, { type: 'copyContext', id: 'C:/x' }]) {
     assert.equal(parseWebviewMessage(bad), undefined, JSON.stringify(bad));
   }
+  assert.deepEqual(parseWebviewMessage({ type: 'addIssue', title: 'Fix login', text: 'details', path: 'x' }), { type: 'addIssue', title: 'Fix login', text: 'details' });
+  assert.deepEqual(parseWebviewMessage({ type: 'saveNote', id: 'k3', title: 'Why', text: '' }), { type: 'saveNote', id: 'k3', title: 'Why', text: '' });
+  for (const type of ['project', 'learn', 'hotspots', 'createRules', 'askNotesAgain']) assert.deepEqual(parseWebviewMessage({ type, id: 'x' }), { type });
 });
 
 test('git status codes map to change groups', () => {

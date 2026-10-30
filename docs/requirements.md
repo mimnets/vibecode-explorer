@@ -249,6 +249,19 @@ Approved by the owner on 2026-10-30 together with Phases 10 and 12 ("all, one by
 
 Owner verification is pending. Non-goals: running scripts or tests, installing or removing packages, fixing TODOs, checking licenses beyond what the package says, rewriting commit messages.
 
+## Phase 12 scope: small fixes
+
+Approved by the owner on 2026-10-30 with Phases 10 and 11. These four come from the "open ideas" in the development log.
+
+| # | Requirement | Status |
+| --- | --- | --- |
+| A | Notes in the browser: a title and text box under Notes in Details; **Save note** creates the note file (same permission, never overwrites). Clicking a note shows it on the page, with **Open in VS Code** | Done (UI not auto-tested) |
+| B | Syntax colours in the code view and diffs: keywords, strings, comments and numbers for JS/TS, Python, CSS, HTML-like, JSON and shell/config files, using VS Code's theme colours (browser: light and dark sets). Text is still set with `textContent` | Done (UI not auto-tested) |
+| C | The notes question now has **No, don't ask again**, which is remembered for the folder (in VS Code's storage). Notes then show "turned off" with **Ask me again**. Closing the question without answering still asks next time | Done (UI not auto-tested) |
+| D | Graph: files without imports are placed in a grid under the rest, spaced by their label length, so their labels don't touch | Done (webview runs without errors; layout not auto-checked) |
+
+Owner verification is pending. Non-goals: editing existing notes, full syntax parsing, themes of their own.
+
 ## Non-goals for Phase 1
 
 Function/API/database graphs, agent attribution, change explanations, embedded browser, marketplace publishing, servers, databases, cloud sync, plugin framework.

@@ -9,7 +9,7 @@ import { explainSymbolAt, explainTarget } from './explain';
 import { listProjectFiles } from './files';
 import { describeCommit, HistoryFile, loadHistory, openCommitFile } from './history';
 import { parseWebviewMessage, WebviewMessage } from './messages';
-import { createNote, ensureNotesAllowed, listNotes, NoteEntry, notesFor, NoteSubject } from './notes';
+import { createNote, ensureNotesAllowed, forgetNotesAnswer, listNotes, NoteEntry, notesDeclined, notesFor, NoteSubject } from './notes';
 import { previewAddress } from '../analysis/pages';
 import { cleanText, cleanTitle } from '../analysis/projectStatus';
 import { loadProject } from './projectStatus';
@@ -219,6 +219,11 @@ export class DashboardSession {
       case 'openInEditor': {
         const target = this.targets.get(msg.id);
         const file = this.historyFiles.get(msg.id);
+        const note = this.notes.get(msg.id);
+        if (note) {
+          await vscode.commands.executeCommand('vscode.open', note.uri, SIDE);
+          return;
+        }
         const loc = this.locations.get(msg.id) ?? this.apiLocations.get(msg.id) ?? this.projectLocations.get(msg.id) ?? this.learnLocations.get(msg.id);
         if (target) await openTarget(target);
         else if (file) await openCommitFile(file);
@@ -371,9 +376,21 @@ export class DashboardSession {
       case 'addNote':
         await this.addNote(msg.id);
         break;
+      case 'saveNote':
+        await this.saveNote(msg.id, msg.title, msg.text);
+        break;
+      case 'askNotesAgain': {
+        const folder = this.folder();
+        if (folder) await forgetNotesAnswer(this.memento, folder);
+        await this.postNotes();
+        break;
+      }
       case 'openNote': {
         const note = this.notes.get(msg.id);
-        if (note) await vscode.commands.executeCommand('vscode.open', note.uri, SIDE);
+        if (!note) return;
+        // Phase 12: in the browser view the note is shown on the page.
+        if (this.codeInPage) await this.reveal(msg.id, { uri: note.uri, relPath: note.relPath, position: new vscode.Position(0, 0), name: note.title });
+        else await vscode.commands.executeCommand('vscode.open', note.uri, SIDE);
         break;
       }
       case 'goto': {
@@ -440,7 +457,7 @@ export class DashboardSession {
       this.notes.set(id, n);
       return { id, title: n.title, created: n.created, path: n.relPath };
     });
-    this.post({ type: 'notes', subject: subject.id, available: true, notes });
+    this.post({ type: 'notes', subject: subject.id, available: true, notes, declined: notesDeclined(this.memento, folder), inPage: this.codeInPage });
   }
 
   private async postProject(): Promise<void> {
@@ -501,6 +518,28 @@ export class DashboardSession {
       this.post({ type: 'markedSafe', id });
     } catch (err) {
       void vscode.window.showErrorMessage(err instanceof Error ? err.message : String(err));
+    }
+    this.allNotes = undefined;
+    await this.postNotes();
+  }
+
+  /** Phase 12: a note written on the page (title and text), saved as a new file. */
+  private async saveNote(id: string, rawTitle: string, rawText: string): Promise<void> {
+    const subject = this.subject;
+    const folder = this.folder();
+    const title = cleanTitle(rawTitle);
+    if (!subject || subject.id !== id || !folder || !title || !vscode.workspace.isTrusted) return;
+    if (!await ensureNotesAllowed(this.memento, folder)) {
+      this.post({ type: 'noteSaved', subject: id, ok: false, message: 'Not saved: notes are turned off for this folder.' });
+      await this.postNotes();
+      return;
+    }
+    try {
+      const body = cleanText(rawText);
+      const uri = await createNote(folder, subject.value, title, body ? { body } : {});
+      this.post({ type: 'noteSaved', subject: id, ok: true, message: `Saved as ${vscode.workspace.asRelativePath(uri, false)}` });
+    } catch (err) {
+      this.post({ type: 'noteSaved', subject: id, ok: false, message: err instanceof Error ? err.message : String(err) });
     }
     this.allNotes = undefined;
     await this.postNotes();

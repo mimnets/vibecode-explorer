@@ -49,6 +49,9 @@ export type WebviewMessage =
   | { type: 'hotspots' }
   | { type: 'copyContext'; id: string }
   | { type: 'createRules' }
+  /** Phase 12: save a note written on the page about the file or commit in Details (its id), and ask the notes question again after a "No". */
+  | { type: 'saveNote'; id: string; title: string; text: string }
+  | { type: 'askNotesAgain' }
   /** Preview a page (`g…`) at an address the owner may have edited (Phase 8). */
   | { type: 'previewPage'; id: string; path: string }
   /** Show one AI session (`a…`). */
@@ -76,6 +79,7 @@ export function parseWebviewMessage(raw: unknown): WebviewMessage | undefined {
     case 'learn':
     case 'hotspots':
     case 'createRules':
+    case 'askNotesAgain':
       return { type: msg.type };
     case 'selectFolder':
       return Number.isInteger(msg.index) && (msg.index as number) >= 0 && (msg.index as number) < 1000
@@ -105,6 +109,11 @@ export function parseWebviewMessage(raw: unknown): WebviewMessage | undefined {
     case 'previewPage':
       return typeof msg.id === 'string' && ID_PATTERN.test(msg.id) && typeof msg.path === 'string' && msg.path.length <= 512
         ? { type: 'previewPage', id: msg.id, path: msg.path }
+        : undefined;
+    case 'saveNote':
+      return typeof msg.id === 'string' && ID_PATTERN.test(msg.id) && typeof msg.title === 'string' && msg.title.trim() && msg.title.length <= 200
+        && typeof msg.text === 'string' && msg.text.length <= 8000
+        ? { type: 'saveNote', id: msg.id, title: msg.title, text: msg.text }
         : undefined;
     case 'addIssue':
       return typeof msg.title === 'string' && msg.title.trim() && msg.title.length <= 200 && typeof msg.text === 'string' && msg.text.length <= 8000
