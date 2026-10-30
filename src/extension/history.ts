@@ -1,5 +1,6 @@
 import * as path from 'path';
 import * as vscode from 'vscode';
+import { commitMessageHint } from '../analysis/learn';
 import { commitHeadline, summarizeCommitFiles } from '../git/history';
 import { ChangeGroup } from '../git/status';
 import { CommitEntry, CommitFileRef, getCommitFiles, getHistory, gitUriAt } from '../git/gitChanges';
@@ -9,7 +10,7 @@ const MAX_COMMIT_FILES = 300;
 
 export interface HistoryResult {
   git:
-    | { kind: 'ok'; commits: { id: string; headline: string; author: string; date: string; shortHash: string }[] }
+    | { kind: 'ok'; commits: { id: string; headline: string; author: string; date: string; shortHash: string; hint?: string }[] }
     | { kind: 'noGit' }
     | { kind: 'unavailable'; reason: string }
     | { kind: 'restricted' };
@@ -28,7 +29,9 @@ export async function loadHistory(folder: vscode.WorkspaceFolder, limit: number)
   const items = history.commits.map((c, i) => {
     const id = `k${i}`;
     commits.set(id, c);
-    return { id, headline: commitHeadline(c.message), author: c.author, date: c.date?.toLocaleString() ?? '', shortHash: c.hash.slice(0, 7) };
+    const headline = commitHeadline(c.message);
+    // Phase 11: a hint when the first line doesn't follow Conventional Commits.
+    return { id, headline, author: c.author, date: c.date?.toLocaleString() ?? '', shortHash: c.hash.slice(0, 7), hint: commitMessageHint(headline) };
   });
   return { result: { git: { kind: 'ok', commits: items }, limit: max, more: items.length >= max && max < MAX_COMMITS }, commits };
 }

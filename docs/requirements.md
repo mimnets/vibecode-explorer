@@ -229,6 +229,26 @@ Approved by the owner on 2026-10-30 ("all, one by one", for the saved project-tr
 
 Owner verification is pending. Non-goals: editing the plan, memory or rule files; closing issues from the dashboard; guessing a plan from anything but a table.
 
+## Phase 11 scope: learning aids
+
+Approved by the owner on 2026-10-30 together with Phases 10 and 12 ("all, one by one").
+
+| # | Requirement | Status |
+| --- | --- | --- |
+| A | **Learn** tab (eighth) with How to run, Reading order, Test map, TODO list, Packages and Hotspots. Glossary terms for each | Done (UI not auto-tested) |
+| B | How to run: an install step and the package.json scripts in a sensible order with plain labels; Python `requirements.txt`, `pyproject.toml`, `manage.py`, `main.py`/`app.py`; command lines from the README's install/run sections. Shown only, never run | Done |
+| C | Reading order: start files (entry points, or files nothing imports but that import others), then what they use level by level; tests left out; unconnected files last | Done |
+| D | Test map: a file has a test when a test file imports it or is named after it (same language). Lists, plus a button that colours the graph (green tested, grey not, blue tests) | Done |
+| E | TODO list: TODO/FIXME/HACK/XXX/BUG comments with file, line and text (secret-looking text hidden, sensitive files never opened); click opens the line | Done |
+| F | Packages: npm and pip packages with version, dev or not, license and description from the installed package's own `package.json`, and whether the code imports them, a script runs them, they are type information, or nothing uses them | Done |
+| G | Hotspots: on request, the files changed most in the latest 100 commits, with the count in fix commits | Done |
+| H | Copy context for AI: a button under "In plain words" copies a short summary of the file (sentences, imports, packages, imported by, symbols, tests, note titles) to the clipboard and shows it | Done (UI not auto-tested) |
+| I | Folder rules in the Health tab: lines like "`src/ui/` must not import `src/db/`" or a package name, in `.vibecode/rules.md`; breaking imports are listed and dashed orange in the graph. **Create rules file** writes the file once with examples (notes permission, never overwritten); AGENTS.md updated | Done |
+| J | Commit message check in History: a hint under commits whose first line doesn't follow Conventional Commits | Done |
+| K | Prompt tips in AI sessions: prompts sent again with the same words, and prompts that name no file or folder | Done |
+
+Owner verification is pending. Non-goals: running scripts or tests, installing or removing packages, fixing TODOs, checking licenses beyond what the package says, rewriting commit messages.
+
 ## Non-goals for Phase 1
 
 Function/API/database graphs, agent attribution, change explanations, embedded browser, marketplace publishing, servers, databases, cloud sync, plugin framework.

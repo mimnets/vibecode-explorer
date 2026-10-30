@@ -13,6 +13,10 @@ import { createNote, ensureNotesAllowed, listNotes, NoteEntry, notesFor, NoteSub
 import { previewAddress } from '../analysis/pages';
 import { cleanText, cleanTitle } from '../analysis/projectStatus';
 import { loadProject } from './projectStatus';
+import { aiContext, RULES_TEMPLATE } from '../analysis/learn';
+import { isTestFor, isTestFile } from '../analysis/explain';
+import { loadHotspots, loadLearn } from './learn';
+import { RULES_FILE } from './health';
 import { openPreview, previewBase, showInSimpleBrowser } from './preview';
 import { CodeLocation, collectState, DashboardState, describeTarget, findUsages, Target } from './state';
 
@@ -40,6 +44,10 @@ export class DashboardSession {
   private secretIds = new Set<string>();
   /** Plan files and issues in the Project tab (`j…`). */
   private projectLocations = new Map<string, CodeLocation>();
+  /** TODOs in the Learn tab (`l…`). */
+  private learnLocations = new Map<string, CodeLocation>();
+  /** Facts about the file shown in Details, for "Copy context for AI". */
+  private context: { id: string; text: string } | undefined;
   /** AI sessions in the AI sessions tab (`a…`). */
   private sessions = new Map<string, StoredSession>();
   private state: DashboardState | undefined;
@@ -99,6 +107,8 @@ export class DashboardSession {
           this.healthLocations.clear();
           this.secretIds.clear();
           this.projectLocations.clear();
+          this.learnLocations.clear();
+          this.context = undefined;
           this.commits.clear();
           this.historyFiles.clear();
           this.post({ type: 'state', state });
@@ -157,8 +167,21 @@ export class DashboardSession {
         const folder = this.folder();
         if (folder && this.state && vscode.workspace.isTrusted) {
           const notes = this.allNotes ? notesFor(this.allNotes, { about: target.relPath }).length : 0;
-          const explanation = await explainTarget(folder, target, details, this.state, notes);
+          const { facts, ...explanation } = await explainTarget(folder, target, details, this.state, notes);
           this.post({ type: 'explain', subject: msg.id, ...explanation });
+          // Phase 11: a short summary to paste into an AI chat, ready for "Copy context for AI".
+          const nodeId = this.state.graph.nodes.find((n) => n.kind === 'file' && n.path === target.relPath)?.id;
+          const testers = new Set(this.state.graph.edges.filter((e) => e.target === nodeId).map((e) => this.state?.graph.nodes.find((n) => n.id === e.source)?.path ?? '').filter(isTestFile));
+          for (const n of this.state.graph.nodes) if (n.kind === 'file' && isTestFor(target.relPath, n.path)) testers.add(n.path);
+          const noteTitles = this.allNotes ? notesFor(this.allNotes, { about: target.relPath }).map((n) => n.title) : [];
+          this.context = {
+            id: msg.id,
+            text: aiContext({
+              path: target.relPath, sentences: explanation.sentences, localImports: facts.localImports, packages: facts.packages,
+              importedBy: facts.importedBy, symbols: details.symbols.filter((s) => s.depth === 0).map((s) => `${s.name} (${s.kind.toLowerCase()})`),
+              notes: noteTitles, tests: [...testers].sort(),
+            }),
+          };
         }
         break;
       }
@@ -196,7 +219,7 @@ export class DashboardSession {
       case 'openInEditor': {
         const target = this.targets.get(msg.id);
         const file = this.historyFiles.get(msg.id);
-        const loc = this.locations.get(msg.id) ?? this.apiLocations.get(msg.id) ?? this.projectLocations.get(msg.id);
+        const loc = this.locations.get(msg.id) ?? this.apiLocations.get(msg.id) ?? this.projectLocations.get(msg.id) ?? this.learnLocations.get(msg.id);
         if (target) await openTarget(target);
         else if (file) await openCommitFile(file);
         else if (loc) await revealLocation(loc);
@@ -229,7 +252,7 @@ export class DashboardSession {
           this.post({ type: 'health', result: { state: 'none' } });
           return;
         }
-        const { result, locations, secretIds } = await loadHealth(folder, this.state, this.memento);
+        const { result, locations, secretIds } = await loadHealth(folder, this.state, this.memento, this.targets);
         this.healthLocations = locations;
         this.secretIds = secretIds;
         this.post({ type: 'health', result });
@@ -256,6 +279,36 @@ export class DashboardSession {
       }
       case 'addIssue':
         await this.addIssue(msg.title, msg.text);
+        break;
+      case 'learn': {
+        const folder = this.folder();
+        if (!folder || !this.state) {
+          this.post({ type: 'learn', result: { state: 'none' } });
+          return;
+        }
+        const { result, locations } = await loadLearn(folder, this.state, this.targets);
+        this.learnLocations = locations;
+        this.post({ type: 'learn', result });
+        break;
+      }
+      case 'learnItem': {
+        const loc = this.learnLocations.get(msg.id);
+        if (loc) await this.reveal(msg.id, loc);
+        break;
+      }
+      case 'hotspots': {
+        const folder = this.folder();
+        if (folder) this.post({ type: 'hotspots', result: await loadHotspots(folder) });
+        break;
+      }
+      case 'copyContext':
+        if (this.context?.id === msg.id) {
+          await vscode.env.clipboard.writeText(this.context.text);
+          this.post({ type: 'contextCopied', id: msg.id, text: this.context.text });
+        }
+        break;
+      case 'createRules':
+        await this.createRules();
         break;
       case 'previewPage': {
         const loc = msg.id.startsWith('g') ? this.apiLocations.get(msg.id) : undefined;
@@ -418,6 +471,23 @@ export class DashboardSession {
     }
     this.allNotes = undefined;
     await this.postProject();
+  }
+
+  /** Phase 11: creates the folder rules file with examples, if it doesn't exist yet (never overwritten). */
+  private async createRules(): Promise<void> {
+    const folder = this.folder();
+    if (!folder || !vscode.workspace.isTrusted) return;
+    if (!await ensureNotesAllowed(this.memento, folder)) return;
+    const uri = vscode.Uri.joinPath(folder.uri, ...RULES_FILE.split('/'));
+    try {
+      await vscode.workspace.fs.stat(uri);
+    } catch {
+      await vscode.workspace.fs.createDirectory(vscode.Uri.joinPath(uri, '..'));
+      await vscode.workspace.fs.writeFile(uri, new TextEncoder().encode(RULES_TEMPLATE));
+    }
+    // The owner writes the rules in VS Code's editor.
+    await vscode.commands.executeCommand('vscode.open', uri, SIDE);
+    this.post({ type: 'rulesCreated' });
   }
 
   /** Phase 9: marks a commit as a safe point by saving a small note (the same opt-in as notes). */

@@ -463,6 +463,42 @@ export async function run(): Promise<void> {
     assert.equal(repoProject.locations.get(rp!.issues[0].id)?.relPath, rp!.issues[0].path);
   });
 
+  // Phase 11: learning aids.
+  const learn = await api.loadLearn(apiFolder, apiState.state, apiState.targets);
+  const lr = learn.result.state === 'ok' ? learn.result : undefined;
+  check('reading order starts at the server, and how-to-run shows the install step', () => {
+    const order = lr!.reading.map((s) => s.file);
+    assert.ok(order.indexOf('server.js') < order.indexOf('routes/users.js'), JSON.stringify(order));
+    assert.equal(lr!.reading.find((s) => s.file === 'server.js')?.depth, 0);
+    assert.deepEqual(lr!.run.map((s) => s.command), ['npm install']);
+  });
+  check('TODO comments are listed and open by id; packages say whether they are used', () => {
+    assert.deepEqual(lr!.todos.map((t) => `${t.file}:${t.line}:${t.tag}:${t.text}`), ['docs/notes.md:2:TODO:write the API docs']);
+    assert.equal(learn.locations.get(lr!.todos[0].id)?.position.line, 1);
+    assert.deepEqual(lr!.packages.map((p) => `${p.name}:${p.used}:${p.installed}`), ['express:imported:false', 'next:not found:false']);
+  });
+  const pyLearn = await api.loadLearn(pyFolder, py.state, py.targets);
+  check('the test map links a Python test to the file it imports', () => {
+    const t = pyLearn.result.state === 'ok' ? pyLearn.result.tests : undefined;
+    assert.deepEqual(t?.tested.map((x) => `${x.file}<${x.tests.join(',')}`), ['app/models.py<tests/test_models.py']);
+    assert.ok(t?.untested.some((x) => x.file === 'app/main.py' && x.node));
+    assert.deepEqual(t?.testFiles.map((x) => x.file), ['tests/test_models.py']);
+  });
+  const ruled = await api.loadHealth(apiFolder, apiState.state, apiState.targets);
+  check('folder rules list the imports that break them', () => {
+    const rules = ruled.result.state === 'ok' ? ruled.result.rules : undefined;
+    assert.equal(rules?.exists, true);
+    assert.deepEqual(rules?.rules.map((r) => `${r.text}: ${r.violations.map((v) => `${v.file}>${v.imports}`).join(',')}`),
+      ['`routes/` must not import `express`: routes/users.js>express', '`web/` must not import `routes/`: ']);
+    assert.equal(ruled.locations.get(rules!.rules[0].id)?.position.line, 2);
+  });
+  const spots = await api.loadHotspots(repoFolder);
+  check('hotspots read the history, and commit messages get a hint', () => {
+    assert.equal(spots.state, 'ok');
+    assert.equal(spots.commits, 2, 'the first commit has nothing to compare with');
+    assert.ok(history.git.kind === 'ok' && history.git.commits.every((c) => c.hint?.startsWith('Start with a type')));
+  });
+
   // Phase 4b: AI sessions from (fake) Claude Code logs. Reading needs the owner's permission first.
   const listed = await api.loadSessions(repoFolder);
   check('session logs are not read before permission is given', () => {

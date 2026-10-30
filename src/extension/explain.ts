@@ -12,7 +12,7 @@ export interface FileExplanation { sentences: string[]; role?: FileRole; tips: s
 
 export async function explainTarget(
   folder: vscode.WorkspaceFolder, target: Target, details: FileDetails, state: DashboardState, notes: number,
-): Promise<FileExplanation> {
+): Promise<FileExplanation & { facts: FileFacts }> {
   const pathOf = new Map(state.graph.nodes.map((n) => [n.id, n.path]));
   const nodeId = state.graph.nodes.find((n) => n.kind === 'file' && n.path === target.relPath)?.id;
   const importedBy = nodeId ? state.graph.edges.filter((e) => e.target === nodeId).map((e) => pathOf.get(e.source) as string) : [];
@@ -65,7 +65,7 @@ export async function explainTarget(
     analyzed: details.analyzed,
   };
   const { sentences, role } = explainFile(facts);
-  return { sentences, role, tips: codeTips(facts) };
+  return { sentences, role, tips: codeTips(facts), facts };
 }
 
 function hoverText(c: vscode.MarkdownString | vscode.MarkedString): string {

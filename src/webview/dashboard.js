@@ -16,7 +16,7 @@
   /** Symbol whose usages are being looked up; stale replies are ignored. */
   let pendingSymbol = '';
   const HISTORY_PAGE = 50;
-  /** 'changes' | 'history' | 'sessions' | 'files' | 'apis' | 'health' | 'project' */
+  /** 'changes' | 'history' | 'sessions' | 'files' | 'apis' | 'health' | 'project' | 'learn' */
   let activeTab = 'changes';
   /** AI session whose details are being loaded; stale replies are ignored. */
   let pendingSession = '';
@@ -63,7 +63,7 @@
 
   /** Browser view only: the click whose code or comparison should be shown (stale replies are ignored). */
   let pendingCode = '';
-  const CODE_REQUESTS = new Set(['open', 'commitFile', 'symbol', 'goto', 'apiItem', 'previewPage', 'projectItem']);
+  const CODE_REQUESTS = new Set(['open', 'commitFile', 'symbol', 'goto', 'apiItem', 'previewPage', 'projectItem', 'learnItem']);
 
   function send(msg) {
     if (CODE_REQUESTS.has(msg.type)) pendingCode = msg.id;
@@ -87,6 +87,7 @@
   $('tabApis').addEventListener('click', () => showTab('apis'));
   $('tabHealth').addEventListener('click', () => showTab('health'));
   $('tabProject').addEventListener('click', () => showTab('project'));
+  $('tabLearn').addEventListener('click', () => showTab('learn'));
   $('expandAll').addEventListener('click', () => { for (const d of $('fileTree').querySelectorAll('details')) /** @type {HTMLDetailsElement} */ (d).open = true; });
   $('collapseAll').addEventListener('click', () => { for (const d of $('fileTree').querySelectorAll('details')) /** @type {HTMLDetailsElement} */ (d).open = false; });
   document.getElementById('codeBack')?.addEventListener('click', () => showGraph());
@@ -98,7 +99,7 @@
 
   function showTab(name) {
     activeTab = name;
-    for (const [tab, view, key] of [['tabChanges', 'changesView', 'changes'], ['tabHistory', 'historyView', 'history'], ['tabSessions', 'sessionsView', 'sessions'], ['tabFiles', 'filesView', 'files'], ['tabApis', 'apisView', 'apis'], ['tabHealth', 'healthView', 'health'], ['tabProject', 'projectView', 'project']]) {
+    for (const [tab, view, key] of [['tabChanges', 'changesView', 'changes'], ['tabHistory', 'historyView', 'history'], ['tabSessions', 'sessionsView', 'sessions'], ['tabFiles', 'filesView', 'files'], ['tabApis', 'apisView', 'apis'], ['tabHealth', 'healthView', 'health'], ['tabProject', 'projectView', 'project'], ['tabLearn', 'learnView', 'learn']]) {
       $(tab).classList.toggle('active', key === name);
       $(tab).setAttribute('aria-selected', String(key === name));
       $(view).hidden = key !== name;
@@ -110,6 +111,7 @@
     else if (name === 'apis') requestApis();
     else if (name === 'health') requestHealth();
     else if (name === 'project') requestProject();
+    else if (name === 'learn') requestLearn();
   }
 
   function requestApis() {
@@ -160,6 +162,10 @@
     else if (msg.type === 'pagePreview') renderPagePreview(msg);
     else if (msg.type === 'health') renderHealth(msg.result);
     else if (msg.type === 'project') renderProject(msg.result);
+    else if (msg.type === 'learn') renderLearn(msg.result);
+    else if (msg.type === 'hotspots') renderHotspots(msg.result);
+    else if (msg.type === 'contextCopied') renderContextCopied(msg);
+    else if (msg.type === 'rulesCreated') { if (activeTab === 'health') requestHealth(); }
     else if (msg.type === 'issueSaved') { const p = document.getElementById('issueStatus'); if (p) p.textContent = msg.message; }
     else if (msg.type === 'markedSafe') { const b = document.getElementById('markSafe'); if (b) { b.textContent = 'Marked as a safe point'; b.setAttribute('disabled', ''); } }
     else if (msg.type === 'previewError') renderPreviewError(msg);
@@ -248,6 +254,7 @@
     else if (activeTab === 'apis') requestApis();
     else if (activeTab === 'health') requestHealth();
     else if (activeTab === 'project') requestProject();
+    else if (activeTab === 'learn') requestLearn();
   }
 
   function showBanner(text) {
@@ -323,6 +330,11 @@
         // Phase 9: files with problems get a soft red (errors) or yellow (warnings) halo.
         { selector: 'node.hasError', style: { 'underlay-color': '#f14c4c', 'underlay-opacity': 0.45, 'underlay-padding': 5, 'underlay-shape': 'ellipse' } },
         { selector: 'node.hasWarning', style: { 'underlay-color': '#cca700', 'underlay-opacity': 0.4, 'underlay-padding': 5, 'underlay-shape': 'ellipse' } },
+        // Phase 11: test colours (Learn tab) and imports that break a folder rule (Health tab).
+        { selector: 'node.tested', style: { 'background-color': '#3fb950' } },
+        { selector: 'node.untested', style: { 'background-color': '#8b949e' } },
+        { selector: 'node.isTest', style: { 'background-color': '#58a6ff', shape: 'round-rectangle' } },
+        { selector: 'node.breaksRule', style: { 'border-width': 3, 'border-color': '#e3742f', 'border-style': 'dashed' } },
       ],
     });
     cy.on('tap', 'node', (evt) => {
@@ -336,6 +348,7 @@
     cy.on('tap', (evt) => { if (evt.target === cy) clearHighlight(); });
     cy.on('dbltap', 'node[kind = "file"]', (evt) => send({ type: 'open', id: evt.target.id() }));
     runLayout();
+    applyTestColours();
     send({ type: 'rendered', nodes: cy.nodes().length, edges: cy.edges().length });
     if (graph.nodes.length === 0) $('graphInfo').textContent = 'No JavaScript, TypeScript or Python files found in this folder.';
   }
@@ -466,6 +479,12 @@
         send({ type: 'commit', id: c.id });
       });
       li.append(btn, el('div', `${c.shortHash} · ${c.author} · ${c.date}`, 'muted small'));
+      // Phase 11: a hint when the message doesn't follow the usual "type: what changed" form.
+      if (c.hint) {
+        const hint = el('div', '✎ ' + c.hint, 'small commit-hint');
+        hint.title = 'Conventional Commits: a common way to write commit messages, like "fix: stop the login loop"';
+        li.append(hint);
+      }
       list.append(li);
     }
     more.hidden = !r.more;
@@ -527,6 +546,7 @@
     const head = el('h3', 'In plain words');
     if (msg.role) head.append(withHelp(el('span', msg.role, 'tag'), msg.role));
     box.replaceChildren(head, el('p', msg.sentences.join(' ')));
+    addCopyContext(box, msg.subject);
     if (msg.tips.length) {
       const ul = el('ul', undefined, 'tips');
       for (const tip of msg.tips) ul.append(el('li', tip));
@@ -668,7 +688,7 @@
   function renderHealth(r) {
     const view = $('healthView');
     view.replaceChildren();
-    if (cy) cy.nodes().removeClass('hasError hasWarning');
+    if (cy) cy.nodes().removeClass('hasError hasWarning breaksRule');
     if (r.state === 'restricted') { view.append(el('p', 'Health checks are off in Restricted Mode. Trust the workspace to see them.', 'muted')); return; }
     if (r.state !== 'ok') { view.append(el('p', 'No folder is open.', 'muted')); return; }
     view.append(el('p', 'Read-only checks: nothing is run, fixed or changed for you.', 'muted small'));
@@ -759,6 +779,44 @@
       tidy.append(el('div'), btn);
     }
     view.append(tidy);
+
+    // Folder rules (Phase 11)
+    const rules = el('div', undefined, 'health-section');
+    const broken = r.rules.rules.reduce((n, x) => n + x.violations.length, 0);
+    rules.append(withHelp(el('h3', `Folder rules (${r.rules.rules.length} rules, ${broken} broken)`), 'folder rule'));
+    if (!r.rules.exists) {
+      rules.append(el('p', 'Write rules like "`src/ui/` must not import `src/database/`" and every import that breaks one is listed here and marked in the graph.', 'muted small'));
+      const create = el('button', 'Create rules file');
+      create.title = `Creates ${r.rules.file} with two example rules and opens it in VS Code. Nothing else is changed.`;
+      create.addEventListener('click', () => send({ type: 'createRules' }));
+      rules.append(create);
+    } else {
+      const open = el('button', r.rules.file, 'link mono small');
+      open.title = 'Open the rules file';
+      open.addEventListener('click', () => send({ type: 'healthItem', id: r.rules.id }));
+      rules.append(open);
+      if (r.rules.rules.length === 0) rules.append(el('p', 'No rules in the form "`folder/` must not import `other/`" yet.', 'muted small'));
+    }
+    for (const rule of r.rules.rules) {
+      const row = el('div', undefined, 'check ' + (rule.violations.length ? 'warn' : 'ok'));
+      const btn = el('button', rule.text, 'link small');
+      btn.addEventListener('click', () => send({ type: 'healthItem', id: rule.id }));
+      row.append(el('span', rule.violations.length ? '✖' : '✔', 'mark'), btn);
+      rules.append(row);
+      const ul = el('ul', undefined, 'files');
+      for (const v of rule.violations) {
+        const li = el('li');
+        const b = el('button', v.file, 'link mono small');
+        b.addEventListener('click', () => {
+          if (v.node) { showGraph(); highlightNodes([v.node]); send({ type: 'inspect', id: v.node }); }
+        });
+        li.append(b, el('span', ` imports ${v.imports}`, 'muted small'));
+        ul.append(li);
+        if (v.node && cy) cy.getElementById(v.node).addClass('breaksRule');
+      }
+      rules.append(ul);
+    }
+    view.append(rules);
 
     // Safe points
     const safe = el('div', undefined, 'health-section');
@@ -954,6 +1012,176 @@
     }
     info.append(el('p', 'Ticked from the words in the status column and the development log, so they are only as up to date as those files.', 'muted small'));
     if (r.plan) info.append(docLink(r.plan, 'Open the plan'));
+  }
+
+  // ---- Learn tab (Phase 11) ----
+  function requestLearn() {
+    $('learnView').replaceChildren(el('p', 'Working out a reading order, tests, TODOs, packages and how to run…', 'muted'));
+    send({ type: 'learn' });
+  }
+
+  /** A file name that selects its graph node and shows its details. */
+  function fileButton(file, node, extra) {
+    const btn = el('button', file, 'link mono small');
+    btn.addEventListener('click', () => {
+      if (!node) return;
+      showGraph();
+      highlightNodes([node]);
+      send({ type: 'inspect', id: node });
+    });
+    const li = el('li');
+    li.append(btn);
+    if (extra) li.append(el('span', ' ' + extra, 'muted small'));
+    return li;
+  }
+
+  /** A list that shows the first `max` items and a "Show all" button for the rest. */
+  function shortList(items, max, render) {
+    const ul = el('ul', undefined, 'files');
+    const show = (n) => ul.replaceChildren(...items.slice(0, n).map(render));
+    show(max);
+    if (items.length <= max) return ul;
+    const wrap = el('div');
+    const more = el('button', `Show all ${items.length}`, 'link small');
+    more.addEventListener('click', () => { show(items.length); more.remove(); });
+    wrap.append(ul, more);
+    return wrap;
+  }
+
+  let testColours = false;
+  /** @type {any} */
+  let lastTests;
+  function applyTestColours() {
+    if (!cy) return;
+    cy.nodes().removeClass('tested untested isTest');
+    if (!testColours || !lastTests) return;
+    for (const t of lastTests.tested) if (t.node) cy.getElementById(t.node).addClass('tested');
+    for (const t of lastTests.untested) if (t.node) cy.getElementById(t.node).addClass('untested');
+    for (const t of lastTests.testFiles) if (t.node) cy.getElementById(t.node).addClass('isTest');
+  }
+
+  function renderLearn(r) {
+    const view = $('learnView');
+    view.replaceChildren();
+    if (r.state === 'restricted') { view.append(el('p', 'Learning aids are off in Restricted Mode. Trust the workspace to see them.', 'muted')); return; }
+    if (r.state !== 'ok') { view.append(el('p', 'No folder is open.', 'muted')); return; }
+    view.append(el('p', 'Worked out from the code and Git: nothing is run or changed. Commands are only shown, for you to copy.', 'muted small'));
+
+    // How to run
+    view.append(withHelp(el('h3', 'How to run'), 'how to run'));
+    if (r.run.length === 0 && r.readme.length === 0) view.append(el('p', 'No package.json scripts, Python entry files or README commands found.', 'muted small'));
+    const ol = el('ol', undefined, 'steps');
+    for (const step of r.run) {
+      const li = el('li', step.text);
+      if (step.command) li.append(el('code', step.command));
+      ol.append(li);
+    }
+    view.append(ol);
+    if (r.readme.length) {
+      view.append(el('p', 'From the README:', 'muted small'));
+      const pre = el('pre', r.readme.join('\n'), 'readme-commands');
+      view.append(pre);
+    }
+
+    // Reading order
+    view.append(withHelp(el('h3', `Reading order (${r.reading.length})`), 'reading order'));
+    if (r.reading.length === 0) view.append(el('p', 'No code files in the graph.', 'muted small'));
+    else view.append(el('p', 'Start at the top: files that start things, then what they use, down to small helpers.', 'muted small'));
+    view.append(shortList(r.reading, 15, (s) => {
+      const li = fileButton(s.file, s.node, s.reason);
+      li.classList.add('depth-' + Math.min(Math.max(s.depth, 0), 4));
+      return li;
+    }));
+
+    // Test map
+    lastTests = r.tests;
+    const total = r.tests.tested.length + r.tests.untested.length;
+    view.append(withHelp(el('h3', `Test map (${r.tests.tested.length} of ${total} files have a test)`), 'test map'));
+    const toggle = el('button', testColours ? 'Hide test colours in the graph' : 'Show test colours in the graph');
+    toggle.addEventListener('click', () => {
+      testColours = !testColours;
+      toggle.textContent = testColours ? 'Hide test colours in the graph' : 'Show test colours in the graph';
+      showGraph();
+      applyTestColours();
+    });
+    view.append(toggle, el('p', 'A file has a test when a test file imports it or is named after it (app.ts → app.test.ts, test_app.py).', 'muted small'));
+    if (r.tests.untested.length) {
+      view.append(el('div', `No test found (${r.tests.untested.length})`, 'small strong'));
+      view.append(shortList(r.tests.untested, 10, (t) => fileButton(t.file, t.node)));
+    }
+    if (r.tests.tested.length) {
+      view.append(el('div', `Tested (${r.tests.tested.length})`, 'small strong'));
+      view.append(shortList(r.tests.tested, 10, (t) => fileButton(t.file, t.node, '← ' + t.tests.map((x) => x.split('/').pop()).join(', '))));
+    }
+    applyTestColours();
+
+    // TODO list
+    view.append(withHelp(el('h3', `TODO list (${r.todos.length}${r.todosTruncated ? '+' : ''})`), 'todo'));
+    if (r.todos.length === 0) view.append(el('p', 'No TODO, FIXME or HACK comments found.', 'muted small'));
+    view.append(shortList(r.todos, 20, (t) => {
+      const li = el('li');
+      const btn = el('button', `${t.file}:${t.line}`, 'link mono small');
+      btn.title = 'Open the line';
+      btn.addEventListener('click', () => send({ type: 'learnItem', id: t.id }));
+      li.append(el('span', t.tag + ' ', 'tag'), btn, el('div', t.text || '(no text)', 'muted small'));
+      return li;
+    }));
+
+    // Packages
+    view.append(withHelp(el('h3', `Packages (${r.packages.length})`), 'package'));
+    if (r.packages.length === 0) view.append(el('p', 'No package.json or requirements.txt packages found.', 'muted small'));
+    const USED = { imported: 'imported by the code', types: 'type information for another package', scripts: 'used by a script', 'not found': 'not imported anywhere: maybe unused, or used by a tool or config' };
+    view.append(shortList(r.packages, 25, (p) => {
+      const li = el('li');
+      li.append(el('span', `${p.name} `, 'mono small'), el('span', `${p.version}${p.dev ? ' · dev' : ''}${p.license ? ' · ' + p.license : ''}`, 'muted small'));
+      if (p.description) li.append(el('div', p.description, 'small'));
+      li.append(el('div', (p.used === 'not found' ? '? ' : '') + USED[p.used] + (p.ecosystem === 'npm' && p.installed === false ? ' · not installed' : ''), p.used === 'not found' ? 'small sev-warning' : 'muted small'));
+      return li;
+    }));
+
+    // Hotspots
+    view.append(withHelp(el('h3', 'Hotspots'), 'hotspot'));
+    const box = el('div');
+    box.id = 'hotspots';
+    const find = el('button', 'Find hotspots');
+    find.title = 'Looks through the latest 100 commits (this can take a few seconds)';
+    find.addEventListener('click', () => {
+      box.replaceChildren(el('p', 'Reading the latest commits…', 'muted small'));
+      send({ type: 'hotspots' });
+    });
+    box.append(find, el('p', 'Files changed most often. Files often changed in "fix" commits are worth a closer look or a test.', 'muted small'));
+    view.append(box);
+  }
+
+  function renderHotspots(r) {
+    const box = document.getElementById('hotspots');
+    if (!box) return;
+    box.replaceChildren();
+    if (r.state !== 'ok') { box.append(el('p', r.state === 'noGit' ? 'No Git history for this folder.' : 'Off in Restricted Mode.', 'muted small')); return; }
+    box.append(el('p', `From the latest ${r.commits} commits.`, 'muted small'));
+    if (r.hotspots.length === 0) box.append(el('p', 'No file changed more than once.', 'muted small'));
+    const nodeOf = new Map(cy ? cy.nodes().map((n) => [n.data('path'), n.id()]) : []);
+    const ul = el('ul', undefined, 'files');
+    for (const h of r.hotspots) ul.append(fileButton(h.file, nodeOf.get(h.file), `${h.changes} changes${h.fixes ? ` · ${h.fixes} in fixes` : ''}`));
+    box.append(ul);
+  }
+
+  /** "Copy context for AI" below a file's plain-words explanation. */
+  function addCopyContext(box, subject) {
+    const btn = el('button', 'Copy context for AI');
+    btn.title = 'Copies a short summary of this file (what it does, what it uses and what uses it) to paste into an AI chat, so the agent needs to read less';
+    btn.addEventListener('click', () => send({ type: 'copyContext', id: subject }));
+    box.append(btn);
+  }
+
+  function renderContextCopied(msg) {
+    if (msg.id !== currentSubject) return;
+    const box = /** @type {HTMLElement | null} */ ($('info').querySelector('.explain'));
+    if (!box) return;
+    box.querySelector('.copied')?.remove();
+    const wrap = el('div', undefined, 'copied');
+    wrap.append(el('p', 'Copied. Paste it into your AI chat:', 'small'), el('pre', msg.text, 'context-text'));
+    box.append(wrap);
   }
 
   // ---- Preview next to the code (Phase 8, browser view only) ----

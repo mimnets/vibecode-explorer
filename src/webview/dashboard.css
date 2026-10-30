@@ -153,3 +153,9 @@ li.closed > button { opacity: 0.6; }
 .note-form { display: flex; flex-direction: column; gap: 4px; margin-top: 6px; }
 .note-form input, .note-form textarea { font: inherit; color: var(--vscode-input-foreground); background: var(--vscode-input-background); border: 1px solid var(--vscode-input-border, #555); padding: 3px 5px; }
 .note-form button { align-self: flex-start; }
+
+/* Phase 11: Learn tab */
+.dot.tested { background: #3fb950; } .dot.untested { background: #8b949e; }
+.depth-1 { padding-left: 10px; } .depth-2 { padding-left: 20px; } .depth-3, .depth-4 { padding-left: 30px; }
+.readme-commands, .context-text { white-space: pre-wrap; word-break: break-word; font-family: var(--vscode-editor-font-family, monospace); font-size: 11px; background: var(--vscode-textCodeBlock-background, rgba(127,127,127,0.12)); padding: 6px; border-radius: 3px; max-height: 240px; overflow: auto; }
+.commit-hint { color: var(--vscode-editorWarning-foreground, #cca700); }

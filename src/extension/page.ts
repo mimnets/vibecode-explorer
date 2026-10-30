@@ -42,6 +42,7 @@ ${browser ? `<link rel="stylesheet" href="${o.asset('src', 'webview', 'browser.c
       <button id="tabApis" class="tab" role="tab" aria-selected="false">Pages &amp; APIs</button>
       <button id="tabHealth" class="tab" role="tab" aria-selected="false">Health</button>
       <button id="tabProject" class="tab" role="tab" aria-selected="false">Project</button>
+      <button id="tabLearn" class="tab" role="tab" aria-selected="false">Learn</button>
     </div>
     <div id="changesView">
       <div id="repo" class="muted"></div>
@@ -64,6 +65,7 @@ ${browser ? `<link rel="stylesheet" href="${o.asset('src', 'webview', 'browser.c
     <div id="apisView" hidden></div>
     <div id="healthView" hidden></div>
     <div id="projectView" hidden></div>
+    <div id="learnView" hidden></div>
   </section>
   <section class="pane graph-pane">
     <div class="graph-tools" id="graphTools">
@@ -76,7 +78,7 @@ ${browser ? `<link rel="stylesheet" href="${o.asset('src', 'webview', 'browser.c
     </div>
     <div id="graph"></div>
     <div class="legend muted" id="legend">
-      <span class="dot file"></span>file <span class="dot changed"></span>changed <span class="dot untracked"></span>new <span class="dot unknown"></span>unknown import <span class="dot used"></span>uses selected symbol <span class="dot commit"></span>in selected commit, session or folder <span class="dot cycle"></span>circular import <span class="dot problem"></span>has problems (Health tab)
+      <span class="dot file"></span>file <span class="dot changed"></span>changed <span class="dot untracked"></span>new <span class="dot unknown"></span>unknown import <span class="dot used"></span>uses selected symbol <span class="dot commit"></span>in selected commit, session or folder <span class="dot cycle"></span>circular import <span class="dot problem"></span>has problems (Health tab) <span class="dot tested"></span>has a test <span class="dot untested"></span>no test found (Learn tab)
     </div>
 ${browser ? `    <div id="codeView" class="code-view" hidden>
       <div class="graph-tools">

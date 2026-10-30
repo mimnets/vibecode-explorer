@@ -338,9 +338,49 @@ History's commit details have a new **Mark as safe point** button.
 
 **Limitations:** only tables are read as plans. The ticks are only as current as the status words and the log. Issues are closed by editing their file.
 
+## 2026-10-30: Phase 11: learning aids
+
+**What:** an eighth tab, **Learn**, with:
+- **How to run:** install, then the scripts in order with plain labels; Python files; README commands. Shown, never run.
+- **Reading order** from start files to small helpers.
+- **Test map:** lists, plus a button that colours the graph.
+- **TODO list.**
+- **Packages:** license, description, and whether anything uses each one.
+- **Hotspots** on request.
+
+Also:
+- **Copy context for AI** in Details.
+- **Folder rules** in the Health tab, from `.vibecode/rules.md`, with **Create rules file**.
+- A **commit message hint** in History.
+- Two new **prompt tips** in AI sessions: repeated prompts, and prompts that name no file.
+
+**AGENTS.md change:** the read-only rule now also allows creating `.vibecode/rules.md` once, with examples, under the notes permission. It is never overwritten. The owner approved folder rules as a feature ("the owner writes rules").
+
+**Dry run on this repository:**
+- How to run lists `npm ci`, watch, compile, the three test scripts, lint, package and prepublish.
+- The README's install commands are found.
+- Packages: cytoscape and typescript are imported, the `@types` packages are types, and eslint and vsce are run by scripts.
+- Fixed before the commit: "js" (from `@eslint/js`) was wrongly found in a script path. Short command names are no longer matched.
+
+**Verified automatically:** lint. 92 unit tests, 10 of them new: reading order, test map (by import and by name, same language only), TODO comments (not `TODO_LIST` in code), commit hints, packages (imported, types, scripts, not found; pip names with `-` and extras), how to run (prebuild hidden, `test:unit` labelled, pnpm), README commands, hotspots, folder rules (three line styles, packages and folders), the AI context text, and prompt tips. 89 integration checks, 5 of them new:
+- reading order and how to run in `api-project`
+- a TODO in an HTML comment, opening at its line
+- packages express (imported) and next (not found)
+- the Python test map
+- a folder rule broken by `routes/users.js` (another rule kept)
+- hotspots over the sample history, and commit hints on its three non-conventional commits
+
+**Not verified automatically:** the Learn tab, the test colours, **Copy context for AI** (clipboard) and **Create rules file** in the GUI.
+
+**Limitations:**
+- Tests are found by imports and names, not by running them, so coverage is unknown.
+- "Not found" packages may still be used by a config file or a tool.
+- Hotspots look at the latest 100 commits only.
+- Folder rules match whole folders and package names, not patterns.
+
 ## Handoff for the next session (updated 2026-10-30)
 
-**Where things stand:** Phases 0–9 are Done and owner-verified. Phase 10 (Project tab) is implemented and auto-tested, awaiting the owner's check; Phases 11 and 12 are approved. GitHub is up to date to `fe0eda5`; later commits are local (pushing needs the owner's yes).
+**Where things stand:** Phases 0–9 are Done and owner-verified. Phases 10 (Project tab) and 11 (learning aids) are implemented and auto-tested, awaiting the owner's check; Phase 12 is approved. GitHub is up to date to `fe0eda5`; later commits are local (pushing needs the owner's yes).
 
 **Next:** the owner picks from the remaining saved ideas: the read-only Project status tab, and the rest of the learning list (reading order, test map, copy context for AI, folder rules, commit message check, TODO list, package list, hotspots, how-to-run card, prompt tips).
 

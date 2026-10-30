@@ -72,6 +72,12 @@ export const GLOSSARY: Readonly<Record<string, string>> = {
   plan: 'The list of phases (steps) the project goes through, kept as a table in a Markdown file such as docs/roadmap.md. Each phase has a goal and a status.',
   workflow: 'The usual steps of each phase: write a plan, get it approved, build it, test it automatically, have the owner check it, and record what happened in the log.',
   'intended structure': 'The folders the project is meant to have, written down in the docs. Folders that are not in it are flagged, so files an AI put in the wrong place are caught early.',
+  'how to run': 'The commands that install, start, build and test this project, read from package.json scripts, Python files and the README. They are shown only: copy them into a terminal yourself.',
+  'reading order': 'A suggested order for reading the code: first the files that start the program, then the files they use, down to small helpers that use nothing else.',
+  'test map': 'Which files have an automatic test. A file without a test can break without anyone noticing; files many others depend on need a test most.',
+  todo: 'A comment like "TODO: …" or "FIXME: …" that someone left as a reminder of unfinished work.',
+  hotspot: 'A file that changes very often. Many changes, especially fixes, mean the file is hard to get right: a good place for a test or a clean-up.',
+  'folder rule': 'A rule you write about which folders may use which, like "src/ui/ must not import src/database/". It keeps the code organised as it grows.',
   issue: 'Something that needs doing or fixing, written down so it is not forgotten. Saved as a small file in .vibecode/notes/; your plan files are never changed.',
   'http method': 'The kind of request: GET reads, POST creates, PUT or PATCH changes, DELETE removes. ANY means the route accepts every method.',
 };

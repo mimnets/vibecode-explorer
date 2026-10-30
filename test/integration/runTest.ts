@@ -90,8 +90,10 @@ export const pong = () => ping;
   write(path.join(apiDir, 'views/home.ejs'), `<h1>Home</h1>\n`);
   // Phase 9: a fake key in code, and two near-duplicate names.
   write(path.join(apiDir, 'config.js'), `module.exports = { apiKey: "sk-fakefakefakefake1234" };\n`);
-  write(path.join(apiDir, 'docs/notes.md'), `# Notes\n`);
+  write(path.join(apiDir, 'docs/notes.md'), `# Notes\n<!-- TODO: write the API docs -->\n`);
   write(path.join(apiDir, 'docs/notes-old.md'), `# Old notes\n`);
+  // Phase 11: a folder rule that routes/users.js breaks.
+  write(path.join(apiDir, '.vibecode/rules.md'), `# Folder rules\n\n- \`routes/\` must not import \`express\`\n- \`web/\` must not import \`routes/\`\n`);
   // Phase 10: a plan, a log and an intended layout.
   write(path.join(apiDir, 'docs/roadmap.md'), `# Roadmap\n\n| Phase | Goal | Status |\n| --- | --- | --- |\n| 1 | Users API | Done |\n| 2 | Web client | In progress |\n| 3 | Shop | Planned |\n`);
   write(path.join(apiDir, 'CHANGELOG.md'), `# Log\n\n## Phase 1: users\n`);

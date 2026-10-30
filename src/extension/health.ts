@@ -4,12 +4,16 @@ import { redactSecrets } from '../analysis/agentLogs';
 import { MAX_TREE_FILES, TREE_EXCLUDE_GLOB } from '../analysis/fileTree';
 import { explainProblem, goBackSteps, HealthCheck, healthChecklist, nearDuplicates, possiblyUnused, SafePoint, safePoints } from '../analysis/health';
 import { commitHeadline } from '../git/history';
+import { parseFolderRules, ruleViolations } from '../analysis/learn';
 import { findSecrets } from '../analysis/secrets';
 import { isSensitiveFile } from '../analysis/sensitive';
 import { getHistory, getTags, ignoredByGit } from '../git/gitChanges';
 import { loadSessions, sessionsAllowed } from './agentSessions';
 import { listNotes } from './notes';
-import { CodeLocation, DashboardState } from './state';
+import { CodeLocation, DashboardState, Target } from './state';
+
+/** The owner's folder rules (Phase 11), one rule per line. */
+export const RULES_FILE = '.vibecode/rules.md';
 
 // Phase 9: the Health tab. Problems VS Code already knows about, a project checklist,
 // secret-looking text (location only, never the value), possibly unused and near-duplicate
@@ -40,6 +44,7 @@ export type HealthResult =
     duplicates: { files: string[]; nodes: string[] }[];
     safePoints: (SafePoint & { steps: { text: string; command?: string }[] })[];
     safeSources: { git: boolean; sessionsAllowed: boolean };
+    rules: { file: string; exists: boolean; id?: string; rules: { text: string; id: string; violations: { id: string; file: string; imports: string; node?: string }[] }[] };
   };
 
 async function readText(uri: vscode.Uri): Promise<string | undefined> {
@@ -53,7 +58,7 @@ async function readText(uri: vscode.Uri): Promise<string | undefined> {
 }
 
 export async function loadHealth(
-  folder: vscode.WorkspaceFolder, state: DashboardState, memento: vscode.Memento,
+  folder: vscode.WorkspaceFolder, state: DashboardState, memento: vscode.Memento, targets: ReadonlyMap<string, Target> = new Map(),
 ): Promise<{ result: HealthResult; locations: Map<string, CodeLocation>; secretIds: Set<string> }> {
   const locations = new Map<string, CodeLocation>();
   const secretIds = new Set<string>();
@@ -158,6 +163,23 @@ export async function loadHealth(
   const branch = state.git.kind === 'ok' ? state.git.branch : 'main';
   const points = safePoints(commits, tags, starts, marked).map((p) => ({ ...p, steps: goBackSteps(p.short, branch) }));
 
+  // 6. Folder rules (Phase 11): imports that break the owner's rules in .vibecode/rules.md.
+  const rulesText = await readText(uriOf(RULES_FILE));
+  const parsed = rulesText ? parseFolderRules(rulesText) : [];
+  const graphImports = [...targets].filter(([id, t]) => id.startsWith('f') && t.analysis).map(([, t]) => ({ path: t.relPath, imports: t.analysis?.imports ?? [] }));
+  const broken = ruleViolations(parsed, graphImports);
+  const rules = {
+    file: RULES_FILE,
+    exists: rulesText !== undefined,
+    id: rulesText !== undefined ? locate(RULES_FILE, 1, RULES_FILE) : undefined,
+    rules: parsed.map((r, i) => ({
+      text: r.text,
+      id: locate(RULES_FILE, r.line, r.text),
+      violations: broken.filter((v) => v.rule === i).slice(0, 100)
+        .map((v) => ({ id: locate(v.file, 1, v.file), file: v.file, imports: v.imports, node: nodeOf.get(v.file) })),
+    })),
+  };
+
   return {
     result: {
       state: 'ok',
@@ -169,6 +191,7 @@ export async function loadHealth(
       duplicates,
       safePoints: points,
       safeSources: { git: history.kind === 'ok', sessionsAllowed: allowed },
+      rules,
     },
     locations,
     secretIds,

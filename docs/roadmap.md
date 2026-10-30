@@ -21,7 +21,7 @@ Before each phase: write a short plan, get owner approval, implement, verify, re
 | 8 | Preview alongside code: link preview pages to the source files that serve them, where this can be proven statically | R5 | Done, owner-verified 2026-10-30 |
 | 9 | Safety and learning checks: a Health tab with VS Code's problems in plain words, a project checklist, secret-looking text (location only), possibly unused and near-duplicate files, and safe points to go back to | R6, R12, R1 | Done, owner-verified 2026-10-30 |
 | 10 | Project status: a Project tab with the plan's phases and current stage, each phase's steps (plan, approve, build, test, owner check, log), the requirements count, folders outside the intended layout, and issues added from the dashboard (saved as notes) | R4, R6, R7 | Implemented and auto-tested (plan approved 2026-10-30). Awaiting owner check |
-| 11 | Learning aids: reading order, test map, copy context for AI, folder rules, commit message check, TODO list, package list, hotspots, how-to-run card, prompt tips | R6, R2, R10 | Approved 2026-10-30, not started |
+| 11 | Learning aids: reading order, test map, copy context for AI, folder rules, commit message check, TODO list, package list, hotspots, how-to-run card, prompt tips | R6, R2, R10 | Implemented and auto-tested (plan approved 2026-10-30). Awaiting owner check |
 | 12 | Small fixes: notes written in the browser, syntax colours in the code view, remembering a "No" to the notes question, graph labels that don't touch | R7, R8, R3 | Approved 2026-10-30, not started |
 
 ## Guardrails for every phase

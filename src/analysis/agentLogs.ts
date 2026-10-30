@@ -190,6 +190,19 @@ export function sessionTips(s: SessionSummary, editedRelPaths: string[]): string
   if (s.prompts.length > 25) {
     tips.push(`This session had ${s.prompts.length} prompts. Starting a new session for each new topic keeps the context small, which saves tokens and keeps answers focused.`);
   }
+  // Phase 11: prompts sent again, and prompts that name no file.
+  const norm = (t: string): string => t.toLowerCase().replace(/\s+/g, ' ').trim().slice(0, 200);
+  const seenPrompts = new Map<string, number>();
+  for (const p of s.prompts) if (norm(p.text).length >= 8) seenPrompts.set(norm(p.text), (seenPrompts.get(norm(p.text)) ?? 0) + 1);
+  const repeated = [...seenPrompts.values()].filter((n) => n > 1).reduce((a, n) => a + n - 1, 0);
+  if (repeated > 0) {
+    tips.push(`${repeated} prompt${repeated === 1 ? ' was' : 's were'} sent again with the same words. When an answer isn't right, say what was wrong with it instead of repeating the request.`);
+  }
+  const long = s.prompts.filter((p) => p.text.length >= 40);
+  const namesFile = (t: string): boolean => /[\w-]+\.[a-z]{1,5}\b|[\w-]+\/[\w.-]+|`[^`]+`/i.test(t);
+  if (long.length >= 4 && long.filter((p) => !namesFile(p.text)).length / long.length > 0.75) {
+    tips.push('Most prompts named no file or folder. Naming where to look (for example src/app.ts) lets the agent read less, which saves tokens and time.');
+  }
   const code = editedRelPaths.filter((p) => !/\.(md|txt)$/i.test(p));
   if (code.length > 0 && !code.some((p) => /(^|\/)(tests?|__tests__|spec)(\/|$)|\.(test|spec)\.[a-z]+$|(^|\/)test_[^/]+\.py$|_test\.py$/i.test(p))) {
     tips.push('Code changed but no test files did. Asking the agent to add or run a test is a cheap way to check its work.');
@@ -210,5 +223,5 @@ export function sessionTips(s: SessionSummary, editedRelPaths: string[]): string
   if (editedRelPaths.length === 0 && s.prompts.length > 0) {
     tips.push('No files were changed in this session: it was planning or questions. Saving the outcome as a note keeps the decision next to the code.');
   }
-  return tips.slice(0, 5);
+  return tips.slice(0, 6);
 }

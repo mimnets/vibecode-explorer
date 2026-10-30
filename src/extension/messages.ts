@@ -43,6 +43,12 @@ export type WebviewMessage =
   | { type: 'project' }
   | { type: 'projectItem'; id: string }
   | { type: 'addIssue'; title: string; text: string }
+  /** Learn tab (Phase 11): load it, open a TODO (`l…`), find hotspots; copy a file's (`f…`/`c…`/`p…`) context for an AI chat; create the folder rules file. */
+  | { type: 'learn' }
+  | { type: 'learnItem'; id: string }
+  | { type: 'hotspots' }
+  | { type: 'copyContext'; id: string }
+  | { type: 'createRules' }
   /** Preview a page (`g…`) at an address the owner may have edited (Phase 8). */
   | { type: 'previewPage'; id: string; path: string }
   /** Show one AI session (`a…`). */
@@ -67,6 +73,9 @@ export function parseWebviewMessage(raw: unknown): WebviewMessage | undefined {
     case 'apis':
     case 'health':
     case 'project':
+    case 'learn':
+    case 'hotspots':
+    case 'createRules':
       return { type: msg.type };
     case 'selectFolder':
       return Number.isInteger(msg.index) && (msg.index as number) >= 0 && (msg.index as number) < 1000
@@ -89,6 +98,8 @@ export function parseWebviewMessage(raw: unknown): WebviewMessage | undefined {
     case 'healthItem':
     case 'markSafe':
     case 'projectItem':
+    case 'learnItem':
+    case 'copyContext':
     case 'session':
       return typeof msg.id === 'string' && ID_PATTERN.test(msg.id) ? { type: msg.type, id: msg.id } : undefined;
     case 'previewPage':
