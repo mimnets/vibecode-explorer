@@ -396,10 +396,13 @@ Also:
 
 **Limitations:** colours come from simple rules, not a real parser, so a rare line may be coloured wrongly. Existing notes are still edited in VS Code.
 
-## Handoff for the next session (updated 2026-10-30)
+## Handoff for the next session (updated 2026-10-30, end of day)
 
-**Where things stand:** Phases 0–9 are Done and owner-verified. Phases 10 (Project tab), 11 (learning aids) and 12 (small fixes) are implemented and auto-tested, awaiting the owner's GUI check. GitHub is up to date to `fe0eda5`; later commits are local (pushing needs the owner's yes).
+**Where things stand:** Phases 0–9 are Done and owner-verified. Phases 10 (Project tab), 11 (learning aids) and 12 (small fixes) are implemented, auto-tested (lint, 92 unit tests, 89 integration checks) and committed (`cecdc6b`, `45cefad`, `8c52bf5`). The VSIX with all three was installed into the owner's VS Code with their yes. **The owner's GUI check of Phases 10–12 is still to do.** GitHub is at `9f20dc4`; the three commits above (and this handoff) are local, and pushing needs the owner's yes. AGENTS.md now also allows creating `.vibecode/rules.md` once (Phase 11).
 
-**Next:** the owner picks from the remaining saved ideas: the read-only Project status tab, and the rest of the learning list (reading order, test map, copy context for AI, folder rules, commit message check, TODO list, package list, hotspots, how-to-run card, prompt tips).
+**Next:**
+1. Owner GUI check, one phase at a time (the 13 steps given in the session: Project tab stage/steps/structure/Add issue; Learn tab sections, test colours, hotspots, Copy context for AI, commit hints, Create rules file; browser syntax colours, Save note, spaced labels). Record the evidence, mark the phases Done in `roadmap.md` and `requirements.md`.
+2. Fix anything the check finds, then ask before pushing.
+3. Then ask the owner what next: every saved idea except the one below has been built.
 
-**Open ideas, not scheduled:** editing the AI's memory and rule files from the dashboard (saved idea, needs its own approval); notes break on file rename; AI sessions read Claude Code logs only; clicking a listed note wasn't explicitly owner-checked; Svelte/Nuxt/Astro pages.
+**Open ideas, not scheduled:** editing the AI's memory and rule files from the dashboard (saved idea, needs its own approval and an AGENTS.md rule); closing issues from the dashboard; "what did the AI change" review checklist per session; notes break on file rename; AI sessions read Claude Code logs only; Svelte/Nuxt/Astro pages; the extension version is still 0.1.0.
