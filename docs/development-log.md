@@ -195,6 +195,10 @@ The owner also asked whether notes could be done fully in the browser. Today **A
 
 **Owner evidence:** the AI sessions tab asked for permission in VS Code, then showed the totals and session list; a session's prompts, tokens and changed files were shown; the owner saw no secrets in clear text. Phase 4b is now owner-verified. Next: the Phase 5 learning aids check.
 
+## 2026-10-30: Owner question: browser only, without VS Code?
+
+The owner found VS Code crowded with the agent chat, code and dashboard together, and asked whether to drop the VS Code side and use only the browser. Explained: the browser view depends on the extension for Git, symbols and usages, permissions and opening files; browser-only means option B (rejected 2026-10-29: several phases, needs `git` commands, fewer symbol features). **Owner decision:** keep the extension running in the background and make the browser the main screen. Phase 6c now also includes an option to open the browser view automatically when the project opens. Option B stays not planned.
+
 ## Handoff for the next session (written 2026-10-29)
 
 **Where things stand:** Phases 0–3 are Done and owner-verified. Phases 5 and 6 are implemented (4, 4b and 6b owner-verified 2026-10-30) and auto-tested but **awaiting the owner's GUI check**. Nothing is pushed to GitHub yet (pushing needs the owner's yes). The working tree is clean after the last commit.
