@@ -247,6 +247,10 @@ The owner found VS Code crowded with the agent chat, code and dashboard together
 
 **Owner request, done straight away (small, within 6d):** clicking a file in the tree should show it selected in the graph. Now a click on a graph file brings the graph back (in the browser it may have been showing code), selects the file, and centres it with a short animation. A folder click also zooms to fit its files. Webview-only change. **Verified automatically:** lint and the existing tests. **Not verified automatically:** the selection and animation in the webview.
 
+## 2026-10-30: Owner check of the startup setting
+
+**Owner evidence:** with **Open Browser On Startup** ticked, reloading VS Code opened the dashboard in the browser by itself. Phase 6c is now fully owner-verified. The owner also reported that clicking files in the Files tab didn't change the graph. That was on the version installed before the select-and-centre change (`76c3518`), which has now been installed for a re-check.
+
 ## Handoff for the next session (updated 2026-10-30)
 
 **Where things stand:** Phases 0–6b are Done and owner-verified. Phase 6c (code and diffs in the browser) is owner-verified except the startup setting. Phase 6d (Files tab) is implemented and auto-tested, **awaiting the owner's GUI check**. Nothing is pushed to GitHub yet (pushing needs the owner's yes).

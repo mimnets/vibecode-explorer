@@ -146,11 +146,11 @@ Requested by the owner on 2026-10-30, and approved the same day with these choic
 | C | Clicking a symbol or a "Used in" place shows the file with that line highlighted and scrolled into view | Done (owner-verified in the GUI) |
 | D | **Open in VS Code** opens the same file, comparison or line in VS Code (`openInEditor`, opaque ids only). The VS Code panel is unchanged | Done (owner-verified in the GUI) |
 | E | Read-only. Sensitive files (now or in a commit, including a rename's old name) are never read or sent. Binary files are not shown. Over 1 MB or 20,000 lines is cut off with a note. Over 2,000 changed lines shows the new version with a note. Text is shown with `textContent` only | Done |
-| F | Setting `vibecodeExplorer.openBrowserOnStartup` (default off) opens the browser view when a trusted folder opens, or when the folder becomes trusted | Done (not auto-tested) |
+| F | Setting `vibecodeExplorer.openBrowserOnStartup` (default off) opens the browser view when a trusted folder opens, or when the folder becomes trusted | Done (owner-verified in the GUI) |
 | G | The browser view keeps running while a tab is open and stops 30 minutes after the last tab closes (or a link is never opened), on VS Code exit, or by command | Done |
 | H | No new dependency | Done |
 
-Owner-verified 2026-10-30 except F, the startup setting (see the development log). Non-goals: syntax colours, editing in the browser, notes in the browser, side-by-side comparisons, search.
+Owner-verified 2026-10-30 (see the development log). Non-goals: syntax colours, editing in the browser, notes in the browser, side-by-side comparisons, search.
 
 ## Phase 6d scope: Files tab
 
