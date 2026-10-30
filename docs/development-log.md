@@ -185,6 +185,12 @@ The VSIX was rebuilt (`npm run package`) and, with the owner's yes, installed in
 
 **Owner evidence:** in the VS Code dashboard, **Add note** on a file showed the "Save notes in .vibecode/notes/" question once; after **Yes** a new Markdown note opened in the editor; Details then listed it as Notes (1); a second **Add note** skipped the question. The note was created as `.vibecode/notes/2026-10-30-note-about-agentlogs-test-ts-testing-notes.md`, and no other file changed. It is left uncommitted, as designed. Not explicitly checked: clicking a listed note to open it. Phase 4 is now owner-verified. Next: the Phase 4b AI sessions check.
 
+## 2026-10-30: Owner request: view code in the browser (Phase 6c)
+
+The owner asked whether the code itself could be seen in the browser view instead of opening in VS Code. **Owner decisions:** code **and** diffs shown in the browser (notes keep opening in VS Code), plain text with line numbers (no syntax-highlighting dependency), and planned **after** the three remaining GUI checks (4b, 5, 6), before Phase 7. Added to the roadmap as Phase 6c. Not yet planned in detail or approved for building.
+
+The owner also asked whether notes could be done fully in the browser. Today **Add note** works from the browser, but the permission question, the title box and the editor appear in VS Code. Kept as an open idea, not part of 6c.
+
 ## Handoff for the next session (written 2026-10-29)
 
 **Where things stand:** Phases 0–3 are Done and owner-verified. Phases 4b, 5 and 6 are implemented (4 and 6b owner-verified 2026-10-30) and auto-tested but **awaiting the owner's GUI check**. Nothing is pushed to GitHub yet (pushing needs the owner's yes). The working tree is clean after the last commit.
@@ -198,6 +204,6 @@ The VSIX was rebuilt (`npm run package`) and, with the owner's yes, installed in
    - **Phase 5 learning aids:** In plain words, the **?** buttons, clicking a symbol, red circular-import outline.
    - **Phase 6 Python:** open `Documents\vibecode-python-demo`, check the `orders.py`/`payments.py` loop in red.
 3. After each passing check, update its row in `docs/roadmap.md` and the status in `docs/requirements.md`.
-4. Then plan **Phase 7** (API and database relationships, static only) and ask for approval before building it.
+4. Then plan **Phase 6c** (code and diffs in the browser, requested 2026-10-30), then **Phase 7** (API and database relationships, static only) and ask for approval before building it.
 
-**Open ideas, not scheduled:** a "No" answer to the notes question isn't remembered; notes break on file rename; AI sessions read Claude Code logs only.
+**Open ideas, not scheduled:** notes written fully in the browser; a "No" answer to the notes question isn't remembered; notes break on file rename; AI sessions read Claude Code logs only.
