@@ -72,9 +72,28 @@ export function checkRequest(r: GuardInput): GuardResult {
 }
 
 /** Content-Security-Policy of the browser page: same rules as the VS Code panel, plus same-origin connections. */
-export function browserCsp(nonce: string): string {
+/**
+ * `frameOrigin` (Phase 8) is the owner's preview server, the only page that may be shown
+ * inside the dashboard. It must be a loopback http(s) origin and never this server itself.
+ */
+/** The preview origin that may be framed, or undefined when it is missing, not local, or this server. */
+export function framableOrigin(previewUrl: string | undefined, ownPort: number): string | undefined {
+  if (!previewUrl) return undefined;
+  let u: URL;
+  try {
+    u = new URL(previewUrl);
+  } catch {
+    return undefined;
+  }
+  const port = u.port ? Number(u.port) : u.protocol === 'https:' ? 443 : 80;
+  if (port === ownPort) return undefined;
+  return /^https?:$/.test(u.protocol) && !u.username && !u.password ? u.origin : undefined;
+}
+
+export function browserCsp(nonce: string, frameOrigin?: string): string {
   return [
     "default-src 'none'",
+    `frame-src ${frameOrigin && /^https?:\/\/(localhost|127\.0\.0\.1|\[::1\]|[a-z0-9-]+\.localhost)(:\d+)?$/i.test(frameOrigin) ? frameOrigin : "'none'"}`,
     "img-src 'self' data:",
     "style-src 'self'",
     "font-src 'self'",

@@ -323,6 +323,21 @@ export async function run(): Promise<void> {
     assert.deepEqual(model('Person')?.usedBy, ['service.ts']);
     assert.ok(!JSON.stringify(apis.result).includes('do-not-read'), 'the .env file is never read');
   });
+  const pageOf = (p: string, kind: string) => apiMap?.pages.find((x) => x.path === p && x.kind === kind);
+  check('pages are found with the files that make them', () => {
+    const next = pageOf('/users', 'Next.js page');
+    assert.ok(next, JSON.stringify(apiMap?.pages.map((x) => `${x.kind} ${x.path} ${x.file}`)));
+    assert.equal(next.file, 'app/users/page.tsx');
+    assert.ok(next.files.includes('app/layout.tsx') && next.files.includes('web/client.js'), JSON.stringify(next.files));
+    const profile = pageOf('/profile/:name', 'React Router');
+    assert.equal(profile?.file, 'web/Profile.jsx');
+    assert.ok(profile?.needsValue && profile.files.includes('web/router.jsx'));
+    assert.deepEqual(pageOf('/', 'HTML page')?.files, ['web/client.js']);
+    const home = pageOf('/', 'Express view');
+    assert.equal(home?.template, 'views/home.ejs');
+    assert.equal(home?.file, 'site.js');
+    assert.ok(!pageOf('/api/items', 'Next.js page'), 'route handlers are not pages');
+  });
   const healthLoc = apis.locations.get(route('GET /health')!.id)!;
   const healthView = await api.codeForLocation(route('GET /health')!.id, healthLoc);
   check('a route opens at its line, and items carry graph ids to outline', () => {
@@ -503,6 +518,34 @@ export async function run(): Promise<void> {
   await waitFor(() => received.some((m) => m.type === 'apis'));
   const bApis = received.find((m) => m.type === 'apis')?.result as { state: string; calls: { id: string }[]; routes: { id: string }[] } | undefined;
   check('a browser tab gets the APIs tab listing', () => assert.equal(bApis?.state, 'ok'));
+  // Phase 8: previewing a page from the browser needs the preview setting; it is checked and joined to the page address.
+  await send({ type: 'selectFolder', index: 3 });
+  await waitFor(() => received.filter((m) => m.type === 'state').length >= 2);
+  received.length = 0;
+  await send({ type: 'apis' });
+  await waitFor(() => received.some((m) => m.type === 'apis'));
+  const pagesResult = received.find((m) => m.type === 'apis')?.result as { pages: { id: string; path: string; kind: string }[] } | undefined;
+  const usersPage = pagesResult?.pages.find((p) => p.path === '/users' && p.kind === 'Next.js page');
+  await send({ type: 'previewPage', id: usersPage?.id, path: '/users' });
+  await waitFor(() => received.some((m) => m.type === 'previewError'));
+  check('previewing without a preview address explains what to set', () => {
+    assert.match(String(received.find((m) => m.type === 'previewError')?.message), /preview URL/i);
+    assert.ok(!received.some((m) => m.type === 'pagePreview'));
+  });
+  const config = vscode.workspace.getConfiguration('vibecodeExplorer');
+  await config.update('previewUrl', 'http://localhost:5173', vscode.ConfigurationTarget.Global);
+  await send({ type: 'previewPage', id: usersPage?.id, path: '//evil.example/x' });
+  await send({ type: 'previewPage', id: usersPage?.id, path: '/users?tab=1' });
+  await waitFor(() => received.some((m) => m.type === 'pagePreview'));
+  const previews = received.filter((m) => m.type === 'pagePreview');
+  const framedPage = await request({ path: link.pathname });
+  check('a page preview opens next to its code, only on the preview server', () => {
+    assert.deepEqual(previews.map((m) => m.url), ['http://localhost:5173/users?tab=1']);
+    assert.ok(received.some((m) => m.type === 'code' && (m.view as { for: string }).for === usersPage?.id));
+    assert.ok(received.some((m) => m.type === 'previewError' && /stay on your preview server/.test(String(m.message))));
+    assert.match(String(framedPage.headers['content-security-policy']), /frame-src http:\/\/localhost:5173;/);
+  });
+  await config.update('previewUrl', undefined, vscode.ConfigurationTarget.Global);
   const lanAddress = Object.values(os.networkInterfaces()).flat().find((a) => a && a.family === 'IPv4' && !a.internal)?.address;
   const fromNetwork = lanAddress
     ? await new Promise<string>((resolve) => {

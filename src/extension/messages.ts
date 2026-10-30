@@ -35,6 +35,8 @@ export type WebviewMessage =
   | { type: 'apis' }
   /** Show where a route (`w…`), call (`x…`) or model (`m…`) is defined. */
   | { type: 'apiItem'; id: string }
+  /** Preview a page (`g…`) at an address the owner may have edited (Phase 8). */
+  | { type: 'previewPage'; id: string; path: string }
   /** Show one AI session (`a…`). */
   | { type: 'session'; id: string }
   /** Sent by the webview after drawing the graph, or when a script error occurs. */
@@ -76,6 +78,10 @@ export function parseWebviewMessage(raw: unknown): WebviewMessage | undefined {
     case 'apiItem':
     case 'session':
       return typeof msg.id === 'string' && ID_PATTERN.test(msg.id) ? { type: msg.type, id: msg.id } : undefined;
+    case 'previewPage':
+      return typeof msg.id === 'string' && ID_PATTERN.test(msg.id) && typeof msg.path === 'string' && msg.path.length <= 512
+        ? { type: 'previewPage', id: msg.id, path: msg.path }
+        : undefined;
     case 'rendered':
       return Number.isInteger(msg.nodes) && Number.isInteger(msg.edges)
         ? { type: 'rendered', nodes: msg.nodes as number, edges: msg.edges as number }

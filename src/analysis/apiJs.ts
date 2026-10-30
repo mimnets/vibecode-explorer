@@ -1,8 +1,9 @@
 // Phase 7: routes, HTTP calls and models in JavaScript/TypeScript, read with the TypeScript
 // parser (syntax only). Pure, unit-testable. Patterns, not a type checker: what can't be read
 // from the source text is shown as `*` or left out, never guessed.
+import * as path from 'path';
 import type * as TS from 'typescript';
-import { emptyFacts, FileApiFacts, HTTP_METHODS, HttpMethod } from './apis';
+import { emptyFacts, FileApiFacts, HTTP_METHODS, HttpMethod, joinPath, RouteView } from './apis';
 import { loadTs } from './imports';
 
 const ROUTE_METHODS = new Set(['get', 'post', 'put', 'patch', 'delete', 'head', 'options', 'all']);
@@ -52,6 +53,99 @@ export function analyzeJsApi(fileName: string, source: string): FileApiFacts {
     return undefined;
   };
 
+  /** `import('./x')` inside `() => import('./x')`. */
+  function dynamicImport(n: TS.Node | undefined): string | undefined {
+    let body: TS.Node | undefined = n && (ts.isArrowFunction(n) || ts.isFunctionExpression(n)) ? n.body : n;
+    if (body && ts.isBlock(body)) body = body.statements.find(ts.isReturnStatement)?.expression;
+    if (body && ts.isCallExpression(body) && body.expression.kind === ts.SyntaxKind.ImportKeyword && body.arguments[0] && ts.isStringLiteralLike(body.arguments[0])) {
+      return body.arguments[0].text;
+    }
+    return undefined;
+  }
+
+  /** What an Express handler sends back: `res.render('view')` or `res.sendFile(path.join(__dirname, 'x.html'))`. */
+  function viewOf(handlers: readonly TS.Expression[]): RouteView | undefined {
+    let view: RouteView | undefined;
+    const look = (n: TS.Node): void => {
+      if (view) return;
+      if (ts.isCallExpression(n) && ts.isPropertyAccessExpression(n.expression)) {
+        const name = n.expression.name.text;
+        const arg = n.arguments[0];
+        if (name === 'render' && text(arg)) view = { render: text(arg) };
+        else if (name === 'sendFile' && arg) {
+          const parts = ts.isCallExpression(arg) && ['join', 'resolve'].includes(nameOf(arg.expression)) ? [...arg.arguments] : [arg];
+          const fromDir = parts[0] !== undefined && ts.isIdentifier(parts[0]) && parts[0].text === '__dirname';
+          const literal = (fromDir ? parts.slice(1) : parts).map((p) => text(p));
+          if (literal.length && literal.every((x) => x !== undefined && !x.includes('*'))) {
+            const joined = path.posix.normalize(path.posix.join(fromDir ? path.posix.dirname(fileName) : '', ...(literal as string[])));
+            if (!joined.startsWith('..')) view = { file: joined };
+          }
+        }
+      }
+      ts.forEachChild(n, look);
+    };
+    for (const h of handlers) if (isFunctionLike(h)) look(h);
+    return view;
+  }
+
+  type JsxTag = TS.JsxOpeningElement | TS.JsxSelfClosingElement;
+  const tagName = (n: JsxTag): string => n.tagName.getText(sf);
+  function jsxAttr(n: JsxTag, name: string): TS.JsxAttribute | undefined {
+    return n.attributes.properties.find((a): a is TS.JsxAttribute => ts.isJsxAttribute(a) && a.name.getText(sf) === name);
+  }
+  function jsxString(n: JsxTag, name: string): string | undefined {
+    const init = jsxAttr(n, name)?.initializer;
+    if (!init) return undefined;
+    if (ts.isStringLiteral(init)) return init.text;
+    return ts.isJsxExpression(init) ? text(init.expression) : undefined;
+  }
+  /** The component a <Route> shows: element={<Users />}, Component={Users} or component={Users}. */
+  function jsxComponent(n: JsxTag): string | undefined {
+    for (const key of ['element', 'Component', 'component']) {
+      const init = jsxAttr(n, key)?.initializer;
+      const e = init && ts.isJsxExpression(init) ? init.expression : undefined;
+      if (!e) continue;
+      if (ts.isJsxSelfClosingElement(e)) return tagName(e);
+      if (ts.isJsxElement(e)) return tagName(e.openingElement);
+      if (ts.isIdentifier(e)) return e.text;
+    }
+    return undefined;
+  }
+  /** Joins nested paths from the outside in; an absolute path starts over. */
+  const joinNested = (parts: string[]): string => parts.reduce((acc, x) => (x.startsWith('/') ? x : joinPath(acc, x)), '');
+  /** The joined path of the <Route> elements around this one. */
+  function parentRoutePath(n: TS.Node): string {
+    const parts: string[] = [];
+    for (let p = n.parent; p; p = p.parent) {
+      if (ts.isJsxElement(p) && p.openingElement !== n && tagName(p.openingElement) === 'Route') {
+        const own = jsxString(p.openingElement, 'path');
+        if (own) parts.unshift(own);
+      }
+    }
+    return joinNested(parts);
+  }
+  /** A component name and, when it is imported, the module it comes from. */
+  const componentRef = (name: string): { component?: string; componentName: string } => ({ componentName: name, component: imported.get(name.split('.')[0]) });
+  function objectComponent(o: TS.ObjectLiteralExpression): { component?: string; componentName?: string } | undefined {
+    const el = prop(o, 'element');
+    if (el && ts.isJsxSelfClosingElement(el)) return componentRef(tagName(el));
+    if (el && ts.isJsxElement(el)) return componentRef(tagName(el.openingElement));
+    const comp = prop(o, 'Component') ?? prop(o, 'component');
+    if (comp && ts.isIdentifier(comp)) return componentRef(comp.text);
+    const spec = dynamicImport(comp) ?? dynamicImport(prop(o, 'lazy'));
+    return spec ? { component: spec } : undefined;
+  }
+  /** The joined path of the route objects this one is nested in (`children: [...]`). */
+  function parentObjectPath(o: TS.Node): string {
+    const parts: string[] = [];
+    for (let p = o.parent; p; p = p.parent) {
+      if (!ts.isObjectLiteralExpression(p)) continue;
+      const own = text(prop(p, 'path'));
+      if (own !== undefined) parts.unshift(own);
+    }
+    return joinNested(parts);
+  }
+
   // First pass: imports (for mounts) and axios instances (`const api = axios.create()`).
   const imported = new Map<string, string>();
   const axiosNames = new Set(['axios']);
@@ -70,10 +164,14 @@ export function analyzeJsApi(fileName: string, source: string): FileApiFacts {
       if (ts.isCallExpression(init) && ts.isPropertyAccessExpression(init.expression) && init.expression.name.text === 'create' && axiosNames.has(nameOf(init.expression.expression))) {
         axiosNames.add(node.name.text);
       }
+      // const Users = lazy(() => import('./Users'))
+      const lazySpec = ts.isCallExpression(init) && nameOf(init.expression) === 'lazy' ? dynamicImport(init.arguments[0]) : undefined;
+      if (lazySpec) imported.set(node.name.text, lazySpec);
     }
     ts.forEachChild(node, firstPass);
   };
   firstPass(sf);
+  const routerKind = [...imported.values()].includes('vue-router') ? 'Vue Router' as const : 'React Router' as const;
 
   const addCall = (method: HttpMethod, urlNode: TS.Expression | undefined, line: number, client: string): void => {
     facts.calls.push({ method, url: text(urlNode) ?? '', line, client });
@@ -106,9 +204,9 @@ export function analyzeJsApi(fileName: string, source: string): FileApiFacts {
         } else if (ROUTE_METHODS.has(method) && ts.isCallExpression(receiver) && ts.isPropertyAccessExpression(receiver.expression) && receiver.expression.name.text === 'route') {
           // app.route('/users').get(handler)
           const p = text(receiver.arguments[0]);
-          if (p?.startsWith('/')) facts.routes.push({ method: toMethod(method), path: p, line, framework: 'Express' });
+          if (p?.startsWith('/')) facts.routes.push({ method: toMethod(method), path: p, line, framework: 'Express', view: viewOf(args) });
         } else if (ROUTE_METHODS.has(method) && firstText?.startsWith('/') && args.length >= 2 && (args.slice(1).some(isFunctionLike) || ROUTER_NAME.test(receiverName))) {
-          facts.routes.push({ method: toMethod(method), path: firstText, line, framework: 'Express-style' });
+          facts.routes.push({ method: toMethod(method), path: firstText, line, framework: 'Express-style', view: viewOf(args.slice(1)) });
         } else if (method === 'route' && first && ts.isObjectLiteralExpression(first)) {
           // Fastify: fastify.route({ method: 'GET', url: '/x', handler })
           const url = text(prop(first, 'url') ?? prop(first, 'path'));
@@ -140,6 +238,22 @@ export function analyzeJsApi(fileName: string, source: string): FileApiFacts {
         facts.models.push({ name: node.name.text, line: lineOf(node), kind: 'TypeORM entity', table: text(arg) ?? text(prop(arg, 'name')) });
       } else if (node.heritageClauses?.some((h) => h.token === ts.SyntaxKind.ExtendsKeyword && h.types.some((t) => nameOf(t.expression) === 'Model'))) {
         facts.models.push({ name: node.name.text, line: lineOf(node), kind: 'Sequelize model' });
+      }
+    }
+    // React Router: <Route path="/users" element={<Users />} />; nested routes join their paths.
+    if ((ts.isJsxSelfClosingElement(node) || ts.isJsxOpeningElement(node)) && tagName(node) === 'Route') {
+      const own = jsxString(node, 'path');
+      const component = jsxComponent(node);
+      if ((own !== undefined || jsxAttr(node, 'index')) && component) {
+        facts.pageRoutes.push({ path: joinPath(parentRoutePath(ts.isJsxOpeningElement(node) ? node.parent : node), own ?? ''), line: lineOf(node), kind: routerKind, ...componentRef(component) });
+      }
+    }
+    // Route objects: { path: '/users', element: <Users /> }, { path, component: Users } (Vue), { path, lazy: () => import('./x') }
+    if (ts.isObjectLiteralExpression(node)) {
+      const own = text(prop(node, 'path'));
+      const target = objectComponent(node);
+      if ((own !== undefined || prop(node, 'index')) && target && !/^[a-z]+:/i.test(own ?? '')) {
+        facts.pageRoutes.push({ path: joinPath(parentObjectPath(node), own ?? ''), line: lineOf(node), kind: routerKind, ...target });
       }
     }
     // Next.js route handlers: export function GET() / export const POST = …

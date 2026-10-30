@@ -61,6 +61,7 @@ export const GLOSSARY: Readonly<Record<string, string>> = {
   route: 'An address your server answers, such as GET /users/:id: an HTTP method plus a path. A function (the handler) runs when a request arrives there.',
   'http call': 'Code that sends a request to a server address, for example fetch("/api/users"). It is matched to a route here when the address can be read from the code.',
   'database model': 'A table or a class that stands for one, such as User. ORM libraries (Prisma, SQLAlchemy, Django, TypeORM…) turn rows into objects.',
+  page: 'A screen of your app at an address, such as /users. Here it is linked to the files that make it: the page file, what it imports, its layout or template.',
   'http method': 'The kind of request: GET reads, POST creates, PUT or PATCH changes, DELETE removes. ANY means the route accepts every method.',
 };
 

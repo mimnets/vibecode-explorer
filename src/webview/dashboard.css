@@ -84,6 +84,18 @@ ol.prompts li { margin: 0 0 8px; }
 .code-row.skip { color: var(--vscode-descriptionForeground); font-style: italic; display: block; padding: 2px 12px; background: var(--vscode-textBlockQuote-background); }
 .code-row.hl { background: var(--vscode-editor-findMatchHighlightBackground, rgba(234, 92, 0, 0.33)); }
 
+/* Preview next to the code (Phase 8, browser view). */
+.graph-pane.split { flex-direction: row; }
+.graph-pane.split > .code-view, .graph-pane.split > .preview-view { flex: 1 1 0; min-width: 0; }
+.graph-pane.split > .code-view { border-right: 1px solid var(--vscode-panel-border); }
+.preview-view { display: flex; flex-direction: column; min-height: 0; }
+.preview-frame { flex: 1; width: 100%; min-height: 240px; border: none; background: #fff; }
+.preview-note { margin: 4px 12px; }
+#previewOpen { overflow-wrap: anywhere; }
+.page-path { display: flex; gap: 6px; margin: 8px 0; }
+.page-path input { flex: 1; min-width: 0; font-family: var(--vscode-editor-font-family); background: var(--vscode-input-background, transparent); color: var(--vscode-input-foreground, inherit); border: 1px solid var(--vscode-panel-border); padding: 2px 6px; }
+.preview-error { color: var(--vscode-errorForeground, #f14c4c); }
+
 /* Files tab (Phase 6d). */
 .file-tools { display: flex; gap: 6px; margin-bottom: 6px; }
 .file-tree details > .tree-children { padding-left: 14px; border-left: 1px solid var(--vscode-panel-border); margin-left: 5px; }

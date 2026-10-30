@@ -63,7 +63,7 @@
 
   /** Browser view only: the click whose code or comparison should be shown (stale replies are ignored). */
   let pendingCode = '';
-  const CODE_REQUESTS = new Set(['open', 'commitFile', 'symbol', 'goto', 'apiItem']);
+  const CODE_REQUESTS = new Set(['open', 'commitFile', 'symbol', 'goto', 'apiItem', 'previewPage']);
 
   function send(msg) {
     if (CODE_REQUESTS.has(msg.type)) pendingCode = msg.id;
@@ -109,7 +109,7 @@
   }
 
   function requestApis() {
-    $('apisView').replaceChildren(el('p', 'Looking for routes, HTTP calls and database models…', 'muted'));
+    $('apisView').replaceChildren(el('p', 'Looking for pages, routes, HTTP calls and database models…', 'muted'));
     send({ type: 'apis' });
   }
 
@@ -153,6 +153,8 @@
     else if (msg.type === 'code') renderCode(msg.view);
     else if (msg.type === 'files') renderFiles(msg.result);
     else if (msg.type === 'apis') renderApis(msg.result);
+    else if (msg.type === 'pagePreview') renderPagePreview(msg);
+    else if (msg.type === 'previewError') renderPreviewError(msg);
   });
 
   // ---- code and before/after views (browser view only, Phase 6c) ----
@@ -163,6 +165,7 @@
     const view = document.getElementById('codeView');
     if (!view) return;
     view.hidden = true;
+    hidePreview();
     for (const id of ['graphTools', 'graph', 'legend']) $(id).hidden = false;
     // The graph was hidden, so it needs to measure its container again.
     if (cy) cy.resize();
@@ -178,6 +181,8 @@
     const view = document.getElementById('codeView');
     if (!view || v.for !== pendingCode) return;
     codeFor = v.for;
+    // A new code view replaces the preview; a page's preview follows its code right after.
+    hidePreview();
     for (const id of ['graphTools', 'graph', 'legend']) $(id).hidden = true;
     view.hidden = false;
     $('codeTitle').textContent = v.title;
@@ -636,6 +641,95 @@
     else cy.animate({ fit: { eles: nodes, padding: 60 } }, { duration: 250 });
   }
 
+  // ---- Preview next to the code (Phase 8, browser view only) ----
+  /** Address of the page shown in the preview. */
+  let previewUrl = '';
+
+  function hidePreview() {
+    const view = document.getElementById('previewView');
+    if (!view) return;
+    view.hidden = true;
+    /** @type {HTMLIFrameElement} */ ($('previewFrame')).removeAttribute('src');
+    $('codeView').parentElement?.classList.remove('split');
+  }
+
+  /** Only local http(s) pages are shown; the extension already checked this, the page checks again. */
+  function isLocalUrl(url) {
+    try {
+      const u = new URL(url);
+      return /^https?:$/.test(u.protocol) && /^(localhost|127\.0\.0\.1|\[::1\]|[a-z0-9-]+\.localhost)$/i.test(u.hostname);
+    } catch {
+      return false;
+    }
+  }
+
+  function renderPagePreview(msg) {
+    const view = document.getElementById('previewView');
+    if (!view || msg.for !== pendingCode || !isLocalUrl(msg.url)) return;
+    previewUrl = msg.url;
+    const link = /** @type {HTMLAnchorElement} */ ($('previewOpen'));
+    link.href = msg.url;
+    link.textContent = msg.url;
+    /** @type {HTMLIFrameElement} */ ($('previewFrame')).src = msg.url;
+    view.hidden = false;
+    $('codeView').parentElement?.classList.add('split');
+  }
+  document.getElementById('previewClose')?.addEventListener('click', () => hidePreview());
+  document.getElementById('previewReload')?.addEventListener('click', () => {
+    if (previewUrl) /** @type {HTMLIFrameElement} */ ($('previewFrame')).src = previewUrl;
+  });
+
+  function renderPreviewError(msg) {
+    const box = /** @type {HTMLElement | null} */ ($('info').querySelector('.preview-error'));
+    if (box && msg.for === box.dataset.for) {
+      box.textContent = msg.message;
+      box.hidden = false;
+    }
+  }
+
+  function renderPageDetails(item) {
+    currentSubject = '';
+    pendingSymbol = '';
+    pendingCommit = '';
+    pendingSession = '';
+    const info = $('info');
+    const rows = el('dl');
+    const row = (k, v) => rows.append(el('dt', k), el('dd', v));
+    info.replaceChildren(withHelp(el('h2', 'Page'), 'page'));
+    row('Address', item.path);
+    row('Kind', item.kind);
+    row('Main file', `${item.file}:${item.line}`);
+    if (item.template) row('Template', item.template);
+    info.append(rows);
+    if (item.missing) info.append(el('p', `Named in the code but not found in this folder: ${item.missing}`, 'muted small'));
+
+    // The address can be edited, for example to give `:id` a value.
+    const form = el('div', undefined, 'page-path');
+    const input = /** @type {HTMLInputElement} */ (el('input'));
+    input.value = item.path;
+    input.setAttribute('aria-label', 'Page address to preview');
+    input.spellcheck = false;
+    const preview = el('button', 'Preview');
+    preview.title = 'Open this page in your running app, next to its code';
+    const go = () => send({ type: 'previewPage', id: item.id, path: input.value.trim() });
+    preview.addEventListener('click', go);
+    input.addEventListener('keydown', (e) => { if (/** @type {KeyboardEvent} */ (e).key === 'Enter') go(); });
+    form.append(input, preview);
+    info.append(form);
+    if (item.needsValue) info.append(el('p', 'This address has a part that needs a value (like :id or [id]). Replace it before previewing.', 'muted small'));
+    const err = el('p', '', 'preview-error small');
+    err.dataset.for = item.id;
+    err.hidden = true;
+    const open = el('button', 'Open code');
+    open.addEventListener('click', () => send({ type: 'apiItem', id: item.id }));
+    info.append(err, open, el('p', 'Preview uses the address in the vibecodeExplorer.previewUrl setting. Start your app yourself first.', 'muted small'));
+
+    info.append(el('h3', `Files that make this page (${item.files.length + 1})`));
+    const ul = el('ul', undefined, 'files');
+    for (const f of [item.file, ...item.files]) ul.append(el('li', f, 'mono'));
+    info.append(ul);
+  }
+
   // ---- APIs tab (Phase 7) ----
   function renderApis(r) {
     const view = $('apisView');
@@ -660,7 +754,8 @@
           btn.classList.add('selected');
           showGraph();
           highlightNodes(item.nodes);
-          renderApiDetails(item, routeById);
+          if (item.id.startsWith('g')) renderPageDetails(item);
+          else renderApiDetails(item, routeById);
         });
         btn.addEventListener('dblclick', () => send({ type: 'apiItem', id: item.id }));
         li.append(btn, el('div', sub, 'muted small'));
@@ -670,6 +765,8 @@
     };
     const where = (x) => `${x.file}:${x.line}`;
     const plural = (n, word) => `${n} ${word}${n === 1 ? '' : 's'}`;
+    section('Pages', 'page', r.pages, 'No pages found (Next.js, React or Vue Router, HTML files, server templates).',
+      (x) => [x.path, `${x.kind} · ${where(x)} · ${plural(x.files.length + 1, 'file')}` + (x.missing ? ' · something not found' : '')]);
     section('Routes', 'route', r.routes, 'No routes found (Express, Fastify, Hono, Next.js, FastAPI, Flask, Django).',
       (x) => [`${x.method} ${x.path}`, `${x.framework} · ${where(x)} · ${plural(x.callers.length, 'calling file')}`]);
     section('HTTP calls', 'http call', r.calls, 'No fetch, axios, requests or httpx calls found.',

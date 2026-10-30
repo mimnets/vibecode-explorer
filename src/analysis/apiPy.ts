@@ -1,7 +1,7 @@
 // Phase 7: routes, HTTP calls and models in Python (FastAPI, Flask, Django, requests, httpx,
 // SQLAlchemy, SQLModel, Django ORM). Uses the comment- and string-aware scanner from
 // python.ts, then simple patterns per logical line. Pure, unit-testable; nothing is run.
-import { emptyFacts, FileApiFacts, HTTP_METHODS, HttpMethod, joinPath } from './apis';
+import { emptyFacts, FileApiFacts, HTTP_METHODS, HttpMethod, joinPath, RouteFact } from './apis';
 import { logicalLines, parsePythonImports, STR } from './python';
 
 const TOKEN = `[fFrRbBuU]{0,2}${STR}\\d+${STR}`;
@@ -58,6 +58,10 @@ export function analyzePyApi(source: string): FileApiFacts {
   const isDjangoUrls = lines.some((l) => /^urlpatterns\b/.test(l));
 
   let lastModel: { name: string; table?: string } | undefined;
+  // Phase 8: routes waiting for their function, and the function (or class) being read.
+  let pendingRoutes: RouteFact[] = [];
+  let currentRoutes: RouteFact[] = [];
+  let currentDef = '';
   lines.forEach((l, i) => {
     const line = starts[i];
     // Decorated routes: @app.get("/x"), @router.post(...), @bp.route("/x", methods=["GET", "POST"])
@@ -70,9 +74,32 @@ export function analyzePyApi(source: string): FileApiFacts {
           ? (listed ? [...listed.matchAll(new RegExp(TOKEN, 'g'))].map((t) => toMethod(str(t[0]) ?? '')) : [m[2] === 'route' ? 'GET' as const : 'ANY' as const])
           : [toMethod(m[2])];
         const fw = framework !== 'Python' ? framework : m[2] === 'route' ? 'Flask' : 'FastAPI';
-        for (const method of methods) facts.routes.push({ method, path: joinPath(prefixes.get(m[1]) ?? '', p), line: lineOfToken(m[3], line), framework: fw });
+        for (const method of methods) {
+          const route: RouteFact = { method, path: joinPath(prefixes.get(m[1]) ?? '', p), line: lineOfToken(m[3], line), framework: fw };
+          facts.routes.push(route);
+          pendingRoutes.push(route);
+        }
       }
       return;
+    }
+    // A function after route decorators is their handler; the template it renders is the page.
+    const def = /^(?:async\s+)?def\s+(\w+)\s*\(/.exec(l);
+    if (def) {
+      currentDef = def[1];
+      currentRoutes = pendingRoutes;
+      pendingRoutes = [];
+    }
+    const cls = /^class\s+(\w+)\b/.exec(l);
+    if (cls) {
+      currentDef = cls[1];
+      currentRoutes = [];
+    }
+    const tpl = new RegExp(`\\brender_template\\(\\s*(${TOKEN})|\\brender\\(\\s*\\w+\\s*,\\s*(${TOKEN})|\\bTemplateResponse\\(\\s*(?:\\w+\\s*,\\s*)?(${TOKEN})|^template_name\\s*(?::[^=]+)?=\\s*(${TOKEN})`).exec(l);
+    const tplToken = tpl && (tpl[1] ?? tpl[2] ?? tpl[3] ?? tpl[4]);
+    const template = tplToken ? str(tplToken) : undefined;
+    if (tplToken && template && !template.includes('*')) {
+      for (const r of currentRoutes) r.view ??= { template };
+      if (currentDef) facts.views.push({ name: currentDef, template, line: lineOfToken(tplToken, line) });
     }
     // Routers included from other modules.
     m = /\.(include_router|register_blueprint)\(\s*([\w.]+)\s*(?:,(.*))?\)$/.exec(l);
@@ -84,13 +111,15 @@ export function analyzePyApi(source: string): FileApiFacts {
     }
     // Django: path("users/", views.users), path("api/", include("shop.urls"))
     if (isDjangoUrls) {
-      for (const d of l.matchAll(new RegExp(`\\b(?:re_)?path\\(\\s*(${TOKEN})\\s*,\\s*(include\\(\\s*(${TOKEN}))?`, 'g'))) {
+      for (const d of l.matchAll(new RegExp(`\\b(?:re_)?path\\(\\s*(${TOKEN})\\s*,\\s*(?:(include)\\(\\s*(${TOKEN})|([\\w.]+))?`, 'g'))) {
         const p = str(d[1]);
         if (p === undefined) continue;
         const clean = p.replace(/^\^/, '').replace(/\$$/, '');
-        const include = d[3] && str(d[3]);
+        const include = d[2] && str(d[3]);
+        // `views.users` or `views.UserView.as_view()`: the view's name is the last part.
+        const handler = d[4]?.split('.').filter((x) => x && x !== 'as_view').pop();
         if (include) facts.mounts.push({ prefix: joinPath('', clean), line: lineOfToken(d[1], line), target: { py: include }, framework: 'Django' });
-        else if (!d[2]) facts.routes.push({ method: 'ANY', path: joinPath('', clean), line: lineOfToken(d[1], line), framework: 'Django' });
+        else if (!d[2]) facts.routes.push({ method: 'ANY', path: joinPath('', clean), line: lineOfToken(d[1], line), framework: 'Django', view: handler ? { handler } : undefined });
       }
     }
     // HTTP calls: requests.get(url), httpx.post(url), requests.request("PUT", url)

@@ -6,7 +6,13 @@ import * as path from 'path';
 export type HttpMethod = 'GET' | 'POST' | 'PUT' | 'PATCH' | 'DELETE' | 'HEAD' | 'OPTIONS' | 'ANY';
 export const HTTP_METHODS: readonly HttpMethod[] = ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'HEAD', 'OPTIONS'];
 
-export interface RouteFact { method: HttpMethod; path: string; line: number; framework: string }
+/** What a route sends back as a page (Phase 8): a rendered view, a file, a template, or a Django view function. */
+export interface RouteView { render?: string; file?: string; template?: string; handler?: string }
+export interface RouteFact { method: HttpMethod; path: string; line: number; framework: string; view?: RouteView }
+/** A client-side route (React Router, Vue Router): an address and the component it shows. */
+export interface PageRouteFact { path: string; line: number; kind: 'React Router' | 'Vue Router'; component?: string; componentName?: string }
+/** A Python view function or class and the template it renders. */
+export interface ViewFact { name: string; template: string; line: number }
 /** A router included at a path prefix, defined in another file (`app.use('/api', users)`). */
 export interface MountFact { prefix: string; line: number; target: { js: string } | { py: string }; framework: string }
 /** An HTTP call. `url` has `*` for parts computed while the program runs; '' when nothing is known. */
@@ -23,11 +29,13 @@ export interface FileApiFacts {
   modelUses: ModelUseFact[];
   /** HTTP method names a JS/TS file exports (Next.js route handlers). */
   exportedMethods: HttpMethod[];
+  pageRoutes: PageRouteFact[];
+  views: ViewFact[];
 }
 
-export const emptyFacts = (): FileApiFacts => ({ routes: [], mounts: [], calls: [], models: [], modelUses: [], exportedMethods: [] });
+export const emptyFacts = (): FileApiFacts => ({ routes: [], mounts: [], calls: [], models: [], modelUses: [], exportedMethods: [], pageRoutes: [], views: [] });
 
-export interface ApiRoute { id: string; method: HttpMethod; path: string; file: string; line: number; framework: string; callers: string[] }
+export interface ApiRoute { id: string; method: HttpMethod; path: string; file: string; line: number; framework: string; callers: string[]; view?: RouteView }
 export interface ApiCall { id: string; method: HttpMethod; url: string; file: string; line: number; client: string; routes: string[]; external: boolean }
 export interface ApiModel { id: string; name: string; table?: string; kind: string; file: string; line: number; usedBy: string[] }
 export interface ApiMap { routes: ApiRoute[]; calls: ApiCall[]; models: ApiModel[]; truncated: boolean }
@@ -137,7 +145,7 @@ export function combineApis(
     for (const r of own) {
       for (const prefix of prefixes) {
         if (routes.length >= MAX_API_ITEMS) { truncated = true; break; }
-        routes.push({ id: `w${routes.length}`, method: r.method, path: joinPath(prefix, r.path), file, line: r.line, framework: r.framework, callers: [] });
+        routes.push({ id: `w${routes.length}`, method: r.method, path: joinPath(prefix, r.path), file, line: r.line, framework: r.framework, callers: [], view: r.view });
       }
     }
     for (const c of f.calls) {

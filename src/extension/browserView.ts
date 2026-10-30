@@ -3,7 +3,8 @@ import * as fs from 'fs';
 import * as http from 'http';
 import * as path from 'path';
 import * as vscode from 'vscode';
-import { ASSET_NAMES, browserCsp, checkRequest, newKey } from './browserGuard';
+import { ASSET_NAMES, browserCsp, checkRequest, framableOrigin, newKey } from './browserGuard';
+import { previewBase } from './preview';
 import { dashboardHtml } from './page';
 import { DashboardSession } from './session';
 
@@ -109,7 +110,8 @@ export class BrowserView {
     switch (verdict.route) {
       case 'page': {
         const nonce = crypto.randomBytes(16).toString('base64');
-        const csp = browserCsp(nonce);
+        const base = previewBase();
+        const csp = browserCsp(nonce, framableOrigin(base.ok ? base.url : undefined, this.port));
         const html = dashboardHtml({ mode: 'browser', nonce, csp, asset: (...p) => `./a/${p[p.length - 1]}` });
         res.writeHead(200, { ...headers, 'Content-Type': 'text/html; charset=utf-8', 'Content-Security-Policy': csp }).end(req.method === 'HEAD' ? undefined : html);
         return;

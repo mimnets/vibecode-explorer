@@ -277,11 +277,26 @@ With the owner's approval, a small demo was created **outside this repository**,
 
 **Owner evidence:** with `Documentsibecode-api-demo` open, the APIs tab showed the routes, HTTP calls and database models; the owner reported that all check steps worked (lists and counts, graph outline and "Called from", unmatched and other-server calls, model users, double-click opening the line). Phase 7 is owner-verified.
 
+## 2026-10-30: Phase 8: preview alongside code
+
+**Approved:** the owner approved the plan with the recommended choices: a Pages section in the APIs tab (renamed **Pages & APIs**), the preview beside the code, and all four kinds of pages (Next.js, React Router, HTML files, server templates). The three Phase 7 commits were pushed with the owner's yes (`17e672f..791d2d9`).
+
+**What:** the tab now starts with **Pages**: every page the code defines, with its address, kind and the files that make it (main file, direct imports, Next.js layouts, router file, template). Clicking one outlines those files in the graph and shows details with an editable address and **Preview**. In VS Code, Preview opens the main file and the page in the Simple Browser beside it. In the browser view, the code and the running page appear side by side (**Reload**, **Close preview**, open in a new tab). A glossary term "page" was added.
+
+**How:** VS Code gives extensions no way to see which page the Simple Browser shows, so the owner picks the page in the dashboard rather than the dashboard following the app. The JS reader now also finds React Router `<Route>` elements and route objects (nested paths joined, `lazy` imports followed) and Vue Router routes, and what an Express handler sends back (`res.render`, `res.sendFile(path.join(__dirname, …))`). The Python reader ties Flask, FastAPI and Django handlers to the templates they render. `pages.ts` combines these with Next.js file paths and HTML files. No new dependency.
+
+**Safety:** the extension never starts the app. Typed addresses must start with one `/`, contain no backslashes or control characters, and stay on the preview server's origin. The browser page's CSP allows framing only that loopback origin and never the dashboard's own port; the frame is sandboxed and sends no referrer, and the page checks the address again. Next.js folders count only when a `package.json` lists `next`.
+
+**Verified automatically:** lint. 69 unit tests, 8 of them new: Next.js page paths and layouts (route groups, private folders, `pages/api`, `_app` excluded), HTML addresses and assets (comments, other servers and `../` ignored), Express and Python template lookup (`..` refused), safe preview addresses (protocol-relative, backslash, newline and other-server addresses refused), React Router nested, index and lazy routes, Vue Router, a plain object with a `path` *not* counted, Express `render`/`sendFile`, Flask, Django function and class views through `urls.py`, the combined page list with "not found" parts, and the CSP `frame-src` rule (only the configured origin, never this server, injection attempts refused). 76 integration checks: in `api-project`, a Next.js page with its layout and imported client, a React Router page that needs a value, an HTML page with its script, an Express view with its template, and no page for a route handler. In a browser tab: previewing without a preview URL explains what to set, a `//evil.example` address is refused, `/users?tab=1` is previewed at `http://localhost:5173/users?tab=1` together with its code, and the page's CSP then allows exactly that origin. **Not verified automatically:** the Pages section, the preview frame and the Simple Browser opening beside the code.
+
+**Demo:** with the owner's approval for the demo project, `Documents\vibecode-api-demo` gained pages for the check: `public/index.html` and `public/users.html`, an Express view, a React Router page, and `preview-server.js`, a zero-dependency static server that the owner starts themselves (`node preview-server.js`, port 5173). It was tested briefly here (both pages 200, a `../` escape 403) and stopped again.
+
+**Limitations:** pages are what the code shows, not what the running app does. Addresses with `:id`-style parts need a value typed in. Apps that forbid framing (`X-Frame-Options`, `frame-ancestors`) stay blank in the browser view; the new-tab link still works. A preview URL changed while the browser page is open needs a page reload for the frame to be allowed. Svelte, Nuxt and Astro file routes are not read.
+
 ## Handoff for the next session (updated 2026-10-30)
 
-**Where things stand:** Phases 0–7 are Done and owner-verified. GitHub is up to date to `17e672f`; later commits are local (pushing needs the owner's yes).
+**Where things stand:** Phases 0–7 are Done and owner-verified. Phase 8 (pages and preview alongside code) is implemented and auto-tested, **awaiting the owner's GUI check** with `Documents\vibecode-api-demo` (`node preview-server.js`, preview URL `http://localhost:5173`). That completes every phase on the roadmap. GitHub is up to date to `791d2d9`; later commits are local (pushing needs the owner's yes).
 
-**Next:**
-1. Plan **Phase 8** (preview alongside code: link preview pages to the source files that serve them, where provable statically).
+**Next:** the Phase 8 GUI check, then ask the owner what comes after the roadmap (for example the open ideas below, or the saved future plans for project tracking and learning aids).
 
-**Open ideas, not scheduled:** notes written fully in the browser; syntax colours; a "No" answer to the notes question isn't remembered; notes break on file rename; AI sessions read Claude Code logs only; clicking a listed note wasn't explicitly owner-checked.
+**Open ideas, not scheduled:** notes written fully in the browser; syntax colours; a "No" answer to the notes question isn't remembered; notes break on file rename; AI sessions read Claude Code logs only; clicking a listed note wasn't explicitly owner-checked; Svelte/Nuxt/Astro pages.

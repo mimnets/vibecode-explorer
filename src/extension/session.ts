@@ -9,7 +9,8 @@ import { listProjectFiles } from './files';
 import { describeCommit, HistoryFile, loadHistory, openCommitFile } from './history';
 import { parseWebviewMessage, WebviewMessage } from './messages';
 import { createNote, ensureNotesAllowed, listNotes, NoteEntry, notesFor, NoteSubject } from './notes';
-import { openPreview } from './preview';
+import { previewAddress } from '../analysis/pages';
+import { openPreview, previewBase, showInSimpleBrowser } from './preview';
 import { CodeLocation, collectState, DashboardState, describeTarget, findUsages, Target } from './state';
 
 /**
@@ -209,6 +210,33 @@ export class DashboardSession {
         const { result, locations } = await loadApis(folder, this.state, this.targets);
         this.apiLocations = locations;
         this.post({ type: 'apis', result });
+        break;
+      }
+      case 'previewPage': {
+        const loc = msg.id.startsWith('g') ? this.apiLocations.get(msg.id) : undefined;
+        if (!loc) return;
+        const base = previewBase();
+        if (!base.ok) {
+          this.post({ type: 'previewError', for: msg.id, message: `${base.reason} Then start your app and click Preview again.` });
+          if (!this.codeInPage) {
+            const choice = await vscode.window.showWarningMessage(base.reason, 'Open Settings');
+            if (choice) await vscode.commands.executeCommand('workbench.action.openSettings', 'vibecodeExplorer.previewUrl');
+          }
+          return;
+        }
+        const url = previewAddress(base.url, msg.path);
+        if (!url) {
+          this.post({ type: 'previewError', for: msg.id, message: 'The address must start with "/" and stay on your preview server.' });
+          return;
+        }
+        // The page's code and the running page, side by side. VibeCode Explorer never starts the app.
+        if (this.codeInPage) {
+          this.post({ type: 'code', view: await codeForLocation(msg.id, loc) });
+          this.post({ type: 'pagePreview', for: msg.id, url });
+        } else {
+          await revealLocation(loc);
+          await showInSimpleBrowser(url);
+        }
         break;
       }
       case 'apiItem': {

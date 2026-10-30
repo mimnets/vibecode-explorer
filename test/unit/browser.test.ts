@@ -1,6 +1,6 @@
 import { strict as assert } from 'assert';
 import { test } from 'node:test';
-import { browserCsp, checkRequest, GuardInput, newKey } from '../../src/extension/browserGuard';
+import { browserCsp, checkRequest, framableOrigin, GuardInput, newKey } from '../../src/extension/browserGuard';
 import { dashboardHtml } from '../../src/extension/page';
 
 const key = newKey();
@@ -67,4 +67,22 @@ test('the browser page keeps the strict CSP and swaps the VS Code button for the
   assert.ok(browser.includes('id="codeView"') && browser.includes('id="codeEditor"') && !vscodePage.includes('id="codeView"'));
   assert.ok(browser.indexOf('browserBridge.js') < browser.indexOf('dashboard.js'), 'bridge loads first');
   assert.equal((browser.match(/<script /g) ?? []).length, (browser.match(/nonce="N"/g) ?? []).length, 'every script has the nonce');
+});
+
+test('only the owner\'s local preview server may be shown inside the browser page', () => {
+  assert.match(browserCsp('N'), /frame-src 'none'/);
+  assert.match(browserCsp('N', 'http://localhost:3000'), /frame-src http:\/\/localhost:3000(;|$)/);
+  for (const bad of ['https://evil.example', 'http://localhost:3000 https://evil.example', "'self'", 'javascript:alert(1)']) {
+    assert.match(browserCsp('N', bad), /frame-src 'none'/, bad);
+  }
+  assert.equal(framableOrigin('http://localhost:3000/app/', 51234), 'http://localhost:3000');
+  assert.equal(framableOrigin('http://127.0.0.1:51234/', 51234), undefined, 'never this server itself');
+  assert.equal(framableOrigin('http://localhost:51234', 51234), undefined);
+  assert.equal(framableOrigin(undefined, 51234), undefined);
+  assert.equal(framableOrigin('not a url', 51234), undefined);
+  const asset = (...p: string[]) => `./a/${p[p.length - 1]}`;
+  const browser = dashboardHtml({ mode: 'browser', nonce: 'N', csp: 'x', asset });
+  const vscodePage = dashboardHtml({ mode: 'vscode', nonce: 'N', csp: 'x', asset });
+  assert.match(browser, /<iframe id="previewFrame"[^>]*sandbox="allow-scripts allow-same-origin allow-forms allow-popups"/);
+  assert.ok(!vscodePage.includes('previewFrame'), 'the VS Code panel uses the Simple Browser instead');
 });

@@ -77,6 +77,15 @@ export const pong = () => ping;
   write(path.join(apiDir, 'db/schema.sql'), `-- CREATE TABLE ignored (id int);\nCREATE TABLE orders (id int);\n`);
   write(path.join(apiDir, 'py/main.py'), `from fastapi import APIRouter\nrouter = APIRouter(prefix="/shop")\n\n@router.get("/cart/{cid}")\ndef cart(cid: int): ...\n\nrequests.get("http://localhost:8000/shop/cart/7")\n`);
   write(path.join(apiDir, '.env'), `DATABASE_URL=postgres://do-not-read\n`);
+  // Phase 8: pages of several kinds in the same folder.
+  write(path.join(apiDir, 'package.json'), JSON.stringify({ name: 'api-project', dependencies: { next: '15.0.0', express: '4.0.0' } }));
+  write(path.join(apiDir, 'app/layout.tsx'), `export default function Root({ children }) { return children; }\n`);
+  write(path.join(apiDir, 'app/users/page.tsx'), `import { load } from '../../web/client';\nexport default function UsersPage() { return null; }\n`);
+  write(path.join(apiDir, 'web/router.jsx'), `import Profile from './Profile';\nexport const routes = <Routes><Route path="/profile/:name" element={<Profile />} /></Routes>;\n`);
+  write(path.join(apiDir, 'web/Profile.jsx'), `export default function Profile() { return null; }\n`);
+  write(path.join(apiDir, 'index.html'), `<!doctype html><script type="module" src="/web/client.js"></script>\n`);
+  write(path.join(apiDir, 'site.js'), `const app = require('express')();\napp.get('/', (req, res) => res.render('home'));\n`);
+  write(path.join(apiDir, 'views/home.ejs'), `<h1>Home</h1>\n`);
 
   const workspace = path.join(root, 'sample.code-workspace');
   write(workspace, JSON.stringify({ folders: [{ path: 'sample-repo' }, { path: 'plain-folder' }, { path: 'py-project' }, { path: 'api-project' }] }));

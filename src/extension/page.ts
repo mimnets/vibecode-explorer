@@ -39,7 +39,7 @@ ${browser ? `<link rel="stylesheet" href="${o.asset('src', 'webview', 'browser.c
       <button id="tabHistory" class="tab" role="tab" aria-selected="false">History</button>
       <button id="tabSessions" class="tab" role="tab" aria-selected="false">AI sessions</button>
       <button id="tabFiles" class="tab" role="tab" aria-selected="false">Files</button>
-      <button id="tabApis" class="tab" role="tab" aria-selected="false">APIs</button>
+      <button id="tabApis" class="tab" role="tab" aria-selected="false">Pages &amp; APIs</button>
     </div>
     <div id="changesView">
       <div id="repo" class="muted"></div>
@@ -82,6 +82,16 @@ ${browser ? `    <div id="codeView" class="code-view" hidden>
       </div>
       <p id="codeNote" class="muted code-note" hidden></p>
       <div id="codeBody" class="code-body" role="region" aria-label="Code"></div>
+    </div>
+    <div id="previewView" class="preview-view" hidden>
+      <div class="graph-tools">
+        <strong>Preview</strong>
+        <a id="previewOpen" class="mono small" target="_blank" rel="noopener noreferrer" title="Open this page in a new browser tab"></a>
+        <button id="previewReload" title="Load the page again">Reload</button>
+        <button id="previewClose" title="Close the preview">Close preview</button>
+      </div>
+      <iframe id="previewFrame" class="preview-frame" title="App preview" sandbox="allow-scripts allow-same-origin allow-forms allow-popups" referrerpolicy="no-referrer"></iframe>
+      <p class="muted small preview-note">Blank? Start your app first. Some apps don't allow being shown inside another page; then use the link above.</p>
     </div>
 ` : ''}  </section>
   <aside class="pane" id="info"><h2>Details</h2><p class="muted">Select a file in the graph or the changes list.</p></aside>

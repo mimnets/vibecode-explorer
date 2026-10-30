@@ -18,7 +18,7 @@ Before each phase: write a short plan, get owner approval, implement, verify, re
 | 6c | View code in the browser: clicking a file or a change in the browser view shows its code (plain text, line numbers) or its before/after diff on the page, with an **Open in VS Code** button. An option to open the browser view automatically when the project opens, so the browser can be the main screen. Sensitive files never shown. Notes still open in VS Code | R8, R2, R1 | Done, owner-verified 2026-10-30 |
 | 6d | Files tab: the project's folders and files as a tree that opens and closes, with changed and sensitive files marked. Clicking a file shows its details, a folder highlights its files in the graph | R3, R2 | Done, owner-verified 2026-10-30 |
 | 7 | API and database relationships: detect routes, HTTP calls and schema or ORM files statically. No database connections | R3 | Done, owner-verified 2026-10-30 |
-| 8 | Preview alongside code: link preview pages to the source files that serve them, where this can be proven statically | R5 | Planned |
+| 8 | Preview alongside code: link preview pages to the source files that serve them, where this can be proven statically | R5 | Implemented and auto-tested (plan approved 2026-10-30). Awaiting owner check |
 
 ## Guardrails for every phase
 
