@@ -126,14 +126,14 @@ Approved by the owner on 2026-10-29 with the recommended choices: stop on VS Cod
 
 | # | Requirement | Status |
 | --- | --- | --- |
-| A | **Open in Browser** button and command open the same dashboard in the default browser. A **Stop Browser View** command | Done (UI not auto-tested) |
-| B | Same page, script and stylesheet as the VS Code panel (`page.ts`). `browserBridge.js` replaces VS Code's message channel with same-origin POSTs and an event stream. `browser.css` supplies theme colours | Done (UI not auto-tested) |
-| C | Each browser tab gets its own `DashboardSession` (own opaque ids, same validation). Clicks open files, diffs and notes in VS Code | Done |
+| A | **Open in Browser** button and command open the same dashboard in the default browser. A **Stop Browser View** command | Done (owner-verified in the GUI) |
+| B | Same page, script and stylesheet as the VS Code panel (`page.ts`). `browserBridge.js` replaces VS Code's message channel with same-origin POSTs and an event stream. `browser.css` supplies theme colours | Done (owner-verified in the GUI) |
+| C | Each browser tab gets its own `DashboardSession` (own opaque ids, same validation). Clicks open files, diffs and notes in VS Code | Done (owner-verified in the GUI) |
 | D | Server on `127.0.0.1` only, random port, 256-bit key as the first path segment (timing-safe check), Host check against DNS rebinding, Origin, `Sec-Fetch-Site` and JSON content-type checks on POST, allow-listed assets, 64 KB body cap, at most 5 tabs, strict CSP header with `frame-ancestors 'none'`, `no-store` and `nosniff` | Done |
 | E | Stops on VS Code exit or extension deactivate, after 30 minutes without requests, or by command. Open tabs are told it stopped. Off in Restricted Mode | Done |
 | F | No new dependency (Node `http`), read-only, no shell | Done |
 
-Owner verification is pending. Non-goals: a standalone app without VS Code, access from other devices, several users, logins.
+Owner-verified 2026-10-30 (see the development log). Non-goals: a standalone app without VS Code, access from other devices, several users, logins.
 
 ## Non-goals for Phase 1
 

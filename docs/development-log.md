@@ -175,9 +175,15 @@ The owner has no Python project, so with their approval a small demo was created
 
 **Verified automatically:** lint, 35 unit tests (one new check for same-name files) and 58 integration checks. **Not verified automatically:** how the new layout and label backdrop look. This needs the owner's GUI check.
 
+## 2026-10-30: Owner GUI check of Phase 6b (browser view)
+
+The VSIX was rebuilt (`npm run package`) and, with the owner's yes, installed into their VS Code (`code --install-extension vibecode-explorer.vsix --force`). The `url.parse()` deprecation warning printed during install comes from the VS Code CLI, not this extension (no `url.parse` in `src/`).
+
+**Owner evidence:** in the browser view, the graph labels no longer overlap; clicking a file opened it in VS Code; **Stop Browser View** stopped the page. Phase 6b is now owner-verified. Next: the Phase 4 notes check.
+
 ## Handoff for the next session (written 2026-10-29)
 
-**Where things stand:** Phases 0–3 are Done and owner-verified. Phases 4, 4b, 5, 6 and 6b are implemented and auto-tested but **awaiting the owner's GUI check**. Nothing is pushed to GitHub yet (pushing needs the owner's yes). The working tree is clean after the last commit.
+**Where things stand:** Phases 0–3 are Done and owner-verified. Phases 4, 4b, 5 and 6 are implemented (6b owner-verified 2026-10-30) and auto-tested but **awaiting the owner's GUI check**. Nothing is pushed to GitHub yet (pushing needs the owner's yes). The working tree is clean after the last commit.
 
 **Start tomorrow with, in this order:**
 1. Rebuild and reinstall the VSIX (`npm run package`, then install `vibecode-explorer.vsix` in VS Code and reload). Ask the owner first, as AGENTS.md requires for installs into their VS Code.
