@@ -191,9 +191,13 @@ The owner asked whether the code itself could be seen in the browser view instea
 
 The owner also asked whether notes could be done fully in the browser. Today **Add note** works from the browser, but the permission question, the title box and the editor appear in VS Code. Kept as an open idea, not part of 6c.
 
+## 2026-10-30: Owner GUI check of Phase 4b (AI sessions)
+
+**Owner evidence:** the AI sessions tab asked for permission in VS Code, then showed the totals and session list; a session's prompts, tokens and changed files were shown; the owner saw no secrets in clear text. Phase 4b is now owner-verified. Next: the Phase 5 learning aids check.
+
 ## Handoff for the next session (written 2026-10-29)
 
-**Where things stand:** Phases 0–3 are Done and owner-verified. Phases 4b, 5 and 6 are implemented (4 and 6b owner-verified 2026-10-30) and auto-tested but **awaiting the owner's GUI check**. Nothing is pushed to GitHub yet (pushing needs the owner's yes). The working tree is clean after the last commit.
+**Where things stand:** Phases 0–3 are Done and owner-verified. Phases 5 and 6 are implemented (4, 4b and 6b owner-verified 2026-10-30) and auto-tested but **awaiting the owner's GUI check**. Nothing is pushed to GitHub yet (pushing needs the owner's yes). The working tree is clean after the last commit.
 
 **Start tomorrow with, in this order:**
 1. Rebuild and reinstall the VSIX (`npm run package`, then install `vibecode-explorer.vsix` in VS Code and reload). Ask the owner first, as AGENTS.md requires for installs into their VS Code.

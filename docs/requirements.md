@@ -8,12 +8,12 @@ Status key: **Partial** = some of it is delivered and verified. **Constraint** =
 
 | # | Requirement | Status after Phase 1 |
 | --- | --- | --- |
-| 1 | See files created, changed or deleted during AI-assisted coding. | Partial: current working-tree changes against HEAD. Phase 3 adds commit history with the files each commit changed (owner-verified). No per-session view. |
+| 1 | See files created, changed or deleted during AI-assisted coding. | Partial: current working-tree changes against HEAD. Phase 3 adds commit history with the files each commit changed (owner-verified). Phase 4b adds the files changed in each Claude Code session (owner-verified). |
 | 2 | Understand modules, functions, classes and variables. | Partial: a per-file symbol list. Phase 2 adds go-to and "used in" (owner-verified). Phase 5 adds plain-language explanations (awaiting owner check). |
 | 3 | Visually explore files, imports, functions, APIs and database relationships. | Partial: a file-import graph for JS/TS relative imports, and Python since Phase 6 (awaiting owner check). Phase 2 highlights the files that use a symbol. No API or database relationships yet. |
 | 4 | Understand why important changes were made. | Partial: Phase 3 shows each commit's full message. Phase 4 adds the owner's notes on files and commits (owner-verified). |
 | 5 | Preview working websites alongside their code. | Partial: opens a user-configured local URL in Simple Browser. |
-| 6 | Learn programming incrementally while developing. | Partial (awaiting owner check): Phase 4b shows rule-based tips for each AI session. Phase 5 adds plain-language file and symbol explanations, a glossary and code tips. |
+| 6 | Learn programming incrementally while developing. | Partial: Phase 4b shows rule-based tips for each AI session (owner-verified). Phase 5 adds plain-language file and symbol explanations, a glossary and code tips (awaiting owner check). |
 | 7 | Preserve educational notes, architecture explanations and decisions. | Partial (owner-verified): Phase 4 saves the owner's notes (what, why, decision) as Markdown in `.vibecode/notes/`, opt-in. |
 | 8 | Work across projects and programming languages. | Partial: any folder, multi-root, no-Git. Graph covers JS/TS and Python (Phase 6, awaiting owner check), with a language list for adding more. |
 | 9 | Support Claude, Qwen, Gemini and other agents without proprietary agent APIs. | Constraint: kept. Data comes from Git and files, never from agent APIs. |
@@ -81,14 +81,14 @@ Requested by the owner and approved on 2026-10-29 with the recommended choices: 
 
 | # | Requirement | Status |
 | --- | --- | --- |
-| A | **AI sessions** tab: project totals (sessions, prompts, input, output and cache tokens, most-edited files) and a session list (title, date, prompts, tokens) | Done (UI not auto-tested) |
-| B | Session details: times, model, replies, tokens, files changed (outlined in the graph), commits made during the session, security mentions, prompts (expandable), tips | Done (UI not auto-tested) |
+| A | **AI sessions** tab: project totals (sessions, prompts, input, output and cache tokens, most-edited files) and a session list (title, date, prompts, tokens) | Done (owner-verified in the GUI) |
+| B | Session details: times, model, replies, tokens, files changed (outlined in the graph), commits made during the session, security mentions, prompts (expandable), tips | Done (owner-verified in the GUI) |
 | C | Reads only `<CLAUDE_CONFIG_DIR or ~/.claude>/projects/<project path with dashes>/*.jsonl` (top level only), read-only, and keeps only lines whose `cwd` is inside the project. Up to 200 sessions, 50 MB per file | Done |
 | D | Never kept: tool output, the agent's reasoning, sub-agent prompts. Secret-looking text is shown as `[hidden]` | Done |
-| E | Modal permission per folder before the first read (only Yes is remembered, in VS Code's storage). The **Reset Permissions** command withdraws it, and the notes permission too. Off in Restricted Mode | Done (dialog not auto-tested) |
+| E | Modal permission per folder before the first read (only Yes is remembered, in VS Code's storage). The **Reset Permissions** command withdraws it, and the notes permission too. Off in Restricted Mode | Done (dialog owner-verified in the GUI) |
 | F | Claude Code reader behind an `AgentLogReader` interface, ready for other agents. No new dependency, no network | Done |
 
-Changed from the plan: commits made during a session are listed as text, with a pointer to the History tab, rather than as links. Owner verification is pending. Non-goals: money cost, live updates, other agents' readers, search, export.
+Changed from the plan: commits made during a session are listed as text, with a pointer to the History tab, rather than as links. Owner-verified 2026-10-30 (see the development log). Non-goals: money cost, live updates, other agents' readers, search, export.
 
 ## Phase 5 scope: learning aids
 
