@@ -269,6 +269,10 @@ The owner found VS Code crowded with the agent chat, code and dashboard together
 
 **Limitations:** pattern-based, so routes registered in loops, from configuration or through wrappers are missed, and unusual receivers named like a router may be counted. Addresses built entirely while running are listed without a match. SQL table use inside query strings is not traced. GraphQL, gRPC and OpenAPI files are not read.
 
+## 2026-10-30: API demo project for the Phase 7 check
+
+With the owner's approval, a small demo was created **outside this repository**, at `Documentsibecode-api-demo` (10 files, no Git, never run). It has an Express server with two routers mounted at `/api`, a web client with `fetch` calls (one to a missing route, one to another server), Prisma models used through the client, and a SQL table. A dry run of the readers on it found the expected 6 routes (with the `/api` mounts), 6 calls and 3 models. The VSIX with Phase 7 was installed with the owner's yes.
+
 ## Handoff for the next session (updated 2026-10-30)
 
 **Where things stand:** Phases 0–6d are Done and owner-verified. Phase 7 (APIs tab) is implemented and auto-tested, **awaiting the owner's GUI check**. GitHub is up to date to `17e672f`; later commits are local (pushing needs the owner's yes).
