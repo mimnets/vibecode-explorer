@@ -4,6 +4,7 @@
 // internal reasoning are never kept.
 
 import { isSensitiveFile } from './sensitive';
+import { SECRET_ASSIGNMENT, SECRET_TOKENS } from './secrets';
 
 export interface TokenCounts { input: number; output: number; cacheRead: number; cacheWrite: number }
 
@@ -45,17 +46,8 @@ export function isInsideProject(cwd: string, projectPath: string): boolean {
   return c === p || c.startsWith(p + '/');
 }
 
-// Things that look like credentials. Replaced before anything is displayed.
-const SECRET_PATTERNS: RegExp[] = [
-  /\bsk-[A-Za-z0-9_-]{16,}/g, // OpenAI / Anthropic style keys
-  /\b(?:AKIA|ASIA)[A-Z0-9]{16}\b/g, // AWS access key ids
-  /\bgh[pousr]_[A-Za-z0-9]{30,}\b/g, // GitHub tokens
-  /\bxox[abprs]-[A-Za-z0-9-]{10,}/g, // Slack tokens
-  /\bAIza[0-9A-Za-z_-]{30,}/g, // Google API keys
-  /\beyJ[A-Za-z0-9_-]{10,}\.[A-Za-z0-9_-]{10,}\.[A-Za-z0-9_-]{10,}/g, // JWTs
-  /-----BEGIN [A-Z ]*PRIVATE KEY-----[\s\S]*?(?:-----END [A-Z ]*PRIVATE KEY-----|$)/g,
-  /\b((?:password|passwd|pwd|secret|token|api[_-]?key|access[_-]?key|client[_-]?secret)\s*[:=]\s*)(["']?)[^\s"']{4,}\2/gi,
-];
+// Things that look like credentials (src/analysis/secrets.ts). Replaced before anything is displayed.
+const SECRET_PATTERNS: RegExp[] = [...SECRET_TOKENS.map((t) => t.re), SECRET_ASSIGNMENT];
 
 export function redactSecrets(text: string): string {
   let out = text;

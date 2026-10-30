@@ -16,7 +16,7 @@
   /** Symbol whose usages are being looked up; stale replies are ignored. */
   let pendingSymbol = '';
   const HISTORY_PAGE = 50;
-  /** 'changes' | 'history' | 'sessions' | 'files' | 'apis' */
+  /** 'changes' | 'history' | 'sessions' | 'files' | 'apis' | 'health' */
   let activeTab = 'changes';
   /** AI session whose details are being loaded; stale replies are ignored. */
   let pendingSession = '';
@@ -85,6 +85,7 @@
   $('tabSessions').addEventListener('click', () => showTab('sessions'));
   $('tabFiles').addEventListener('click', () => showTab('files'));
   $('tabApis').addEventListener('click', () => showTab('apis'));
+  $('tabHealth').addEventListener('click', () => showTab('health'));
   $('expandAll').addEventListener('click', () => { for (const d of $('fileTree').querySelectorAll('details')) /** @type {HTMLDetailsElement} */ (d).open = true; });
   $('collapseAll').addEventListener('click', () => { for (const d of $('fileTree').querySelectorAll('details')) /** @type {HTMLDetailsElement} */ (d).open = false; });
   document.getElementById('codeBack')?.addEventListener('click', () => showGraph());
@@ -96,7 +97,7 @@
 
   function showTab(name) {
     activeTab = name;
-    for (const [tab, view, key] of [['tabChanges', 'changesView', 'changes'], ['tabHistory', 'historyView', 'history'], ['tabSessions', 'sessionsView', 'sessions'], ['tabFiles', 'filesView', 'files'], ['tabApis', 'apisView', 'apis']]) {
+    for (const [tab, view, key] of [['tabChanges', 'changesView', 'changes'], ['tabHistory', 'historyView', 'history'], ['tabSessions', 'sessionsView', 'sessions'], ['tabFiles', 'filesView', 'files'], ['tabApis', 'apisView', 'apis'], ['tabHealth', 'healthView', 'health']]) {
       $(tab).classList.toggle('active', key === name);
       $(tab).setAttribute('aria-selected', String(key === name));
       $(view).hidden = key !== name;
@@ -106,6 +107,7 @@
     else if (name === 'sessions') requestSessions();
     else if (name === 'files') requestFiles();
     else if (name === 'apis') requestApis();
+    else if (name === 'health') requestHealth();
   }
 
   function requestApis() {
@@ -154,6 +156,8 @@
     else if (msg.type === 'files') renderFiles(msg.result);
     else if (msg.type === 'apis') renderApis(msg.result);
     else if (msg.type === 'pagePreview') renderPagePreview(msg);
+    else if (msg.type === 'health') renderHealth(msg.result);
+    else if (msg.type === 'markedSafe') { const b = document.getElementById('markSafe'); if (b) { b.textContent = 'Marked as a safe point'; b.setAttribute('disabled', ''); } }
     else if (msg.type === 'previewError') renderPreviewError(msg);
   });
 
@@ -238,6 +242,7 @@
     else if (activeTab === 'sessions') requestSessions();
     else if (activeTab === 'files') requestFiles();
     else if (activeTab === 'apis') requestApis();
+    else if (activeTab === 'health') requestHealth();
   }
 
   function showBanner(text) {
@@ -310,6 +315,9 @@
         { selector: '.faded', style: { opacity: 0.15 } },
         { selector: 'node.used', style: { 'border-width': 3, 'border-color': '#c586c0' } },
         { selector: 'node.inCommit', style: { 'border-width': 3, 'border-color': '#4fc1ff' } },
+        // Phase 9: files with problems get a soft red (errors) or yellow (warnings) halo.
+        { selector: 'node.hasError', style: { 'underlay-color': '#f14c4c', 'underlay-opacity': 0.45, 'underlay-padding': 5, 'underlay-shape': 'ellipse' } },
+        { selector: 'node.hasWarning', style: { 'underlay-color': '#cca700', 'underlay-opacity': 0.4, 'underlay-padding': 5, 'underlay-shape': 'ellipse' } },
       ],
     });
     cy.on('tap', 'node', (evt) => {
@@ -468,6 +476,11 @@
     row('Author', d.author);
     row('Date', d.date);
     info.replaceChildren(withHelp(el('h2', 'Commit'), 'commit'), rows, el('h3', 'Message'), el('p', d.message.trim() || '(no message)', 'message'));
+    const markSafe = el('button', 'Mark as safe point');
+    markSafe.id = 'markSafe';
+    markSafe.title = 'Saves a small note in .vibecode/notes/ saying this commit is a good point to go back to (see the Health tab)';
+    markSafe.addEventListener('click', () => send({ type: 'markSafe', id: d.id }));
+    info.append(markSafe);
     currentSubject = d.id;
     info.append(el('div', undefined, 'notes'));
 
@@ -639,6 +652,132 @@
     if (nodeIds.length === 0) cy.elements().removeClass('faded');
     // Fit the folder's files into view.
     else cy.animate({ fit: { eles: nodes, padding: 60 } }, { duration: 250 });
+  }
+
+  // ---- Health tab (Phase 9) ----
+  function requestHealth() {
+    $('healthView').replaceChildren(el('p', 'Checking the project…', 'muted'));
+    send({ type: 'health' });
+  }
+
+  function renderHealth(r) {
+    const view = $('healthView');
+    view.replaceChildren();
+    if (cy) cy.nodes().removeClass('hasError hasWarning');
+    if (r.state === 'restricted') { view.append(el('p', 'Health checks are off in Restricted Mode. Trust the workspace to see them.', 'muted')); return; }
+    if (r.state !== 'ok') { view.append(el('p', 'No folder is open.', 'muted')); return; }
+    view.append(el('p', 'Read-only checks: nothing is run, fixed or changed for you.', 'muted small'));
+
+    // Checklist
+    view.append(withHelp(el('h3', 'Checklist'), 'health checklist'));
+    for (const c of r.checklist) {
+      const row = el('div', undefined, 'check ' + c.status);
+      row.append(el('span', c.status === 'ok' ? '✔' : c.status === 'warn' ? '✖' : 'i', 'mark'), el('span', `${c.title}: ${c.detail}`));
+      if (c.tip) row.append(el('span', c.tip, 'tip muted small'));
+      view.append(row);
+    }
+
+    // Problems
+    const errors = r.problems.files.reduce((n, f) => n + f.errors, 0);
+    const warnings = r.problems.files.reduce((n, f) => n + f.warnings, 0);
+    const probs = el('div', undefined, 'health-section');
+    probs.append(withHelp(el('h3', `Problems (${errors} errors, ${warnings} warnings)`), 'problems'));
+    probs.append(el('p', 'What VS Code already found. TypeScript checks mostly the files you have opened, so open a file to check it.', 'muted small'));
+    if (r.problems.files.length === 0) probs.append(el('p', 'No problems reported.', 'muted small'));
+    for (const f of r.problems.files) {
+      const details = /** @type {HTMLDetailsElement} */ (el('details'));
+      const summary = el('summary');
+      summary.append(el('span', f.file, 'mono'), el('span', ` ${f.errors ? f.errors + ' errors ' : ''}${f.warnings ? f.warnings + ' warnings' : ''}`, f.errors ? 'sev-error small' : 'sev-warning small'));
+      summary.addEventListener('click', () => {
+        if (!f.node || !cy) return;
+        showGraph();
+        highlightNodes([f.node]);
+      });
+      details.append(summary);
+      const ul = el('ul', undefined, 'files');
+      for (const p of f.items) {
+        const li = el('li');
+        const btn = el('button', `${p.line}: ${p.plain}`, 'link small sev-' + p.severity);
+        btn.title = `${p.source ? p.source + ': ' : ''}${p.message}\nClick to open the line.`;
+        btn.addEventListener('click', () => send({ type: 'healthItem', id: p.id }));
+        li.append(btn, el('div', p.message, 'muted small mono'));
+        ul.append(li);
+      }
+      details.append(ul);
+      probs.append(details);
+      if (f.node && cy) cy.getElementById(f.node).addClass(f.errors ? 'hasError' : 'hasWarning');
+    }
+    if (r.problems.truncated) probs.append(el('p', 'Only the first problems are listed.', 'muted small'));
+    view.append(probs);
+
+    // Secrets
+    const sec = el('div', undefined, 'health-section');
+    sec.append(withHelp(el('h3', `Secret-looking text (${r.secrets.length})`), 'secret'));
+    if (r.secrets.length === 0) sec.append(el('p', 'Nothing that looks like a key or password was found in the project files.', 'muted small'));
+    else sec.append(el('p', 'The values are never shown here. Click to open the line in VS Code. Move real secrets to a .env file that Git ignores, and change any that were committed.', 'muted small'));
+    const sl = el('ul', undefined, 'files');
+    for (const s of r.secrets) {
+      const li = el('li');
+      const btn = el('button', `${s.file}:${s.line}`, 'link mono small');
+      btn.title = 'Opens in VS Code (never on this page)';
+      btn.addEventListener('click', () => send({ type: 'healthItem', id: s.id }));
+      li.append(btn, el('span', ` ${s.kind}`, 'muted small'));
+      sl.append(li);
+    }
+    sec.append(sl);
+    if (r.secretsTruncated) sec.append(el('p', 'Only the first findings are listed.', 'muted small'));
+    view.append(sec);
+
+    // Unused and duplicates
+    const tidy = el('div', undefined, 'health-section');
+    tidy.append(withHelp(el('h3', `Possibly unused files (${r.unused.length})`), 'possibly unused'));
+    if (r.unused.length === 0) tidy.append(el('p', 'Every code file is imported by another, or is an entry point, test or config.', 'muted small'));
+    const ul = el('ul', undefined, 'files');
+    for (const u of r.unused) {
+      const btn = el('button', u.file, 'link mono small');
+      btn.addEventListener('click', () => {
+        if (!u.node) return;
+        showGraph();
+        highlightNodes([u.node]);
+        send({ type: 'inspect', id: u.node });
+      });
+      const li = el('li');
+      li.append(btn);
+      ul.append(li);
+    }
+    tidy.append(ul);
+    tidy.append(withHelp(el('h3', `Near-duplicate names (${r.duplicates.length})`), 'near-duplicate'));
+    if (r.duplicates.length === 0) tidy.append(el('p', 'No files with almost the same name in the same folder.', 'muted small'));
+    for (const d of r.duplicates) {
+      const btn = el('button', d.files.join('  ·  '), 'link mono small');
+      btn.addEventListener('click', () => { showGraph(); highlightNodes(d.nodes); });
+      tidy.append(el('div'), btn);
+    }
+    view.append(tidy);
+
+    // Safe points
+    const safe = el('div', undefined, 'health-section');
+    safe.append(withHelp(el('h3', `Safe points (${r.safePoints.length})`), 'safe point'));
+    if (!r.safeSources.git) safe.append(el('p', 'No Git history for this folder, so there are no safe points.', 'muted small'));
+    else {
+      safe.append(el('p', 'Commits worth going back to: tagged ones, the last commit before each AI session, and ones you marked in the History tab. The steps are only shown; nothing is run for you.', 'muted small'));
+      if (!r.safeSources.sessionsAllowed) safe.append(el('p', 'Allow reading AI session logs (AI sessions tab) to also see the commit before each session.', 'muted small'));
+    }
+    for (const p of r.safePoints) {
+      const details = /** @type {HTMLDetailsElement} */ (el('details'));
+      const summary = el('summary');
+      summary.append(el('span', `${p.short} ${p.headline}`, 'mono'), el('div', `${p.date ? new Date(p.date).toLocaleString() + ' · ' : ''}${p.reasons.join(' · ')}`, 'muted small'));
+      details.append(summary);
+      const ol = el('ol', undefined, 'steps');
+      for (const step of p.steps) {
+        const li = el('li', step.text);
+        if (step.command) li.append(el('code', step.command));
+        ol.append(li);
+      }
+      details.append(ol);
+      safe.append(details);
+    }
+    view.append(safe);
   }
 
   // ---- Preview next to the code (Phase 8, browser view only) ----

@@ -197,6 +197,22 @@ Approved by the owner on 2026-10-30 with the recommended choices: a Pages sectio
 
 Owner-verified 2026-10-30 with `Documentsibecode-api-demo` (see the development log). Non-goals: following clicks inside the running app, starting dev servers, guessing values for `:id`, Svelte/Nuxt/Astro file routes, server-side includes inside templates.
 
+## Phase 9 scope: Health tab
+
+Chosen by the owner on 2026-10-30 from the saved "safety and learning" ideas (the recommended top 5), approved with a new **Health** tab and three kinds of safe points: before each AI session, tagged commits, and commits the owner marks.
+
+| # | Requirement | Status |
+| --- | --- | --- |
+| A | **Health** tab (sixth): Checklist, Problems, Secret-looking text, Possibly unused files, Near-duplicate names, Safe points. Glossary terms for each | Done (UI not auto-tested) |
+| B | Problems: errors and warnings VS Code already reported (`languages.getDiagnostics`), per file, with a plain explanation of common messages; graph files get a red or yellow halo; clicking opens the line. Messages are passed through the secret filter. Nothing extra is checked or run | Done |
+| C | Checklist: README, `.gitignore` covering `.env` and `node_modules`/`.venv`, license, linter, tests, lock file, and `.env` files ignored by Git (VS Code Git's `checkIgnore`; example env files skipped). Reads file names, plus the root `.gitignore`, `package.json` and `pyproject.toml` | Done |
+| D | Secret-looking text in project text files: file, line and kind only, never the value; one finding per line; placeholders and types (`password: string`) skipped; sensitive-named files never opened; a finding opens only in VS Code's editor, never on the browser page | Done |
+| E | Possibly unused: graph files nothing imports, except entry names, tests, configs, framework files, scripts and `package.json` `main`/`bin`. Near-duplicates: names in one folder that differ only by copy, old, backup, a number or a plural | Done |
+| F | Safe points: tags, the last commit before each AI session (only when session logs are already allowed), and commits marked with **Mark as safe point** in History (a small note in `.vibecode/notes/` with `safe: true`, under the existing notes permission). Each shows plain steps with `git` commands to copy; nothing is run | Done |
+| G | Read-only apart from the opt-in safe-point note. No new dependency | Done |
+
+Owner verification is pending. Non-goals: running tests or linters, fixing problems, deleting files, removing secrets, checking out commits.
+
 ## Non-goals for Phase 1
 
 Function/API/database graphs, agent attribution, change explanations, embedded browser, marketplace publishing, servers, databases, cloud sync, plugin framework.

@@ -390,6 +390,51 @@ export async function run(): Promise<void> {
     assert.deepEqual(api.notesFor(allNotes, { about: 'src/index.ts' }), []);
   });
 
+  // Phase 9: Health checks. A problem is injected the way a language extension reports one.
+  const diagnostics = vscode.languages.createDiagnosticCollection('vibecode-test');
+  const utilUri = vscode.Uri.joinPath(repoFolder.uri, 'src', 'util.ts');
+  diagnostics.set(utilUri, [
+    new vscode.Diagnostic(new vscode.Range(0, 0, 0, 5), "Cannot find name 'foo'.", vscode.DiagnosticSeverity.Error),
+    new vscode.Diagnostic(new vscode.Range(0, 0, 0, 5), "Unknown value token = 'sk-abcdefghijklmnopqrstu'", vscode.DiagnosticSeverity.Warning),
+  ]);
+  await api.createNote!(repoFolder, { commit: log[1].shortHash }, 'Safe point', { safe: true });
+  const health = await api.loadHealth(repoFolder, state);
+  diagnostics.dispose();
+  const h = health.result.state === 'ok' ? health.result : undefined;
+  check('problems VS Code reports are listed in plain words, with secrets hidden', () => {
+    const util = h?.problems.files.find((f) => f.file === 'src/util.ts');
+    assert.ok(util, JSON.stringify(h?.problems));
+    assert.equal(util.errors, 1);
+    assert.equal(util.node, byPath.get('src/util.ts'));
+    assert.equal(util.items[0].plain, 'foo is used here but never defined or imported.');
+    assert.ok(!JSON.stringify(health.result).includes('sk-abcdefghijklmnopqrstu'));
+  });
+  check('the checklist flags a tracked .env file and the missing basics', () => {
+    const status = (id: string) => h?.checklist.find((c) => c.id === id)?.status;
+    assert.equal(status('env'), 'warn', JSON.stringify(h?.checklist));
+    assert.equal(status('readme'), 'warn');
+    assert.equal(status('gitignore'), 'warn');
+  });
+  check('possibly unused files exclude entry points and imported files', () => {
+    const unused = h!.unused.map((u) => u.file);
+    assert.ok(unused.includes('src/helpers.ts'), JSON.stringify(unused));
+    assert.ok(!unused.includes('src/index.ts') && !unused.includes('src/util.ts'));
+  });
+  check('safe points come from tags and marked commits, with steps that are only shown', () => {
+    const points = h!.safePoints.map((p) => `${p.headline}: ${p.reasons.join(', ')}`);
+    assert.deepEqual(points, ['add helper: marked safe by you', 'init: tag v0.1'], JSON.stringify(points));
+    assert.ok(h!.safePoints[0].steps.some((s) => s.command === `git switch --detach ${h!.safePoints[0].short}`));
+    assert.equal(h!.safeSources.sessionsAllowed, false);
+  });
+  const apiHealth = await api.loadHealth(vscode.workspace.workspaceFolders![3], apiState.state);
+  const ah = apiHealth.result.state === 'ok' ? apiHealth.result : undefined;
+  check('secret-looking text is located without its value, and near-duplicates are grouped', () => {
+    assert.deepEqual(ah?.secrets.map((s) => `${s.file}:${s.line}`), ['config.js:1']);
+    assert.ok(!JSON.stringify(apiHealth.result).includes('sk-fakefake') && !JSON.stringify(apiHealth.result).includes('do-not-read'));
+    assert.ok(apiHealth.secretIds.has(ah!.secrets[0].id));
+    assert.deepEqual(ah?.duplicates.map((d) => d.files), [['docs/notes-old.md', 'docs/notes.md']]);
+  });
+
   // Phase 4b: AI sessions from (fake) Claude Code logs. Reading needs the owner's permission first.
   const listed = await api.loadSessions(repoFolder);
   check('session logs are not read before permission is given', () => {

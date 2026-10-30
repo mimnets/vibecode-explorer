@@ -96,6 +96,20 @@ ol.prompts li { margin: 0 0 8px; }
 .page-path input { flex: 1; min-width: 0; font-family: var(--vscode-editor-font-family); background: var(--vscode-input-background, transparent); color: var(--vscode-input-foreground, inherit); border: 1px solid var(--vscode-panel-border); padding: 2px 6px; }
 .preview-error { color: var(--vscode-errorForeground, #f14c4c); }
 
+/* Health tab (Phase 9). */
+.dot.problem { background: none; box-shadow: 0 0 0 3px rgba(241, 76, 76, 0.45); width: 7px; height: 7px; }
+.check { display: grid; grid-template-columns: 1.4em 1fr; gap: 2px 4px; margin: 4px 0; }
+.check .mark { font-weight: 700; }
+.check.ok .mark { color: var(--vscode-testing-iconPassed, #73c991); }
+.check.warn .mark { color: var(--vscode-editorWarning-foreground, #cca700); }
+.check.info .mark { color: var(--vscode-descriptionForeground); }
+.check .tip { grid-column: 2; }
+.sev-error { color: var(--vscode-errorForeground, #f14c4c); }
+.sev-warning { color: var(--vscode-editorWarning-foreground, #cca700); }
+.steps { margin: 4px 0 8px; padding-left: 20px; }
+.steps code { display: block; margin: 2px 0 4px; padding: 2px 6px; background: var(--vscode-textBlockQuote-background); font-family: var(--vscode-editor-font-family); user-select: all; }
+.health-section { margin-top: 14px; }
+
 /* Files tab (Phase 6d). */
 .file-tools { display: flex; gap: 6px; margin-bottom: 6px; }
 .file-tree details > .tree-children { padding-left: 14px; border-left: 1px solid var(--vscode-panel-border); margin-left: 5px; }

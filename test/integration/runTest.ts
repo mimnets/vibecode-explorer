@@ -26,6 +26,8 @@ function createSample(root: string): string {
   git(repo, '-c', 'user.name=test', '-c', 'user.email=test@example.invalid', 'add', '.');
   const commit = (message: string) => git(repo, '-c', 'user.name=test', '-c', 'user.email=test@example.invalid', 'commit', '-q', '-m', message);
   commit('init');
+  // Phase 9: a tagged commit is a safe point.
+  git(repo, 'tag', 'v0.1');
   // History for Phase 3: an add, a rename, a deletion and a sensitive file.
   write(path.join(repo, 'src/helper.ts'), `export const helper = 'a fairly long line so rename detection has content to compare';\n`);
   write(path.join(repo, 'src/temp.ts'), `export const temp = 1;\n`);
@@ -86,6 +88,10 @@ export const pong = () => ping;
   write(path.join(apiDir, 'index.html'), `<!doctype html><script type="module" src="/web/client.js"></script>\n`);
   write(path.join(apiDir, 'site.js'), `const app = require('express')();\napp.get('/', (req, res) => res.render('home'));\n`);
   write(path.join(apiDir, 'views/home.ejs'), `<h1>Home</h1>\n`);
+  // Phase 9: a fake key in code, and two near-duplicate names.
+  write(path.join(apiDir, 'config.js'), `module.exports = { apiKey: "sk-fakefakefakefake1234" };\n`);
+  write(path.join(apiDir, 'docs/notes.md'), `# Notes\n`);
+  write(path.join(apiDir, 'docs/notes-old.md'), `# Old notes\n`);
 
   const workspace = path.join(root, 'sample.code-workspace');
   write(workspace, JSON.stringify({ folders: [{ path: 'sample-repo' }, { path: 'plain-folder' }, { path: 'py-project' }, { path: 'api-project' }] }));
@@ -151,9 +157,9 @@ async function main(): Promise<void> {
   if (fingerprint(path.join(root, 'ws')) !== before) throw new Error('sample workspace files were modified');
   console.log('  ✔ sample workspace unchanged outside .vibecode/notes');
   const notes = fs.readdirSync(path.join(root, 'ws', 'sample-repo', '.vibecode', 'notes'));
-  if (notes.length !== 3 || !notes.every((n) => /^\d{4}-\d{2}-\d{2}-[a-z0-9-]+\.md$/.test(n))) throw new Error(`unexpected notes: ${notes}`);
+  if (notes.length !== 4 || !notes.every((n) => /^\d{4}-\d{2}-\d{2}-[a-z0-9-]+\.md$/.test(n))) throw new Error(`unexpected notes: ${notes}`);
   if (fs.readdirSync(path.join(root, 'ws', 'sample-repo', '.vibecode')).length !== 1) throw new Error('unexpected files in .vibecode');
-  console.log('  ✔ notes folder holds only the 3 notes created by the test');
+  console.log('  ✔ notes folder holds only the 4 notes created by the test');
   fs.rmSync(root, { recursive: true, force: true, maxRetries: 5 });
 }
 

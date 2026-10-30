@@ -1,6 +1,7 @@
 import * as vscode from 'vscode';
 import { CommitEntry } from '../git/gitChanges';
 import { loadApis } from './apis';
+import { loadHealth } from './health';
 import { askToAllowSessions, describeSession, loadSessions, StoredSession } from './agentSessions';
 import { codeForCommitFile, codeForLocation, codeForTarget } from './codeView';
 import { openTarget, revealLocation, SIDE } from './open';
@@ -32,6 +33,9 @@ export class DashboardSession {
   private subject: { id: string; label: string; value: NoteSubject } | undefined;
   /** Routes (`w…`), calls (`x…`) and models (`m…`) in the APIs tab. */
   private apiLocations = new Map<string, CodeLocation>();
+  /** Problems and secret-looking text in the Health tab (`y…`); secrets only open in the editor. */
+  private healthLocations = new Map<string, CodeLocation>();
+  private secretIds = new Set<string>();
   /** AI sessions in the AI sessions tab (`a…`). */
   private sessions = new Map<string, StoredSession>();
   private state: DashboardState | undefined;
@@ -88,6 +92,8 @@ export class DashboardSession {
           this.subject = undefined;
           this.sessions.clear();
           this.apiLocations.clear();
+          this.healthLocations.clear();
+          this.secretIds.clear();
           this.commits.clear();
           this.historyFiles.clear();
           this.post({ type: 'state', state });
@@ -212,6 +218,29 @@ export class DashboardSession {
         this.post({ type: 'apis', result });
         break;
       }
+      case 'health': {
+        const folder = this.folder();
+        if (!folder || !this.state) {
+          this.post({ type: 'health', result: { state: 'none' } });
+          return;
+        }
+        const { result, locations, secretIds } = await loadHealth(folder, this.state, this.memento);
+        this.healthLocations = locations;
+        this.secretIds = secretIds;
+        this.post({ type: 'health', result });
+        break;
+      }
+      case 'healthItem': {
+        const loc = this.healthLocations.get(msg.id);
+        if (!loc) return;
+        // A secret-looking line opens only in VS Code's editor, never on the browser page.
+        if (this.secretIds.has(msg.id)) await revealLocation(loc);
+        else await this.reveal(msg.id, loc);
+        break;
+      }
+      case 'markSafe':
+        await this.markSafe(msg.id);
+        break;
       case 'previewPage': {
         const loc = msg.id.startsWith('g') ? this.apiLocations.get(msg.id) : undefined;
         if (!loc) return;
@@ -343,6 +372,22 @@ export class DashboardSession {
       return { id, title: n.title, created: n.created, path: n.relPath };
     });
     this.post({ type: 'notes', subject: subject.id, available: true, notes });
+  }
+
+  /** Phase 9: marks a commit as a safe point by saving a small note (the same opt-in as notes). */
+  private async markSafe(id: string): Promise<void> {
+    const commit = this.commits.get(id);
+    const folder = this.folder();
+    if (!commit || !folder || !vscode.workspace.isTrusted) return;
+    if (!await ensureNotesAllowed(this.memento, folder)) return;
+    try {
+      await createNote(folder, { commit: commit.hash }, `Safe point ${commit.hash.slice(0, 7)}`, { safe: true });
+      this.post({ type: 'markedSafe', id });
+    } catch (err) {
+      void vscode.window.showErrorMessage(err instanceof Error ? err.message : String(err));
+    }
+    this.allNotes = undefined;
+    await this.postNotes();
   }
 
   /** The only write into the project: a new note file, after the owner allows it. */

@@ -15,6 +15,8 @@ export interface NoteHeader {
   /** Commit hash the note is about. */
   commit?: string;
   created?: string;
+  /** Phase 9: the commit was marked as a safe point. */
+  safe?: boolean;
   /** First `# ` heading, or '' when there is none. */
   title: string;
 }
@@ -28,6 +30,7 @@ export function parseNote(text: string): NoteHeader {
     for (i = 1; i < lines.length && lines[i].trim() !== '---'; i++) {
       const m = /^(about|commit|created):\s*(.*?)\s*$/.exec(lines[i]);
       if (m && m[2]) header[m[1] as 'about' | 'commit' | 'created'] = m[2];
+      if (/^safe:\s*true\s*$/i.test(lines[i])) header.safe = true;
     }
     i++;
   }
@@ -65,7 +68,10 @@ export function noteFileName(created: string, title: string, existing: Set<strin
 }
 
 /** Starting text of a new note. */
-export function noteTemplate(subject: { about: string } | { commit: string }, created: string, title: string): string {
+export function noteTemplate(subject: { about: string } | { commit: string }, created: string, title: string, options: { safe?: boolean } = {}): string {
   const line = 'about' in subject ? `about: ${subject.about}` : `commit: ${subject.commit}`;
+  if (options.safe) {
+    return `---\n${line}\nsafe: true\ncreated: ${created}\n---\n\n# ${title}\n\nMarked as a safe point: a commit that worked and is worth going back to.\n\n## Why it is safe\n\n`;
+  }
   return `---\n${line}\ncreated: ${created}\n---\n\n# ${title}\n\n## What\n\n\n## Why\n\n\n## Decision\n\n`;
 }

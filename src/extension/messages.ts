@@ -35,6 +35,10 @@ export type WebviewMessage =
   | { type: 'apis' }
   /** Show where a route (`w…`), call (`x…`) or model (`m…`) is defined. */
   | { type: 'apiItem'; id: string }
+  /** Health tab (Phase 9): load the checks, open a problem or secret location (`y…`), mark a commit (`k…`) safe. */
+  | { type: 'health' }
+  | { type: 'healthItem'; id: string }
+  | { type: 'markSafe'; id: string }
   /** Preview a page (`g…`) at an address the owner may have edited (Phase 8). */
   | { type: 'previewPage'; id: string; path: string }
   /** Show one AI session (`a…`). */
@@ -57,6 +61,7 @@ export function parseWebviewMessage(raw: unknown): WebviewMessage | undefined {
     case 'allowSessions':
     case 'files':
     case 'apis':
+    case 'health':
       return { type: msg.type };
     case 'selectFolder':
       return Number.isInteger(msg.index) && (msg.index as number) >= 0 && (msg.index as number) < 1000
@@ -76,6 +81,8 @@ export function parseWebviewMessage(raw: unknown): WebviewMessage | undefined {
     case 'openNote':
     case 'openInEditor':
     case 'apiItem':
+    case 'healthItem':
+    case 'markSafe':
     case 'session':
       return typeof msg.id === 'string' && ID_PATTERN.test(msg.id) ? { type: msg.type, id: msg.id } : undefined;
     case 'previewPage':

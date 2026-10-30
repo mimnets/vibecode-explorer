@@ -299,10 +299,31 @@ With the owner's approval, a small demo was created **outside this repository**,
 
 **Owner screenshot of this repository in the browser view:** the Pages & APIs tab shows Pages (0), Routes (0) and Database (0), which is correct for an extension. It shows one HTTP call, `POST ./message?c=*` from `src/webview/browserBridge.js:12`, marked "no matching route found": the browser page's own call to the extension's server, as the dry run predicted. The tabs wrap onto two rows, and the graph shows 53 files and 121 imports. Cosmetic note, not changed: the four files without imports sit in a row at the top right, and two of their labels touch.
 
+## 2026-10-30: Phase 9: Health tab
+
+**Approved:** after the roadmap was complete, the owner chose the saved "safety and learning" top 5 as the next phase, with a new **Health** tab and three kinds of safe points (before each AI session, tags, and commits the owner marks). The three Phase 8 commits were pushed with the owner's yes (`791d2d9..fe0eda5`).
+
+**What:** a sixth tab, **Health**, with:
+1. **Checklist:** README, `.gitignore`, license, linter, tests, lock file, `.env` files ignored by Git.
+2. **Problems:** the errors and warnings VS Code already knows about, with a plain explanation, for example "foo is used here but never defined or imported". Files with problems get a red or yellow halo in the graph.
+3. **Secret-looking text:** file, line and kind, never the value.
+4. **Possibly unused files** and **near-duplicate names.**
+5. **Safe points** with plain go-back steps.
+
+History's commit details have a new **Mark as safe point** button.
+
+**How:** only reads what already exists. Diagnostics come from `vscode.languages.getDiagnostics()`, so nothing new is checked. Git ignore status and tags come from the Git extension API. The credential patterns moved to `src/analysis/secrets.ts` and are shared with the AI sessions reader, whose tests still pass. Safe-point marks are notes (`safe: true`), so the only write stays inside `.vibecode/notes/` under the existing permission. No new dependency and no AGENTS.md change.
+
+**Safety:** secret values are never returned. In code, only quoted values count, and placeholders such as `your_api_key`, `process.env.X` and `${…}` are skipped. Files with sensitive names are never opened. A secret finding opens only in VS Code's editor, never on the browser page. Problem messages pass through the secret filter. Go-back steps are text to copy, never run, and none of them can lose work (no `reset --hard`, `clean` or `push`).
+
+**Verified automatically:** lint. 76 unit tests, 7 of them new: plain problem texts, the checklist for a good, a bad and a Python project (and without Git), possibly unused files (entry points, tests, configs, framework files and scripts excluded), near-duplicate names (`util`/`utils`/`utils2`, `api`/`api-copy`, `old_api`), safe points (tags, the commit before each session, marked commits, newest first, no step that loses work), the safe-point note header, and secrets (located, values never returned, `password: string` and `process.env` skipped). 81 integration checks, 5 of them new. A problem was injected the way a language extension reports one; it appears in plain words with its graph id, and a fake key in its message is hidden. The sample repository's tracked `.env`, missing README and `.gitignore` are flagged. `src/helpers.ts` is possibly unused, but `index.ts` and `util.ts` are not. The `v0.1` tag and a marked commit are safe points with their steps. In `api-project` a fake key in `config.js` is found at line 1 without its value, its id opens only in the editor, and `docs/notes.md`/`docs/notes-old.md` are grouped. **Not verified automatically:** the Health tab in the webview, the graph halos and the **Mark as safe point** button.
+
+**Limitations:** TypeScript reports problems mostly for files that have been opened. Secret detection is pattern-based, so it can miss unusual formats and will also list fake keys in tests. "Possibly unused" can't see files loaded by scripts, configs or frameworks it doesn't know. Safe points before AI sessions need the session logs to be allowed first. Whether a commit's tests passed is not known, because the extension never runs tests.
+
 ## Handoff for the next session (updated 2026-10-30)
 
-**Where things stand:** every phase on the roadmap (0–8) is Done and owner-verified. The Phase 8 check used `Documents\vibecode-api-demo` (`node preview-server.js`, preview URL `http://localhost:5173`). GitHub is up to date to `791d2d9`; later commits are local (pushing needs the owner's yes).
+**Where things stand:** Phases 0–8 are Done and owner-verified. Phase 9 (Health tab) is implemented and auto-tested, **awaiting the owner's GUI check**. GitHub is up to date to `fe0eda5`; later commits are local (pushing needs the owner's yes).
 
-**Next:** ask the owner what comes after the roadmap (for example the open ideas below, or the saved future plans for project tracking and learning aids).
+**Next:** the Phase 9 GUI check (Health tab on this repository and on `Documents\vibecode-api-demo`; **Mark as safe point** in History). Then the remaining saved ideas: the read-only Project status tab, and the rest of the learning list (reading order, test map, copy context for AI, folder rules, commit message check, TODO list, package list, hotspots, how-to-run card, prompt tips).
 
 **Open ideas, not scheduled:** notes written fully in the browser; syntax colours; a "No" answer to the notes question isn't remembered; notes break on file rename; AI sessions read Claude Code logs only; clicking a listed note wasn't explicitly owner-checked; Svelte/Nuxt/Astro pages; labels of unconnected graph files can touch.

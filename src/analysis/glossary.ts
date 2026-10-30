@@ -62,6 +62,12 @@ export const GLOSSARY: Readonly<Record<string, string>> = {
   'http call': 'Code that sends a request to a server address, for example fetch("/api/users"). It is matched to a route here when the address can be read from the code.',
   'database model': 'A table or a class that stands for one, such as User. ORM libraries (Prisma, SQLAlchemy, Django, TypeORM…) turn rows into objects.',
   page: 'A screen of your app at an address, such as /users. Here it is linked to the files that make it: the page file, what it imports, its layout or template.',
+  'health checklist': 'Basic things most projects should have: a README, a .gitignore that keeps secrets out of Git, a license, a code checker, tests and locked package versions.',
+  problems: 'Errors and warnings VS Code\'s language support found while checking your files, like the red and yellow squiggles in the editor.',
+  secret: 'A password, API key or token. If it is in a file Git tracks, everyone with the code can read it. Keep secrets in a .env file that Git ignores.',
+  'possibly unused': 'A code file no other file imports. It may be left over and safe to delete, or it may be loaded in a way the graph can\'t see (a script, a config).',
+  'near-duplicate': 'Files with almost the same name in one folder, like utils.ts and utils2.ts. Often a copy made while experimenting; keep one.',
+  'safe point': 'A commit you can go back to if later changes break something. Git keeps every commit, so going back loses nothing if you save your work first.',
   'http method': 'The kind of request: GET reads, POST creates, PUT or PATCH changes, DELETE removes. ANY means the route accepts every method.',
 };
 

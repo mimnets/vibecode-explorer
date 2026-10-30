@@ -12,6 +12,7 @@ interface GitCommit {
   readonly authorDate?: Date;
   readonly authorName?: string;
 }
+interface GitRef { readonly type: number; readonly name?: string; readonly commit?: string }
 interface GitRepository {
   readonly rootUri: vscode.Uri;
   readonly state: {
@@ -20,8 +21,13 @@ interface GitRepository {
     readonly workingTreeChanges: GitChange[];
     readonly untrackedChanges?: GitChange[];
     readonly mergeChanges: GitChange[];
+    readonly refs?: GitRef[];
   };
   status(): Promise<void>;
+  /** Branches and tags (`type` 2 is a tag). Older API versions only have `state.refs`. */
+  getRefs?(query: { pattern?: string; count?: number }): Promise<GitRef[]>;
+  /** Which of the given paths Git ignores. */
+  checkIgnore?(paths: string[]): Promise<Set<string>>;
   log(options?: { maxEntries?: number; path?: string }): Promise<GitCommit[]>;
   /** Runs `git diff ref1...ref2`; both refs must be commits. */
   diffBetween(ref1: string, ref2: string): Promise<GitChange[]>;
@@ -193,4 +199,33 @@ export async function getCommitFiles(folder: vscode.WorkspaceFolder, commit: Com
 /** URI for a file's content at a commit (read-only, served by the Git extension). */
 export function gitUriAt(uri: vscode.Uri, ref: string): vscode.Uri | undefined {
   return cachedApi?.toGitUri(uri, ref);
+}
+
+/** Tags of the folder's repository with their commits (Phase 9 safe points). Read-only. */
+export async function getTags(folder: vscode.WorkspaceFolder): Promise<{ name: string; hash: string }[]> {
+  const found = await findRepo(folder);
+  if (found.kind !== 'repo') return [];
+  let refs: GitRef[];
+  try {
+    refs = found.repo.getRefs ? await found.repo.getRefs({ pattern: 'refs/tags' }) : [...(found.repo.state.refs ?? [])];
+  } catch {
+    refs = [...(found.repo.state.refs ?? [])];
+  }
+  return refs.filter((r) => r.type === 2 && r.name && r.commit).map((r) => ({ name: r.name as string, hash: r.commit as string }));
+}
+
+/** Which of these folder-relative paths Git ignores; undefined when Git can't tell. Read-only. */
+export async function ignoredByGit(folder: vscode.WorkspaceFolder, relPaths: string[]): Promise<Set<string> | undefined> {
+  const found = await findRepo(folder);
+  if (found.kind !== 'repo' || !found.repo.checkIgnore) return undefined;
+  if (relPaths.length === 0) return new Set();
+  try {
+    const abs = relPaths.map((p) => path.join(folder.uri.fsPath, ...p.split('/')));
+    const ignored = await found.repo.checkIgnore(abs);
+    const norm = (p: string): string => path.normalize(p).toLowerCase();
+    const set = new Set([...ignored].map(norm));
+    return new Set(relPaths.filter((_, i) => set.has(norm(abs[i]))));
+  } catch {
+    return undefined;
+  }
 }

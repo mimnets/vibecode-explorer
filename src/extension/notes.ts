@@ -15,6 +15,8 @@ export interface NoteEntry {
   commit?: string;
   created: string;
   title: string;
+  /** Phase 9: a safe-point mark on a commit. */
+  safe?: boolean;
 }
 
 /** What a note is attached to. */
@@ -35,7 +37,7 @@ export async function listNotes(folder: vscode.WorkspaceFolder): Promise<NoteEnt
       const header = parseNote(new TextDecoder().decode(await vscode.workspace.fs.readFile(uri)));
       const relPath = vscode.workspace.asRelativePath(uri, false);
       const name = relPath.split('/').pop() ?? relPath;
-      notes.push({ uri, relPath, about: header.about, commit: header.commit, created: header.created ?? '', title: header.title || name });
+      notes.push({ uri, relPath, about: header.about, commit: header.commit, created: header.created ?? '', title: header.title || name, safe: header.safe });
     } catch {
       // Unreadable note: skip it.
     }
@@ -65,7 +67,7 @@ export async function ensureNotesAllowed(memento: vscode.Memento, folder: vscode
 }
 
 /** Creates a new note file (never overwrites) and returns its URI. */
-export async function createNote(folder: vscode.WorkspaceFolder, subject: NoteSubject, title: string): Promise<vscode.Uri> {
+export async function createNote(folder: vscode.WorkspaceFolder, subject: NoteSubject, title: string, options: { safe?: boolean } = {}): Promise<vscode.Uri> {
   if (!vscode.workspace.isTrusted) throw new Error('Notes are off in Restricted Mode.');
   const dir = notesFolderUri(folder);
   await vscode.workspace.fs.createDirectory(dir);
@@ -76,7 +78,7 @@ export async function createNote(folder: vscode.WorkspaceFolder, subject: NoteSu
   if (!isNoteFileName(name)) throw new Error('Invalid note file name.');
   const uri = vscode.Uri.joinPath(dir, name);
   if (await exists(uri)) throw new Error(`${NOTES_DIR}/${name} already exists.`);
-  await vscode.workspace.fs.writeFile(uri, new TextEncoder().encode(noteTemplate(subject, created, title)));
+  await vscode.workspace.fs.writeFile(uri, new TextEncoder().encode(noteTemplate(subject, created, title, options)));
   return uri;
 }
 

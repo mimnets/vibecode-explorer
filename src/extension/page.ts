@@ -40,6 +40,7 @@ ${browser ? `<link rel="stylesheet" href="${o.asset('src', 'webview', 'browser.c
       <button id="tabSessions" class="tab" role="tab" aria-selected="false">AI sessions</button>
       <button id="tabFiles" class="tab" role="tab" aria-selected="false">Files</button>
       <button id="tabApis" class="tab" role="tab" aria-selected="false">Pages &amp; APIs</button>
+      <button id="tabHealth" class="tab" role="tab" aria-selected="false">Health</button>
     </div>
     <div id="changesView">
       <div id="repo" class="muted"></div>
@@ -60,6 +61,7 @@ ${browser ? `<link rel="stylesheet" href="${o.asset('src', 'webview', 'browser.c
       <div id="fileTree" class="file-tree" role="tree"></div>
     </div>
     <div id="apisView" hidden></div>
+    <div id="healthView" hidden></div>
   </section>
   <section class="pane graph-pane">
     <div class="graph-tools" id="graphTools">
@@ -72,7 +74,7 @@ ${browser ? `<link rel="stylesheet" href="${o.asset('src', 'webview', 'browser.c
     </div>
     <div id="graph"></div>
     <div class="legend muted" id="legend">
-      <span class="dot file"></span>file <span class="dot changed"></span>changed <span class="dot untracked"></span>new <span class="dot unknown"></span>unknown import <span class="dot used"></span>uses selected symbol <span class="dot commit"></span>in selected commit, session or folder <span class="dot cycle"></span>circular import
+      <span class="dot file"></span>file <span class="dot changed"></span>changed <span class="dot untracked"></span>new <span class="dot unknown"></span>unknown import <span class="dot used"></span>uses selected symbol <span class="dot commit"></span>in selected commit, session or folder <span class="dot cycle"></span>circular import <span class="dot problem"></span>has problems (Health tab)
     </div>
 ${browser ? `    <div id="codeView" class="code-view" hidden>
       <div class="graph-tools">
