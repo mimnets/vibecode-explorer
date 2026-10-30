@@ -172,6 +172,15 @@ export interface CodeLocation { uri: vscode.Uri; relPath: string; position: vsco
 const MAX_SYMBOLS = 200;
 const MAX_USAGES = 100;
 
+async function isSmallText(uri: vscode.Uri): Promise<boolean> {
+  try {
+    if ((await vscode.workspace.fs.stat(uri)).size > MAX_FILE_BYTES) return false;
+    return !(await vscode.workspace.fs.readFile(uri)).subarray(0, 8000).includes(0);
+  } catch {
+    return false;
+  }
+}
+
 /** Details for the info panel. Symbols come from whatever VS Code language support is installed. */
 export async function describeTarget(id: string, t: Target): Promise<{ details: FileDetails; symbols: Map<string, CodeLocation> }> {
   const symbols = new Map<string, CodeLocation>();
@@ -196,6 +205,8 @@ export async function describeTarget(id: string, t: Target): Promise<{ details: 
     details.note = 'Deleted in the working tree. Open shows the HEAD version.';
     return { details, symbols };
   }
+  // Files from the Files tab can be anything: ask for symbols only for small text files.
+  if (!t.analysis && !await isSmallText(t.uri)) return { details, symbols };
   try {
     const result = await vscode.commands.executeCommand<(vscode.DocumentSymbol | vscode.SymbolInformation)[] | undefined>(
       'vscode.executeDocumentSymbolProvider', t.uri);

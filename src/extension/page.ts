@@ -38,6 +38,7 @@ ${browser ? `<link rel="stylesheet" href="${o.asset('src', 'webview', 'browser.c
       <button id="tabChanges" class="tab active" role="tab" aria-selected="true">Workspace changes</button>
       <button id="tabHistory" class="tab" role="tab" aria-selected="false">History</button>
       <button id="tabSessions" class="tab" role="tab" aria-selected="false">AI sessions</button>
+      <button id="tabFiles" class="tab" role="tab" aria-selected="false">Files</button>
     </div>
     <div id="changesView">
       <div id="repo" class="muted"></div>
@@ -49,6 +50,14 @@ ${browser ? `<link rel="stylesheet" href="${o.asset('src', 'webview', 'browser.c
       <button id="moreHistory" hidden>Load more</button>
     </div>
     <div id="sessionsView" hidden></div>
+    <div id="filesView" hidden>
+      <div class="file-tools">
+        <button id="expandAll" title="Open every folder">Expand all</button>
+        <button id="collapseAll" title="Close every folder">Collapse all</button>
+      </div>
+      <div id="filesInfo" class="muted"></div>
+      <div id="fileTree" class="file-tree" role="tree"></div>
+    </div>
   </section>
   <section class="pane graph-pane">
     <div class="graph-tools" id="graphTools">
@@ -61,7 +70,7 @@ ${browser ? `<link rel="stylesheet" href="${o.asset('src', 'webview', 'browser.c
     </div>
     <div id="graph"></div>
     <div class="legend muted" id="legend">
-      <span class="dot file"></span>file <span class="dot changed"></span>changed <span class="dot untracked"></span>new <span class="dot unknown"></span>unknown import <span class="dot used"></span>uses selected symbol <span class="dot commit"></span>in selected commit or session <span class="dot cycle"></span>circular import
+      <span class="dot file"></span>file <span class="dot changed"></span>changed <span class="dot untracked"></span>new <span class="dot unknown"></span>unknown import <span class="dot used"></span>uses selected symbol <span class="dot commit"></span>in selected commit, session or folder <span class="dot cycle"></span>circular import
     </div>
 ${browser ? `    <div id="codeView" class="code-view" hidden>
       <div class="graph-tools">

@@ -152,6 +152,21 @@ Requested by the owner on 2026-10-30, and approved the same day with these choic
 
 Owner-verified 2026-10-30 except F, the startup setting (see the development log). Non-goals: syntax colours, editing in the browser, notes in the browser, side-by-side comparisons, search.
 
+## Phase 6d scope: Files tab
+
+Requested by the owner on 2026-10-30, and approved the same day with the recommended choices: a fourth tab on the left, listing all project files.
+
+| # | Requirement | Status |
+| --- | --- | --- |
+| A | **Files** tab after AI sessions: folders and files as a tree, folders first, sorted by name, each folder with its file count. Folders open and close; top-level folders start open. **Expand all** and **Collapse all** | Done (UI not auto-tested) |
+| B | Clicking a file shows its Details and, for graph files, selects it in the graph. Double-clicking opens it (on the page in the browser, in the editor in VS Code). Clicking a folder outlines its graph files | Done (UI not auto-tested) |
+| C | All files, skipping dependency, build and virtual-environment folders (`node_modules`, `.git`, `out`, `.venv`, …). At most 5,000 files, with a note when cut. Files deleted in the working tree are listed from Git | Done |
+| D | Graph files keep their graph id, changed files their change id (so opening shows the diff), other files get new `p…` ids. Changed files are coloured, graph files dotted, sensitive files marked and never opened from the tree | Done |
+| E | Names only for the listing. Symbols are asked for only for small text files; binary files are described but not shown. Off in Restricted Mode | Done |
+| F | No new dependency | Done |
+
+Owner verification is pending. Non-goals: renaming, moving or deleting files, search, file icons, opening files outside the folder.
+
 ## Non-goals for Phase 1
 
 Function/API/database graphs, agent attribution, change explanations, embedded browser, marketplace publishing, servers, databases, cloud sync, plugin framework.

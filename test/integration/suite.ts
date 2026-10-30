@@ -233,6 +233,21 @@ export async function run(): Promise<void> {
     assert.ok(symbolText.some((x) => /^It appears in \d+ places in 3 files/.test(x)), JSON.stringify(symbolText));
   });
 
+  // Phase 6d: the Files tab lists names only, keeping graph and change ids.
+  type Node = { kind: 'folder' | 'file'; path: string; id?: string; group?: string; sensitive?: boolean; inGraph?: boolean; children?: Node[] };
+  const flatten = (n: Node): Node[] => (n.kind === 'folder' ? (n.children ?? []).flatMap(flatten) : [n]);
+  const repoFiles = await api.listProjectFiles(repoFolder, targets);
+  const repoList = repoFiles.result.state === 'ok' ? flatten(repoFiles.result.tree as Node) : [];
+  const entry = (p: string) => repoList.find((f) => f.path === p);
+  check('the Files tab lists the project with graph, change and sensitive marks', () => {
+    assert.equal(repoFiles.result.state, 'ok');
+    assert.ok(entry('src/util.ts')?.inGraph && entry('src/util.ts')?.id === byPath.get('src/util.ts'));
+    assert.equal(entry('src/util.ts')?.group, 'modified');
+    assert.equal(entry('src/old.ts')?.group, 'deleted', 'deleted files are listed from Git');
+    assert.ok(entry('.env')?.sensitive && entry('.env')?.id?.startsWith('c'));
+    assert.ok(!repoList.some((f) => f.path.startsWith('.git/')));
+  });
+
   // Phase 6: Python in the graph.
   const py = await api.collectState(2, true);
   const pyGraph = py.state.graph;
@@ -258,6 +273,27 @@ export async function run(): Promise<void> {
     assert.ok(modelsExplained.sentences.includes('2 files use it (main.py and test_models.py).'), JSON.stringify(modelsExplained.sentences));
     const mainImports = py.targets.get(pyId('app/main.py')!)!.analysis!.imports.map((i) => `${i.specifier}:${i.kind}`);
     assert.deepEqual(mainImports.sort(), ['.models:local', '.ping:local', 'os:external']);
+  });
+  const pyFiles = await api.listProjectFiles(pyFolder, py.targets);
+  const pyList = pyFiles.result.state === 'ok' ? flatten(pyFiles.result.tree as Node) : [];
+  const readme = pyList.find((f) => f.path === 'README.md');
+  const logo = pyList.find((f) => f.path === 'logo.png');
+  check('the Files tab lists non-code files and skips virtual environments', () => {
+    assert.ok(readme?.id?.startsWith('p') && !readme.inGraph);
+    assert.ok(logo?.id?.startsWith('p'));
+    assert.ok(!pyList.some((f) => f.path.startsWith('.venv/')));
+    assert.ok(pyList.find((f) => f.path === 'app/models.py')?.inGraph);
+  });
+  const logoTarget = pyFiles.added.get(logo!.id!)!;
+  const logoDescribed = await api.describeTarget(logo!.id!, logoTarget);
+  const logoView = await api.codeForTarget(logo!.id!, logoTarget);
+  const readmeView = await api.codeForTarget(readme!.id!, pyFiles.added.get(readme!.id!)!);
+  check('a binary file from the Files tab is described but not shown', () => {
+    assert.equal(logoDescribed.details.fileType, 'PNG');
+    assert.equal(logoDescribed.details.symbols.length, 0);
+    assert.equal(logoView.mode, 'none');
+    assert.match(logoView.note ?? '', /binary/);
+    assert.deepEqual(readmeView.lines, ['# Demo', '', '## Setup']);
   });
 
   const plain = await api.collectState(1, true);
@@ -419,6 +455,13 @@ export async function run(): Promise<void> {
     const envCode = received.find((m) => m.type === 'code' && (m.view as { for: string }).for === envChange)?.view as { mode: string } | undefined;
     assert.equal(envCode?.mode, 'none');
     assert.ok(!received.some((m) => JSON.stringify(m).includes('do-not-read')));
+  });
+  await send({ type: 'files' });
+  await waitFor(() => received.some((m) => m.type === 'files'));
+  check('a browser tab gets the Files tab listing', () => {
+    const files = received.find((m) => m.type === 'files')?.result as { state: string; tree: Node } | undefined;
+    assert.equal(files?.state, 'ok');
+    assert.ok(files && flatten(files.tree).some((f) => f.path === 'src/util.ts' && f.inGraph));
   });
   const lanAddress = Object.values(os.networkInterfaces()).flat().find((a) => a && a.family === 'IPv4' && !a.internal)?.address;
   const fromNetwork = lanAddress

@@ -16,7 +16,7 @@
   /** Symbol whose usages are being looked up; stale replies are ignored. */
   let pendingSymbol = '';
   const HISTORY_PAGE = 50;
-  /** 'changes' | 'history' | 'sessions' */
+  /** 'changes' | 'history' | 'sessions' | 'files' */
   let activeTab = 'changes';
   /** AI session whose details are being loaded; stale replies are ignored. */
   let pendingSession = '';
@@ -83,6 +83,9 @@
   $('tabChanges').addEventListener('click', () => showTab('changes'));
   $('tabHistory').addEventListener('click', () => showTab('history'));
   $('tabSessions').addEventListener('click', () => showTab('sessions'));
+  $('tabFiles').addEventListener('click', () => showTab('files'));
+  $('expandAll').addEventListener('click', () => { for (const d of $('fileTree').querySelectorAll('details')) /** @type {HTMLDetailsElement} */ (d).open = true; });
+  $('collapseAll').addEventListener('click', () => { for (const d of $('fileTree').querySelectorAll('details')) /** @type {HTMLDetailsElement} */ (d).open = false; });
   document.getElementById('codeBack')?.addEventListener('click', () => showGraph());
   document.getElementById('codeEditor')?.addEventListener('click', () => { if (codeFor) send({ type: 'openInEditor', id: codeFor }); });
   $('moreHistory').addEventListener('click', () => {
@@ -92,7 +95,7 @@
 
   function showTab(name) {
     activeTab = name;
-    for (const [tab, view, key] of [['tabChanges', 'changesView', 'changes'], ['tabHistory', 'historyView', 'history'], ['tabSessions', 'sessionsView', 'sessions']]) {
+    for (const [tab, view, key] of [['tabChanges', 'changesView', 'changes'], ['tabHistory', 'historyView', 'history'], ['tabSessions', 'sessionsView', 'sessions'], ['tabFiles', 'filesView', 'files']]) {
       $(tab).classList.toggle('active', key === name);
       $(tab).setAttribute('aria-selected', String(key === name));
       $(view).hidden = key !== name;
@@ -100,6 +103,12 @@
     clearHighlight();
     if (name === 'history') requestHistory();
     else if (name === 'sessions') requestSessions();
+    else if (name === 'files') requestFiles();
+  }
+
+  function requestFiles() {
+    $('filesInfo').textContent = 'Loading files…';
+    send({ type: 'files' });
   }
 
   function requestSessions() {
@@ -135,6 +144,7 @@
     else if (msg.type === 'sessionsError') $('sessionsView').replaceChildren(el('p', 'Could not read the session logs: ' + msg.message, 'muted'));
     else if (msg.type === 'session') renderSession(msg.details, msg.nodeIds);
     else if (msg.type === 'code') renderCode(msg.view);
+    else if (msg.type === 'files') renderFiles(msg.result);
   });
 
   // ---- code and before/after views (browser view only, Phase 6c) ----
@@ -213,6 +223,7 @@
     // A refresh invalidates commit and session ids, so the active tab reloads.
     if (activeTab === 'history') requestHistory();
     else if (activeTab === 'sessions') requestSessions();
+    else if (activeTab === 'files') requestFiles();
   }
 
   function showBanner(text) {
@@ -519,6 +530,93 @@
     add.title = 'Write down what, why and the decision. Saved as a Markdown file in .vibecode/notes/';
     add.addEventListener('click', () => send({ type: 'addNote', id: currentSubject }));
     box.append(ul, add);
+  }
+
+  // ---- Files tab (Phase 6d) ----
+  function renderFiles(r) {
+    const info = $('filesInfo');
+    const treeBox = $('fileTree');
+    treeBox.replaceChildren();
+    if (r.state === 'restricted') { info.textContent = 'Files are off in Restricted Mode. Trust the workspace to see them.'; return; }
+    if (r.state !== 'ok') { info.textContent = 'No folder is open.'; return; }
+    info.textContent = `${r.tree.files} file${r.tree.files === 1 ? '' : 's'} in ${r.folder}` + (r.truncated ? ' (only the first ones are listed)' : '') +
+      '. Click a file for details, double-click to open it. Click a folder to see its files in the graph.';
+    treeBox.append(...r.tree.children.map((n) => treeNode(n, 0)));
+  }
+
+  function clearTreeSelection() {
+    for (const s of $('fileTree').querySelectorAll('.selected')) s.classList.remove('selected');
+  }
+
+  /** Graph node ids of the files below a folder. */
+  function graphIdsIn(folder) {
+    const ids = [];
+    const walk = (n) => {
+      if (n.kind === 'folder') n.children.forEach(walk);
+      else if (n.inGraph) ids.push(n.id);
+    };
+    walk(folder);
+    return ids;
+  }
+
+  function treeNode(n, depth) {
+    if (n.kind === 'folder') {
+      const details = /** @type {HTMLDetailsElement} */ (el('details'));
+      details.open = depth === 0;
+      const summary = el('summary');
+      summary.setAttribute('role', 'treeitem');
+      summary.append(el('span', n.name, 'folder-name'), el('span', String(n.files), 'count muted'));
+      summary.title = n.path;
+      summary.addEventListener('click', () => {
+        clearTreeSelection();
+        summary.classList.add('selected');
+        highlightNodes(graphIdsIn(n));
+      });
+      const children = el('div', undefined, 'tree-children');
+      // Children are built when the folder is first opened, so large projects stay quick.
+      let built = false;
+      const build = () => {
+        if (built) return;
+        built = true;
+        children.append(...n.children.map((c) => treeNode(c, depth + 1)));
+      };
+      if (details.open) build();
+      details.addEventListener('toggle', () => { if (details.open) build(); });
+      details.append(summary, children);
+      return details;
+    }
+    const btn = el('button', n.name, 'link tree-file' + (n.group ? ' group ' + n.group : '') + (n.inGraph ? ' in-graph' : ''));
+    btn.setAttribute('role', 'treeitem');
+    btn.title = n.path + (n.sensitive ? ' (sensitive: contents are never shown)' : n.group ? ` (${GROUP_LABELS[n.group] || n.group})` : '') + (n.inGraph ? ' · in the graph' : '');
+    btn.addEventListener('click', () => {
+      clearTreeSelection();
+      btn.classList.add('selected');
+      if (n.inGraph && cy) {
+        selectedId = n.id;
+        const node = cy.getElementById(n.id);
+        cy.elements().removeClass('used inCommit').addClass('faded');
+        node.closedNeighborhood().removeClass('faded');
+      } else {
+        clearHighlight();
+      }
+      send({ type: 'inspect', id: n.id });
+    });
+    // Sensitive files are never opened from the tree.
+    if (!n.sensitive) btn.addEventListener('dblclick', () => send({ type: 'open', id: n.id }));
+    if (n.sensitive) {
+      const wrap = el('div');
+      wrap.append(btn, el('span', 'sensitive', 'tag warn'));
+      return wrap;
+    }
+    return btn;
+  }
+
+  /** Outlines the given graph nodes (a folder's files) and fades the rest. */
+  function highlightNodes(nodeIds) {
+    if (!cy) return;
+    cy.elements().removeClass('used inCommit').addClass('faded');
+    for (const id of nodeIds) cy.getElementById(id).removeClass('faded').addClass('inCommit');
+    if (nodeIds.length === 0) cy.elements().removeClass('faded');
   }
 
   const fmt = (n) => Number(n).toLocaleString();

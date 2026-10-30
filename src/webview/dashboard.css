@@ -84,6 +84,19 @@ ol.prompts li { margin: 0 0 8px; }
 .code-row.skip { color: var(--vscode-descriptionForeground); font-style: italic; display: block; padding: 2px 12px; background: var(--vscode-textBlockQuote-background); }
 .code-row.hl { background: var(--vscode-editor-findMatchHighlightBackground, rgba(234, 92, 0, 0.33)); }
 
+/* Files tab (Phase 6d). */
+.file-tools { display: flex; gap: 6px; margin-bottom: 6px; }
+.file-tree details > .tree-children { padding-left: 14px; border-left: 1px solid var(--vscode-panel-border); margin-left: 5px; }
+.file-tree summary { cursor: pointer; padding: 1px 0; list-style: none; }
+.file-tree summary::-webkit-details-marker { display: none; }
+.file-tree summary::before { content: '▸'; display: inline-block; width: 1em; color: var(--vscode-descriptionForeground); }
+.file-tree details[open] > summary::before { content: '▾'; }
+.file-tree summary.selected .folder-name, .file-tree button.selected { font-weight: 600; }
+.file-tree .folder-name { font-weight: 500; }
+.file-tree .count { margin-left: 6px; font-size: 0.8em; }
+.file-tree .tree-file { display: block; padding: 1px 0 1px 1em; }
+.file-tree .tree-file.in-graph::after { content: ' ●'; font-size: 0.7em; color: #6c8ebf; }
+
 ul.files { list-style: none; padding: 0; margin: 0; }
 ul.files li { padding: 1px 0; }
 button.link { background: none; color: var(--vscode-textLink-foreground); padding: 0; text-align: left; word-break: break-all; }

@@ -217,7 +217,7 @@ The owner found VS Code crowded with the agent chat, code and dashboard together
 
 **Safety:** sensitive files are refused before reading, in the working tree and in commits, including a rename's old name. Binary files are not shown. Files are cut off at 1 MB or 20,000 lines. Code reaches the page only over the existing keyed 127.0.0.1 connection and is drawn with `textContent`, so nothing in a file can run. The page still sends opaque ids only. The idle stop now waits for the last tab to close, so a page left open for reading keeps working. It still stops on VS Code exit and by command.
 
-**Verified automatically:** lint. 42 unit tests: line endings, binary files, size caps, 400 random comparisons checked against a longest-common-subsequence reference (correct and smallest), the give-up limit, folding and numbering, a 20,000-line file compared in about 20 ms, the `openInEditor` message, and the code view existing only on the browser page. 66 integration checks: a modified file compared with HEAD, a deleted file's HEAD version, a new file, a renamed and a deleted commit file, a symbol's highlighted line, `.env` never shown (working tree, commit, or over the browser stream), a browser click delivering code without opening an editor, **Open in VS Code** opening `util.ts`, and an open tab keeping the server alive past the idle time until it closes. **Not verified automatically:** the code view in a real browser (layout, colours, scrolling to the line, Back to graph) and the startup setting. These need the owner's GUI check.
+**Verified automatically:** lint. 42 unit tests: line endings, binary files, size caps, 400 random comparisons checked against a longest-common-subsequence reference (correct and smallest), the give-up limit, folding and numbering, a 20,000-line file compared in about 20 ms, the `openInEditor` message, and the code view existing only on the browser page. 64 integration checks: a modified file compared with HEAD, a deleted file's HEAD version, a new file, a renamed and a deleted commit file, a symbol's highlighted line, `.env` never shown (working tree, commit, or over the browser stream), a browser click delivering code without opening an editor, **Open in VS Code** opening `util.ts`, and an open tab keeping the server alive past the idle time until it closes. **Not verified automatically:** the code view in a real browser (layout, colours, scrolling to the line, Back to graph) and the startup setting. These need the owner's GUI check.
 
 **Limitations:** no syntax colours. Comparisons are one column, not side by side. Very different versions show only the new version. Text that isn't UTF-8 may show odd characters. With the startup setting on, each VS Code window (and each Reload Window) opens a new browser tab.
 
@@ -227,12 +227,26 @@ The owner found VS Code crowded with the agent chat, code and dashboard together
 
 **Owner request:** a file and folder hierarchy that can be opened and closed when needed, so the project's structure can be seen and files chosen from it. Plan to be proposed for approval.
 
+## 2026-10-30: Phase 6d: Files tab
+
+**Approved:** the owner approved the plan with the recommended choices: a fourth tab on the left, listing all project files.
+
+**What:** a **Files** tab shows the project's folders and files as a tree that opens and closes, with **Expand all** and **Collapse all**. Each folder shows how many files it holds. Clicking a file shows its Details (and selects it in the graph). Double-clicking opens it: on the page in the browser view, in the editor in VS Code. Clicking a folder outlines its files in the graph. Changed files use the change colours, graph files have a small dot, and sensitive files are marked and never opened from the tree. **How:** `src/extension/files.ts` lists names with `workspace.findFiles`, skipping the same dependency and build folders as the graph but still listing sensitive names. `src/analysis/fileTree.ts` (pure) builds the tree. Graph and change ids are reused, so the graph highlight and the HEAD comparison work; other files get `p…` ids. Deleted files come from Git. The page builds a folder's contents only when it is opened, so large projects stay quick. No new dependency.
+
+**Found while building:** Details asks VS Code's language support for symbols, which would open any file as text. For files from the tree that aren't in the graph, it now asks only for small text files, so images and other binary files are described but never opened as text.
+
+**Verified automatically:** lint. 48 unit tests, including tree order (folders first, by name), file counts, ids and marks kept, duplicates and `..` paths ignored, the exclude glob (skips `node_modules` and `.git`, keeps `.env` names listed), and 5,000 files built in about 20 ms. 68 integration checks: in the sample repository the tree has `src/util.ts` with its graph id marked modified, the deleted `src/old.ts`, and `.env` marked sensitive with its change id, and no `.git` content. In the Python project it has `README.md` and `logo.png` with new ids and skips `.venv`. A binary `logo.png` is described with no symbols and shown as "binary". A browser tab receives the listing. **Not verified automatically:** the tree in the webview (opening and closing folders, expand and collapse, folder highlight, double-click). This needs the owner's GUI check.
+
+**Correction:** the Phase 6c entry said 66 integration checks. That count included two setup lines of the test runner; the real number was 64.
+
+**Limitations:** the listing refreshes with **Refresh** or when the tab is opened, not live. No file icons or search. At most 5,000 files. Explanations for non-code files are short, because the graph knows nothing about them.
+
 ## Handoff for the next session (updated 2026-10-30)
 
-**Where things stand:** Phases 0–6b are Done and owner-verified. Phase 6c (code and diffs in the browser) is implemented and auto-tested, **awaiting the owner's GUI check**. Nothing is pushed to GitHub yet (pushing needs the owner's yes).
+**Where things stand:** Phases 0–6b are Done and owner-verified. Phase 6c (code and diffs in the browser) is owner-verified except the startup setting. Phase 6d (Files tab) is implemented and auto-tested, **awaiting the owner's GUI check**. Nothing is pushed to GitHub yet (pushing needs the owner's yes).
 
 **Next:**
-1. Rebuild and reinstall the VSIX (ask first), then the owner's Phase 6c GUI check: in the browser, a file's code, a changed file's comparison, a commit file, a symbol's highlighted line, **Back to graph**, **Open in VS Code**, and the **Open browser view on startup** setting.
+1. Rebuild and reinstall the VSIX (ask first), then the owner's GUI checks: the Phase 6d Files tab (open and close folders, expand/collapse all, click a file and a folder, double-click a file) and the Phase 6c **Open browser view on startup** setting.
 2. Then plan **Phase 7** (API and database relationships, static only).
 
 **Open ideas, not scheduled:** notes written fully in the browser; syntax colours; a "No" answer to the notes question isn't remembered; notes break on file rename; AI sessions read Claude Code logs only; clicking a listed note wasn't explicitly owner-checked.

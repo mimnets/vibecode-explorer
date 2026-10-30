@@ -3,6 +3,7 @@ import { loadSessions, readSessions, resetPermissions } from './agentSessions';
 import { BrowserView, openInBrowser } from './browserView';
 import { codeForCommitFile, codeForLocation, codeForTarget } from './codeView';
 import { Dashboard } from './dashboard';
+import { listProjectFiles } from './files';
 import { openTarget } from './open';
 import { explainSymbolAt, explainTarget } from './explain';
 import { describeCommit, loadHistory, openCommitFile } from './history';
@@ -57,6 +58,7 @@ export function activate(context: vscode.ExtensionContext) {
     codeForTarget,
     codeForCommitFile,
     codeForLocation,
+    listProjectFiles,
     explainTarget,
     explainSymbolAt,
     listNotes,

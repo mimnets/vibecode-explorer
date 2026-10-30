@@ -29,6 +29,8 @@ export type WebviewMessage =
   /** Load the AI session list (Phase 4b); `allowSessions` first asks the owner for permission. */
   | { type: 'sessions' }
   | { type: 'allowSessions' }
+  /** List the folder's files for the Files tab (Phase 6d). */
+  | { type: 'files' }
   /** Show one AI session (`a…`). */
   | { type: 'session'; id: string }
   /** Sent by the webview after drawing the graph, or when a script error occurs. */
@@ -47,6 +49,7 @@ export function parseWebviewMessage(raw: unknown): WebviewMessage | undefined {
     case 'openInBrowser':
     case 'sessions':
     case 'allowSessions':
+    case 'files':
       return { type: msg.type };
     case 'selectFolder':
       return Number.isInteger(msg.index) && (msg.index as number) >= 0 && (msg.index as number) < 1000

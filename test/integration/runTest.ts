@@ -61,6 +61,9 @@ export const pong = () => ping;
   write(path.join(py, 'app/pong.py'), `from .ping import ping\ndef pong(): return ping\n`);
   write(path.join(py, 'tests/test_models.py'), `from app.models import User\n`);
   write(path.join(py, '.venv/lib/site.py'), `import never_read\n`);
+  // Phase 6d: non-code files for the Files tab, one of them binary.
+  write(path.join(py, 'README.md'), `# Demo\n\n## Setup\n`);
+  fs.writeFileSync(path.join(py, 'logo.png'), Buffer.from([0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a, 0, 0, 0, 0x0d]));
 
   const workspace = path.join(root, 'sample.code-workspace');
   write(workspace, JSON.stringify({ folders: [{ path: 'sample-repo' }, { path: 'plain-folder' }, { path: 'py-project' }] }));

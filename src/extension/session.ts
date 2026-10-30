@@ -4,6 +4,7 @@ import { askToAllowSessions, describeSession, loadSessions, StoredSession } from
 import { codeForCommitFile, codeForLocation, codeForTarget } from './codeView';
 import { openTarget, revealLocation, SIDE } from './open';
 import { explainSymbolAt, explainTarget } from './explain';
+import { listProjectFiles } from './files';
 import { describeCommit, HistoryFile, loadHistory, openCommitFile } from './history';
 import { parseWebviewMessage, WebviewMessage } from './messages';
 import { createNote, ensureNotesAllowed, listNotes, NoteEntry, notesFor, NoteSubject } from './notes';
@@ -195,6 +196,19 @@ export class DashboardSession {
       case 'sessions':
         await this.postSessions();
         break;
+      case 'files': {
+        const folder = this.folder();
+        if (!folder) {
+          this.post({ type: 'files', result: { state: 'none' } });
+          return;
+        }
+        const { result, added } = await listProjectFiles(folder, this.targets);
+        // New `p…` ids replace the previous listing's; graph and change ids stay valid.
+        for (const id of [...this.targets.keys()]) if (id.startsWith('p')) this.targets.delete(id);
+        for (const [id, t] of added) this.targets.set(id, t);
+        this.post({ type: 'files', result });
+        break;
+      }
       case 'session': {
         const session = this.sessions.get(msg.id);
         const folder = this.folder();
