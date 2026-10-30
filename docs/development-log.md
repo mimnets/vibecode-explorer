@@ -203,19 +203,16 @@ The owner found VS Code crowded with the agent chat, code and dashboard together
 
 **Owner evidence (in the browser view):** for `src/extension/explain.ts`, the **In plain words** box, the inline **?** explanations and the **About <symbol>** details all showed. This repository has no circular imports in its real code, so the red outline is checked with the Python demo in the Phase 6 check. Phase 5 is now owner-verified apart from that.
 
-## Handoff for the next session (written 2026-10-29)
+## 2026-10-30: Owner GUI check of Phase 6 (Python), and Phase 5's red outline
 
-**Where things stand:** Phases 0–3 are Done and owner-verified. Phase 6 is implemented (4, 4b, 5 and 6b owner-verified 2026-10-30) and auto-tested but **awaiting the owner's GUI check**. Nothing is pushed to GitHub yet (pushing needs the owner's yes). The working tree is clean after the last commit.
+**Owner evidence:** with `Documentsibecode-python-demo` open, the graph showed the `shop` package's Python files and the test, `orders.py` and `payments.py` were outlined in red as a circular import, and the remaining steps (the circular-import tip, 1 workspace change, 2 commits) worked. Phase 6 is owner-verified, and so is Phase 5's red outline. All implemented phases (0–6b) are now owner-verified. Next: plan Phase 6c.
 
-**Start tomorrow with, in this order:**
-1. Rebuild and reinstall the VSIX (`npm run package`, then install `vibecode-explorer.vsix` in VS Code and reload). Ask the owner first, as AGENTS.md requires for installs into their VS Code.
-2. Owner GUI checks, one phase at a time, each recorded here with the evidence:
-   - **Phase 6b browser view:** labels no longer overlap; clicking a file in the browser opens it in VS Code; **Stop Browser View** closes the page.
-   - **Phase 4 notes:** Add note asks once, creates a file in `.vibecode/notes/`, and the note appears under Notes.
-   - **Phase 4b AI sessions:** the tab asks permission, then lists sessions with prompts and tokens; no secrets shown.
-   - **Phase 5 learning aids:** In plain words, the **?** buttons, clicking a symbol, red circular-import outline.
-   - **Phase 6 Python:** open `Documents\vibecode-python-demo`, check the `orders.py`/`payments.py` loop in red.
-3. After each passing check, update its row in `docs/roadmap.md` and the status in `docs/requirements.md`.
-4. Then plan **Phase 6c** (code and diffs in the browser, requested 2026-10-30), then **Phase 7** (API and database relationships, static only) and ask for approval before building it.
+## Handoff for the next session (updated 2026-10-30)
 
-**Open ideas, not scheduled:** notes written fully in the browser; a "No" answer to the notes question isn't remembered; notes break on file rename; AI sessions read Claude Code logs only.
+**Where things stand:** Phases 0–6b are Done and owner-verified (the last GUI checks were on 2026-10-30). The installed VSIX matches commit `358b314`'s code; only docs changed since. Nothing is pushed to GitHub yet (pushing needs the owner's yes).
+
+**Next:**
+1. Plan **Phase 6c** (code and diffs shown in the browser view, plain text with line numbers, plus an option to open the browser view automatically) and get the owner's approval before building it.
+2. Then plan **Phase 7** (API and database relationships, static only).
+
+**Open ideas, not scheduled:** notes written fully in the browser; a "No" answer to the notes question isn't remembered; notes break on file rename; AI sessions read Claude Code logs only; clicking a listed note wasn't explicitly owner-checked.
