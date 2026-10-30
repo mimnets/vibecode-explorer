@@ -17,6 +17,8 @@ export interface NoteHeader {
   created?: string;
   /** Phase 9: the commit was marked as a safe point. */
   safe?: boolean;
+  /** Phase 10: an issue for the plan, open or closed (the owner edits the word to close it). */
+  issue?: 'open' | 'closed';
   /** First `# ` heading, or '' when there is none. */
   title: string;
 }
@@ -31,6 +33,8 @@ export function parseNote(text: string): NoteHeader {
       const m = /^(about|commit|created):\s*(.*?)\s*$/.exec(lines[i]);
       if (m && m[2]) header[m[1] as 'about' | 'commit' | 'created'] = m[2];
       if (/^safe:\s*true\s*$/i.test(lines[i])) header.safe = true;
+      const issue = /^issue:\s*(open|closed|done)\s*$/i.exec(lines[i]);
+      if (issue) header.issue = issue[1].toLowerCase() === 'open' ? 'open' : 'closed';
     }
     i++;
   }
@@ -67,11 +71,24 @@ export function noteFileName(created: string, title: string, existing: Set<strin
   }
 }
 
-/** Starting text of a new note. */
-export function noteTemplate(subject: { about: string } | { commit: string }, created: string, title: string, options: { safe?: boolean } = {}): string {
-  const line = 'about' in subject ? `about: ${subject.about}` : `commit: ${subject.commit}`;
-  if (options.safe) {
-    return `---\n${line}\nsafe: true\ncreated: ${created}\n---\n\n# ${title}\n\nMarked as a safe point: a commit that worked and is worth going back to.\n\n## Why it is safe\n\n`;
+export interface NoteOptions {
+  safe?: boolean;
+  /** Phase 10: save as an open issue for the plan. */
+  issue?: boolean;
+  /** Text written on the dashboard page; replaces the empty What/Why/Decision headings. */
+  body?: string;
+}
+
+/** Starting text of a new note. A note without a subject is about the whole project. */
+export function noteTemplate(subject: { about: string } | { commit: string } | undefined, created: string, title: string, options: NoteOptions = {}): string {
+  const line = !subject ? '' : 'about' in subject ? `about: ${subject.about}\n` : `commit: ${subject.commit}\n`;
+  const body = options.body?.trim() ? `${options.body.trim()}\n` : '';
+  if (options.issue) {
+    return `---\n${line}issue: open\ncreated: ${created}\n---\n\n# ${title}\n\n${body}${body ? '\n' : ''}To close this issue, change "issue: open" to "issue: closed" above.\n`;
   }
-  return `---\n${line}\ncreated: ${created}\n---\n\n# ${title}\n\n## What\n\n\n## Why\n\n\n## Decision\n\n`;
+  if (options.safe) {
+    return `---\n${line}safe: true\ncreated: ${created}\n---\n\n# ${title}\n\nMarked as a safe point: a commit that worked and is worth going back to.\n\n## Why it is safe\n\n`;
+  }
+  if (body) return `---\n${line}created: ${created}\n---\n\n# ${title}\n\n${body}`;
+  return `---\n${line}created: ${created}\n---\n\n# ${title}\n\n## What\n\n\n## Why\n\n\n## Decision\n\n`;
 }

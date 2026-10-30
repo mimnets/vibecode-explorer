@@ -1,5 +1,5 @@
 import * as vscode from 'vscode';
-import { isNoteFileName, NOTES_DIR, noteFileName, noteTemplate, parseNote, sameCommit } from '../analysis/notes';
+import { isNoteFileName, NoteOptions, NOTES_DIR, noteFileName, noteTemplate, parseNote, sameCommit } from '../analysis/notes';
 
 // Phase 4: the owner's notes. This is the only place the extension writes into a project,
 // and only after the owner allows it for that folder.
@@ -17,6 +17,8 @@ export interface NoteEntry {
   title: string;
   /** Phase 9: a safe-point mark on a commit. */
   safe?: boolean;
+  /** Phase 10: an issue for the plan. */
+  issue?: 'open' | 'closed';
 }
 
 /** What a note is attached to. */
@@ -37,7 +39,7 @@ export async function listNotes(folder: vscode.WorkspaceFolder): Promise<NoteEnt
       const header = parseNote(new TextDecoder().decode(await vscode.workspace.fs.readFile(uri)));
       const relPath = vscode.workspace.asRelativePath(uri, false);
       const name = relPath.split('/').pop() ?? relPath;
-      notes.push({ uri, relPath, about: header.about, commit: header.commit, created: header.created ?? '', title: header.title || name, safe: header.safe });
+      notes.push({ uri, relPath, about: header.about, commit: header.commit, created: header.created ?? '', title: header.title || name, safe: header.safe, issue: header.issue });
     } catch {
       // Unreadable note: skip it.
     }
@@ -67,7 +69,7 @@ export async function ensureNotesAllowed(memento: vscode.Memento, folder: vscode
 }
 
 /** Creates a new note file (never overwrites) and returns its URI. */
-export async function createNote(folder: vscode.WorkspaceFolder, subject: NoteSubject, title: string, options: { safe?: boolean } = {}): Promise<vscode.Uri> {
+export async function createNote(folder: vscode.WorkspaceFolder, subject: NoteSubject | undefined, title: string, options: NoteOptions = {}): Promise<vscode.Uri> {
   if (!vscode.workspace.isTrusted) throw new Error('Notes are off in Restricted Mode.');
   const dir = notesFolderUri(folder);
   await vscode.workspace.fs.createDirectory(dir);

@@ -324,9 +324,23 @@ History's commit details have a new **Mark as safe point** button.
 
 **Owner evidence:** after reloading VS Code with the new VSIX, the owner went through the six Health checks on this repository and reported "all okay": the checklist marks, the Problems section, secret-looking text shown as file and line only (opening in VS Code's editor), short possibly-unused and near-duplicate lists, and **Mark as safe point** in History adding the commit to Safe points with its go-back steps. Phase 9 is owner-verified.
 
+## 2026-10-30: Phase 10: Project tab
+
+**Approved:** the owner chose "all, one by one" for the remaining saved ideas, to be completed today: Phase 10 (project status), Phase 11 (learning aids) and Phase 12 (small fixes). The Phase 9 commits were pushed with the owner's yes (`fe0eda5..9f20dc4`).
+
+**What:** a seventh tab, **Project**. It shows the current stage with a progress bar, every phase of the plan (✔ done, ● in progress, ○ not started), and for a clicked phase its steps (plan written, approved, built, tested, owner check, logged). It also counts the requirements by status, flags folders that are not in the intended layout, and lists issues, with a form to add one.
+
+**How:** everything is read from Markdown the project already keeps: the first plan, requirements and log files found from short candidate lists, and a "Layout"/"Structure" section (backticked folders or a text tree). Steps are ticked from the status words and from whether the log mentions the phase ("Phase 6" doesn't match "Phase 6b"). An issue is a note with `issue: open`, so the write rule stays "new files in `.vibecode/notes/` only, after the owner allows it". Page text is cleaned of control characters, titles are one line, and the size is capped. No new dependency.
+
+**Dry run on this repository:** 14 phases, all done with every step ticked, 12 requirements (8 Partial, 4 Constraint), 7 planned folders from AGENTS.md and no drift.
+
+**Verified automatically:** lint. 82 unit tests, 6 of them new: plan tables (bold, links, ✅, "not planned"), the current stage, workflow steps, requirement counts, planned folders from bullets and from two tree styles, drift (covered subfolders, hidden folders ignored), and issue notes with cleaned text. 84 integration checks, 3 of them new: `api-project` has a roadmap, a CHANGELOG and an AGENTS.md layout. Phase 2 is the current stage and isn't in the log yet, `db`, `py` and `views` are flagged and `lib` is missing. An issue saved in `sample-repo` is listed with its note path. **Not verified automatically:** the Project tab in the webview and the Add issue form.
+
+**Limitations:** only tables are read as plans. The ticks are only as current as the status words and the log. Issues are closed by editing their file.
+
 ## Handoff for the next session (updated 2026-10-30)
 
-**Where things stand:** Phases 0–9 are Done and owner-verified. GitHub is up to date to `fe0eda5`; later commits are local (pushing needs the owner's yes).
+**Where things stand:** Phases 0–9 are Done and owner-verified. Phase 10 (Project tab) is implemented and auto-tested, awaiting the owner's check; Phases 11 and 12 are approved. GitHub is up to date to `fe0eda5`; later commits are local (pushing needs the owner's yes).
 
 **Next:** the owner picks from the remaining saved ideas: the read-only Project status tab, and the rest of the learning list (reading order, test map, copy context for AI, folder rules, commit message check, TODO list, package list, hotspots, how-to-run card, prompt tips).
 

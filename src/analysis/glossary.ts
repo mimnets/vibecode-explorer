@@ -68,6 +68,11 @@ export const GLOSSARY: Readonly<Record<string, string>> = {
   'possibly unused': 'A code file no other file imports. It may be left over and safe to delete, or it may be loaded in a way the graph can\'t see (a script, a config).',
   'near-duplicate': 'Files with almost the same name in one folder, like utils.ts and utils2.ts. Often a copy made while experimenting; keep one.',
   'safe point': 'A commit you can go back to if later changes break something. Git keeps every commit, so going back loses nothing if you save your work first.',
+  'current stage': 'The phase of the plan being worked on now: the first one marked in progress, or else the first one not started. Read from the status column of the plan.',
+  plan: 'The list of phases (steps) the project goes through, kept as a table in a Markdown file such as docs/roadmap.md. Each phase has a goal and a status.',
+  workflow: 'The usual steps of each phase: write a plan, get it approved, build it, test it automatically, have the owner check it, and record what happened in the log.',
+  'intended structure': 'The folders the project is meant to have, written down in the docs. Folders that are not in it are flagged, so files an AI put in the wrong place are caught early.',
+  issue: 'Something that needs doing or fixing, written down so it is not forgotten. Saved as a small file in .vibecode/notes/; your plan files are never changed.',
   'http method': 'The kind of request: GET reads, POST creates, PUT or PATCH changes, DELETE removes. ANY means the route accepts every method.',
 };
 

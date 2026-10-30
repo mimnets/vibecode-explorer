@@ -16,7 +16,7 @@
   /** Symbol whose usages are being looked up; stale replies are ignored. */
   let pendingSymbol = '';
   const HISTORY_PAGE = 50;
-  /** 'changes' | 'history' | 'sessions' | 'files' | 'apis' | 'health' */
+  /** 'changes' | 'history' | 'sessions' | 'files' | 'apis' | 'health' | 'project' */
   let activeTab = 'changes';
   /** AI session whose details are being loaded; stale replies are ignored. */
   let pendingSession = '';
@@ -63,7 +63,7 @@
 
   /** Browser view only: the click whose code or comparison should be shown (stale replies are ignored). */
   let pendingCode = '';
-  const CODE_REQUESTS = new Set(['open', 'commitFile', 'symbol', 'goto', 'apiItem', 'previewPage']);
+  const CODE_REQUESTS = new Set(['open', 'commitFile', 'symbol', 'goto', 'apiItem', 'previewPage', 'projectItem']);
 
   function send(msg) {
     if (CODE_REQUESTS.has(msg.type)) pendingCode = msg.id;
@@ -86,6 +86,7 @@
   $('tabFiles').addEventListener('click', () => showTab('files'));
   $('tabApis').addEventListener('click', () => showTab('apis'));
   $('tabHealth').addEventListener('click', () => showTab('health'));
+  $('tabProject').addEventListener('click', () => showTab('project'));
   $('expandAll').addEventListener('click', () => { for (const d of $('fileTree').querySelectorAll('details')) /** @type {HTMLDetailsElement} */ (d).open = true; });
   $('collapseAll').addEventListener('click', () => { for (const d of $('fileTree').querySelectorAll('details')) /** @type {HTMLDetailsElement} */ (d).open = false; });
   document.getElementById('codeBack')?.addEventListener('click', () => showGraph());
@@ -97,7 +98,7 @@
 
   function showTab(name) {
     activeTab = name;
-    for (const [tab, view, key] of [['tabChanges', 'changesView', 'changes'], ['tabHistory', 'historyView', 'history'], ['tabSessions', 'sessionsView', 'sessions'], ['tabFiles', 'filesView', 'files'], ['tabApis', 'apisView', 'apis'], ['tabHealth', 'healthView', 'health']]) {
+    for (const [tab, view, key] of [['tabChanges', 'changesView', 'changes'], ['tabHistory', 'historyView', 'history'], ['tabSessions', 'sessionsView', 'sessions'], ['tabFiles', 'filesView', 'files'], ['tabApis', 'apisView', 'apis'], ['tabHealth', 'healthView', 'health'], ['tabProject', 'projectView', 'project']]) {
       $(tab).classList.toggle('active', key === name);
       $(tab).setAttribute('aria-selected', String(key === name));
       $(view).hidden = key !== name;
@@ -108,6 +109,7 @@
     else if (name === 'files') requestFiles();
     else if (name === 'apis') requestApis();
     else if (name === 'health') requestHealth();
+    else if (name === 'project') requestProject();
   }
 
   function requestApis() {
@@ -157,6 +159,8 @@
     else if (msg.type === 'apis') renderApis(msg.result);
     else if (msg.type === 'pagePreview') renderPagePreview(msg);
     else if (msg.type === 'health') renderHealth(msg.result);
+    else if (msg.type === 'project') renderProject(msg.result);
+    else if (msg.type === 'issueSaved') { const p = document.getElementById('issueStatus'); if (p) p.textContent = msg.message; }
     else if (msg.type === 'markedSafe') { const b = document.getElementById('markSafe'); if (b) { b.textContent = 'Marked as a safe point'; b.setAttribute('disabled', ''); } }
     else if (msg.type === 'previewError') renderPreviewError(msg);
   });
@@ -243,6 +247,7 @@
     else if (activeTab === 'files') requestFiles();
     else if (activeTab === 'apis') requestApis();
     else if (activeTab === 'health') requestHealth();
+    else if (activeTab === 'project') requestProject();
   }
 
   function showBanner(text) {
@@ -778,6 +783,177 @@
       safe.append(details);
     }
     view.append(safe);
+  }
+
+  // ---- Project tab (Phase 10) ----
+  function requestProject() {
+    $('projectView').replaceChildren(el('p', 'Reading the plan…', 'muted'));
+    send({ type: 'project' });
+  }
+
+  const PHASE_MARK = { done: '✔', active: '●', todo: '○', skipped: '–' };
+  const PHASE_WORD = { done: 'done', active: 'in progress', todo: 'not started', skipped: 'not planned' };
+
+  function docLink(doc, label) {
+    const btn = el('button', label || doc.file, 'link mono small');
+    btn.title = 'Open ' + doc.file;
+    btn.addEventListener('click', () => send({ type: 'projectItem', id: doc.id }));
+    return btn;
+  }
+
+  function phaseName(p) {
+    return /^\d/.test(p.id) ? `Phase ${p.id}` : p.id;
+  }
+
+  function renderProject(r) {
+    const view = $('projectView');
+    view.replaceChildren();
+    if (r.state === 'restricted') { view.append(el('p', 'The project status is off in Restricted Mode. Trust the workspace to see it.', 'muted')); return; }
+    if (r.state !== 'ok') { view.append(el('p', 'No folder is open.', 'muted')); return; }
+    view.append(el('p', 'Read from the project\'s own plan files. Nothing is changed, except a new issue when you save one.', 'muted small'));
+
+    // Stage
+    const stage = el('div', undefined, 'summary');
+    if (r.plan) {
+      const phases = r.plan.phases;
+      const done = phases.filter((p) => p.state === 'done').length;
+      const counted = phases.filter((p) => p.state !== 'skipped').length;
+      const current = phases.find((p) => p.id === r.plan.current);
+      stage.append(withHelp(el('div', current ? `Current stage: ${phaseName(current)}` : 'Every phase in the plan is done.', 'strong'), 'current stage'));
+      if (current) stage.append(el('div', `${current.goal ? current.goal + ' · ' : ''}${current.status || PHASE_WORD[current.state]}`, 'muted small'));
+      const bar = el('div', undefined, 'progress');
+      const fill = el('div', undefined, 'progress-fill');
+      fill.style.width = `${counted ? Math.round((100 * done) / counted) : 0}%`;
+      bar.append(fill);
+      const left = phases.filter((p) => p.state === 'active' || p.state === 'todo').length;
+      const open = r.issues.filter((i) => i.state === 'open').length;
+      stage.append(bar, el('div', `${done} of ${counted} phases done · ${left} left${open ? ` · ${open} open issue${open === 1 ? '' : 's'}` : ''}`, 'small'));
+    } else {
+      stage.append(el('div', 'No plan found.', 'strong'), el('p', 'Add a Markdown table with a "Phase" and a "Status" column to one of: ' + r.lookedFor.plan.join(', '), 'muted small'));
+    }
+    view.append(stage);
+
+    // Phases
+    if (r.plan) {
+      const head = el('h3', `Plan (${r.plan.phases.length} phases) `);
+      head.append(docLink(r.plan));
+      view.append(withHelp(head, 'plan'));
+      const ul = el('ul', undefined, 'commits phases');
+      for (const p of r.plan.phases) {
+        const li = el('li', undefined, 'phase ' + p.state + (p.id === r.plan.current ? ' current' : ''));
+        const btn = el('button', `${PHASE_MARK[p.state]} ${phaseName(p)}`, 'link');
+        btn.title = 'Show this phase\'s steps';
+        btn.addEventListener('click', () => {
+          for (const b of ul.querySelectorAll('button.selected')) b.classList.remove('selected');
+          btn.classList.add('selected');
+          renderPhaseDetails(p, r);
+        });
+        li.append(btn, el('div', p.goal, 'muted small'));
+        ul.append(li);
+      }
+      view.append(ul);
+    }
+
+    // Requirements and log
+    if (r.requirements) {
+      const head = el('h3', `Requirements (${r.requirements.total}) `);
+      head.append(docLink(r.requirements));
+      view.append(head, el('p', r.requirements.counts.map((c) => `${c.count} ${c.status}`).join(' · '), 'small'));
+    }
+    if (r.log) {
+      const p = el('p', 'Development log: ', 'small');
+      p.append(docLink(r.log));
+      view.append(p);
+    }
+
+    // Intended structure
+    view.append(withHelp(el('h3', 'Intended structure'), 'intended structure'));
+    if (!r.structure) {
+      view.append(el('p', 'No planned folder layout found. Add a "Layout" or "Structure" section listing folders like `src/api/` to one of: ' + r.lookedFor.structure.join(', '), 'muted small'));
+    } else {
+      const from = el('p', `${r.structure.planned.length} planned folders, from `, 'muted small');
+      from.append(docLink(r.structure));
+      view.append(from);
+      if (r.structure.unplanned.length === 0) view.append(el('p', '✔ Every folder is in the plan.', 'small'));
+      else {
+        view.append(el('p', `✖ ${r.structure.unplanned.length} folder${r.structure.unplanned.length === 1 ? ' is' : 's are'} not in the plan. If an AI made them, check they belong there; otherwise add them to the plan.`, 'small sev-warning'));
+        const ul = el('ul', undefined, 'files');
+        for (const f of r.structure.unplanned) {
+          const btn = el('button', f + '/', 'link mono small');
+          btn.title = 'Show this folder\'s files in the graph';
+          btn.addEventListener('click', () => {
+            showGraph();
+            highlightNodes(cy ? cy.nodes().filter((n) => (n.data('path') || '').startsWith(f + '/')).map((n) => n.id()) : []);
+          });
+          const li = el('li');
+          li.append(btn);
+          ul.append(li);
+        }
+        view.append(ul);
+      }
+      if (r.structure.missing.length) view.append(el('p', `Planned but not created yet: ${r.structure.missing.map((m) => m + '/').join(', ')}`, 'muted small'));
+    }
+
+    // Issues
+    view.append(withHelp(el('h3', `Issues (${r.issues.filter((i) => i.state === 'open').length} open)`), 'issue'));
+    const ul = el('ul', undefined, 'files');
+    for (const i of r.issues) {
+      const li = el('li', undefined, i.state === 'closed' ? 'closed' : '');
+      const btn = el('button', `${i.state === 'closed' ? '✔ ' : ''}${i.title}`, 'link');
+      btn.title = 'Open ' + i.path;
+      btn.addEventListener('click', () => send({ type: 'projectItem', id: i.id }));
+      li.append(btn);
+      if (i.created) li.append(el('span', i.created, 'muted small note-date'));
+      ul.append(li);
+    }
+    if (r.issues.length === 0) view.append(el('p', 'No issues yet.', 'muted small'));
+    view.append(ul, issueForm());
+  }
+
+  function issueForm() {
+    const form = el('div', undefined, 'note-form');
+    const title = /** @type {HTMLInputElement} */ (el('input'));
+    title.placeholder = 'New issue: what needs doing?';
+    title.maxLength = 200;
+    title.setAttribute('aria-label', 'Issue title');
+    const text = /** @type {HTMLTextAreaElement} */ (el('textarea'));
+    text.placeholder = 'Details (optional)';
+    text.rows = 3;
+    text.maxLength = 8000;
+    text.setAttribute('aria-label', 'Issue details');
+    const save = el('button', 'Add issue');
+    save.title = 'Saved as a Markdown file in .vibecode/notes/. Your plan files are never changed.';
+    const status = el('p', '', 'muted small');
+    status.id = 'issueStatus';
+    save.addEventListener('click', () => {
+      if (!title.value.trim()) { status.textContent = 'Write a title first.'; return; }
+      status.textContent = 'Saving…';
+      send({ type: 'addIssue', title: title.value.trim(), text: text.value });
+    });
+    form.append(title, text, save, status);
+    return form;
+  }
+
+  function renderPhaseDetails(p, r) {
+    currentSubject = '';
+    pendingSymbol = '';
+    pendingCommit = '';
+    pendingSession = '';
+    const info = $('info');
+    const rows = el('dl');
+    const row = (k, v) => rows.append(el('dt', k), el('dd', v));
+    row('Status', p.status || PHASE_WORD[p.state]);
+    if (p.goal) row('Goal', p.goal);
+    for (const x of p.extra) row(x.name, x.value);
+    info.replaceChildren(el('h2', phaseName(p)), rows);
+    info.append(withHelp(el('h3', 'Steps'), 'workflow'));
+    for (const s of p.steps) {
+      const line = el('div', undefined, 'check ' + (s.done ? 'ok' : 'warn'));
+      line.append(el('span', s.done ? '✔' : '○', 'mark'), el('span', s.name));
+      info.append(line);
+    }
+    info.append(el('p', 'Ticked from the words in the status column and the development log, so they are only as up to date as those files.', 'muted small'));
+    if (r.plan) info.append(docLink(r.plan, 'Open the plan'));
   }
 
   // ---- Preview next to the code (Phase 8, browser view only) ----

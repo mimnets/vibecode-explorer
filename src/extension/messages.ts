@@ -39,6 +39,10 @@ export type WebviewMessage =
   | { type: 'health' }
   | { type: 'healthItem'; id: string }
   | { type: 'markSafe'; id: string }
+  /** Project tab (Phase 10): load the plan, open a plan file or issue (`j…`), save a new issue. */
+  | { type: 'project' }
+  | { type: 'projectItem'; id: string }
+  | { type: 'addIssue'; title: string; text: string }
   /** Preview a page (`g…`) at an address the owner may have edited (Phase 8). */
   | { type: 'previewPage'; id: string; path: string }
   /** Show one AI session (`a…`). */
@@ -62,6 +66,7 @@ export function parseWebviewMessage(raw: unknown): WebviewMessage | undefined {
     case 'files':
     case 'apis':
     case 'health':
+    case 'project':
       return { type: msg.type };
     case 'selectFolder':
       return Number.isInteger(msg.index) && (msg.index as number) >= 0 && (msg.index as number) < 1000
@@ -83,11 +88,16 @@ export function parseWebviewMessage(raw: unknown): WebviewMessage | undefined {
     case 'apiItem':
     case 'healthItem':
     case 'markSafe':
+    case 'projectItem':
     case 'session':
       return typeof msg.id === 'string' && ID_PATTERN.test(msg.id) ? { type: msg.type, id: msg.id } : undefined;
     case 'previewPage':
       return typeof msg.id === 'string' && ID_PATTERN.test(msg.id) && typeof msg.path === 'string' && msg.path.length <= 512
         ? { type: 'previewPage', id: msg.id, path: msg.path }
+        : undefined;
+    case 'addIssue':
+      return typeof msg.title === 'string' && msg.title.trim() && msg.title.length <= 200 && typeof msg.text === 'string' && msg.text.length <= 8000
+        ? { type: 'addIssue', title: msg.title, text: msg.text }
         : undefined;
     case 'rendered':
       return Number.isInteger(msg.nodes) && Number.isInteger(msg.edges)

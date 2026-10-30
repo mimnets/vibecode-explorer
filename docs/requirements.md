@@ -213,6 +213,22 @@ Chosen by the owner on 2026-10-30 from the saved "safety and learning" ideas (th
 
 Owner-verified 2026-10-30 on this repository (see the development log). Non-goals: running tests or linters, fixing problems, deleting files, removing secrets, checking out commits.
 
+## Phase 10 scope: Project tab
+
+Approved by the owner on 2026-10-30 ("all, one by one", for the saved project-tracking ideas, then the learning aids and the small fixes). Built as the read-only part of the saved plan, plus issues. Editing the AI's memory and rule files stays a saved idea, not scheduled.
+
+| # | Requirement | Status |
+| --- | --- | --- |
+| A | **Project** tab (seventh): current stage, a progress bar, "N of M phases done, K left", open issues | Done (UI not auto-tested) |
+| B | Plan: the first Markdown table with a Phase (or Step, Milestone, Stage) and a Status column in `docs/roadmap.md`, `ROADMAP.md` or `docs/plan.md` and similar. Each status is read as done, in progress, not started or not planned. The current stage is the first phase in progress, else the first not started | Done |
+| C | Workflow steps for each phase (plan written, approved, built, tested automatically, checked by the owner, recorded in the log), ticked from the status words and whether the development log mentions the phase | Done |
+| D | Requirements: the first table with a Requirement and a Status column, counted by its first word (Met, Partial, …) | Done |
+| E | Intended structure: folders listed in a "Layout"/"Structure" section (backticked `folder/` paths, or a text tree in a code block) of `docs/structure.md`, `AGENTS.md`, `CLAUDE.md`, `docs/architecture.md` or `README.md`. Folders outside it are flagged and can be shown in the graph; planned folders that don't exist yet are listed | Done |
+| F | Issues: a title and optional details typed on the page, saved as a new note with `issue: open` in `.vibecode/notes/` under the existing notes permission. Plan files are never changed. Closing an issue = changing the word to `closed` in the file | Done |
+| G | Plan files and issues open on the page in the browser view, or in VS Code's editor. No new dependency | Done |
+
+Owner verification is pending. Non-goals: editing the plan, memory or rule files; closing issues from the dashboard; guessing a plan from anything but a table.
+
 ## Non-goals for Phase 1
 
 Function/API/database graphs, agent attribution, change explanations, embedded browser, marketplace publishing, servers, databases, cloud sync, plugin framework.

@@ -11,6 +11,8 @@ import { describeCommit, HistoryFile, loadHistory, openCommitFile } from './hist
 import { parseWebviewMessage, WebviewMessage } from './messages';
 import { createNote, ensureNotesAllowed, listNotes, NoteEntry, notesFor, NoteSubject } from './notes';
 import { previewAddress } from '../analysis/pages';
+import { cleanText, cleanTitle } from '../analysis/projectStatus';
+import { loadProject } from './projectStatus';
 import { openPreview, previewBase, showInSimpleBrowser } from './preview';
 import { CodeLocation, collectState, DashboardState, describeTarget, findUsages, Target } from './state';
 
@@ -36,6 +38,8 @@ export class DashboardSession {
   /** Problems and secret-looking text in the Health tab (`y…`); secrets only open in the editor. */
   private healthLocations = new Map<string, CodeLocation>();
   private secretIds = new Set<string>();
+  /** Plan files and issues in the Project tab (`j…`). */
+  private projectLocations = new Map<string, CodeLocation>();
   /** AI sessions in the AI sessions tab (`a…`). */
   private sessions = new Map<string, StoredSession>();
   private state: DashboardState | undefined;
@@ -94,6 +98,7 @@ export class DashboardSession {
           this.apiLocations.clear();
           this.healthLocations.clear();
           this.secretIds.clear();
+          this.projectLocations.clear();
           this.commits.clear();
           this.historyFiles.clear();
           this.post({ type: 'state', state });
@@ -191,7 +196,7 @@ export class DashboardSession {
       case 'openInEditor': {
         const target = this.targets.get(msg.id);
         const file = this.historyFiles.get(msg.id);
-        const loc = this.locations.get(msg.id) ?? this.apiLocations.get(msg.id);
+        const loc = this.locations.get(msg.id) ?? this.apiLocations.get(msg.id) ?? this.projectLocations.get(msg.id);
         if (target) await openTarget(target);
         else if (file) await openCommitFile(file);
         else if (loc) await revealLocation(loc);
@@ -240,6 +245,17 @@ export class DashboardSession {
       }
       case 'markSafe':
         await this.markSafe(msg.id);
+        break;
+      case 'project':
+        await this.postProject();
+        break;
+      case 'projectItem': {
+        const loc = this.projectLocations.get(msg.id);
+        if (loc) await this.reveal(msg.id, loc);
+        break;
+      }
+      case 'addIssue':
+        await this.addIssue(msg.title, msg.text);
         break;
       case 'previewPage': {
         const loc = msg.id.startsWith('g') ? this.apiLocations.get(msg.id) : undefined;
@@ -372,6 +388,36 @@ export class DashboardSession {
       return { id, title: n.title, created: n.created, path: n.relPath };
     });
     this.post({ type: 'notes', subject: subject.id, available: true, notes });
+  }
+
+  private async postProject(): Promise<void> {
+    const folder = this.folder();
+    if (!folder) {
+      this.post({ type: 'project', result: { state: 'none' } });
+      return;
+    }
+    const { result, locations } = await loadProject(folder);
+    this.projectLocations = locations;
+    this.post({ type: 'project', result });
+  }
+
+  /** Phase 10: a new issue for the plan, saved as a note (the same opt-in as notes). */
+  private async addIssue(rawTitle: string, rawText: string): Promise<void> {
+    const folder = this.folder();
+    const title = cleanTitle(rawTitle);
+    if (!folder || !title || !vscode.workspace.isTrusted) return;
+    if (!await ensureNotesAllowed(this.memento, folder)) {
+      this.post({ type: 'issueSaved', ok: false, message: 'Not saved: notes are not allowed for this folder.' });
+      return;
+    }
+    try {
+      const uri = await createNote(folder, undefined, title, { issue: true, body: cleanText(rawText) });
+      this.post({ type: 'issueSaved', ok: true, message: `Saved as ${vscode.workspace.asRelativePath(uri, false)}` });
+    } catch (err) {
+      this.post({ type: 'issueSaved', ok: false, message: err instanceof Error ? err.message : String(err) });
+    }
+    this.allNotes = undefined;
+    await this.postProject();
   }
 
   /** Phase 9: marks a commit as a safe point by saving a small note (the same opt-in as notes). */

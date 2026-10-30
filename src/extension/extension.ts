@@ -2,6 +2,7 @@ import * as vscode from 'vscode';
 import { loadSessions, readSessions, resetPermissions } from './agentSessions';
 import { loadApis } from './apis';
 import { loadHealth } from './health';
+import { loadProject } from './projectStatus';
 import { BrowserView, openInBrowser } from './browserView';
 import { codeForCommitFile, codeForLocation, codeForTarget } from './codeView';
 import { Dashboard } from './dashboard';
@@ -62,6 +63,7 @@ export function activate(context: vscode.ExtensionContext) {
     codeForLocation,
     listProjectFiles,
     loadApis,
+    loadProject,
     loadHealth: (folder: vscode.WorkspaceFolder, state: Parameters<typeof loadHealth>[1]) => loadHealth(folder, state, context.workspaceState),
     explainTarget,
     explainSymbolAt,

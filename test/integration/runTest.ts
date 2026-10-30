@@ -92,6 +92,10 @@ export const pong = () => ping;
   write(path.join(apiDir, 'config.js'), `module.exports = { apiKey: "sk-fakefakefakefake1234" };\n`);
   write(path.join(apiDir, 'docs/notes.md'), `# Notes\n`);
   write(path.join(apiDir, 'docs/notes-old.md'), `# Old notes\n`);
+  // Phase 10: a plan, a log and an intended layout.
+  write(path.join(apiDir, 'docs/roadmap.md'), `# Roadmap\n\n| Phase | Goal | Status |\n| --- | --- | --- |\n| 1 | Users API | Done |\n| 2 | Web client | In progress |\n| 3 | Shop | Planned |\n`);
+  write(path.join(apiDir, 'CHANGELOG.md'), `# Log\n\n## Phase 1: users\n`);
+  write(path.join(apiDir, 'AGENTS.md'), `# Rules\n\n## Layout\n\n- \`app/\`, \`web/\`, \`routes/\`, \`docs/\`\n- \`lib/\`: shared code\n`);
 
   const workspace = path.join(root, 'sample.code-workspace');
   write(workspace, JSON.stringify({ folders: [{ path: 'sample-repo' }, { path: 'plain-folder' }, { path: 'py-project' }, { path: 'api-project' }] }));
@@ -157,9 +161,9 @@ async function main(): Promise<void> {
   if (fingerprint(path.join(root, 'ws')) !== before) throw new Error('sample workspace files were modified');
   console.log('  ✔ sample workspace unchanged outside .vibecode/notes');
   const notes = fs.readdirSync(path.join(root, 'ws', 'sample-repo', '.vibecode', 'notes'));
-  if (notes.length !== 4 || !notes.every((n) => /^\d{4}-\d{2}-\d{2}-[a-z0-9-]+\.md$/.test(n))) throw new Error(`unexpected notes: ${notes}`);
+  if (notes.length !== 5 || !notes.every((n) => /^\d{4}-\d{2}-\d{2}-[a-z0-9-]+\.md$/.test(n))) throw new Error(`unexpected notes: ${notes}`);
   if (fs.readdirSync(path.join(root, 'ws', 'sample-repo', '.vibecode')).length !== 1) throw new Error('unexpected files in .vibecode');
-  console.log('  ✔ notes folder holds only the 4 notes created by the test');
+  console.log('  ✔ notes folder holds only the 5 notes created by the test');
   fs.rmSync(root, { recursive: true, force: true, maxRetries: 5 });
 }
 

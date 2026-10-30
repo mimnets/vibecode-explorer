@@ -435,6 +435,34 @@ export async function run(): Promise<void> {
     assert.deepEqual(ah?.duplicates.map((d) => d.files), [['docs/notes-old.md', 'docs/notes.md']]);
   });
 
+  // Phase 10: the Project tab reads the plan, the log, the layout and issues.
+  await api.createNote!(repoFolder, undefined, 'Fix the login page', { issue: true, body: 'It fails\nafter a refresh' });
+  const project = await api.loadProject(apiFolder);
+  const pr = project.result.state === 'ok' ? project.result : undefined;
+  check('the plan, its current stage and each phase\'s steps are read from the docs', () => {
+    assert.equal(pr?.plan?.file, 'docs/roadmap.md');
+    assert.deepEqual(pr?.plan?.phases.map((p) => `${p.id}:${p.state}`), ['1:done', '2:active', '3:todo']);
+    assert.equal(pr?.plan?.current, '2');
+    assert.equal(pr?.log?.file, 'CHANGELOG.md');
+    assert.deepEqual(pr!.plan!.phases[0].steps.map((s) => s.done), [true, true, true, true, true, true]);
+    assert.equal(pr!.plan!.phases[1].steps.at(-1)?.done, false, 'phase 2 is not in the log yet');
+    assert.equal(pr?.requirements, undefined);
+  });
+  check('folders outside the intended layout are flagged, and plan files open by id', () => {
+    assert.equal(pr?.structure?.file, 'AGENTS.md');
+    assert.deepEqual(pr?.structure?.unplanned, ['db', 'py', 'views']);
+    assert.deepEqual(pr?.structure?.missing, ['lib']);
+    assert.equal(project.locations.get(pr!.plan!.id)?.relPath, 'docs/roadmap.md');
+  });
+  const repoProject = await api.loadProject(repoFolder);
+  check('issues are saved as notes and listed, open first', () => {
+    const rp = repoProject.result.state === 'ok' ? repoProject.result : undefined;
+    assert.equal(rp?.plan, undefined);
+    assert.deepEqual(rp?.issues.map((i) => `${i.title}:${i.state}`), ['Fix the login page:open']);
+    assert.match(rp!.issues[0].path, /^\.vibecode\/notes\/\d{4}-\d{2}-\d{2}-fix-the-login-page\.md$/);
+    assert.equal(repoProject.locations.get(rp!.issues[0].id)?.relPath, rp!.issues[0].path);
+  });
+
   // Phase 4b: AI sessions from (fake) Claude Code logs. Reading needs the owner's permission first.
   const listed = await api.loadSessions(repoFolder);
   check('session logs are not read before permission is given', () => {
