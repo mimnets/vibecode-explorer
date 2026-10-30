@@ -12,7 +12,7 @@ Status key: **Partial** = some of it is delivered and verified. **Constraint** =
 | 2 | Understand modules, functions, classes and variables. | Partial: a per-file symbol list. Phase 2 adds go-to and "used in" (owner-verified). Phase 5 adds plain-language explanations (owner-verified). |
 | 3 | Visually explore files, imports, functions, APIs and database relationships. | Partial: a file-import graph for JS/TS relative imports, and Python since Phase 6 (owner-verified). Phase 2 highlights the files that use a symbol. Phase 7 adds routes, HTTP calls and database models with their files (owner-verified). |
 | 4 | Understand why important changes were made. | Partial: Phase 3 shows each commit's full message. Phase 4 adds the owner's notes on files and commits (owner-verified). |
-| 5 | Preview working websites alongside their code. | Partial: opens a user-configured local URL in Simple Browser. Phase 8 lists the app's pages with the files that make them and previews a page next to its code (awaiting owner check). |
+| 5 | Preview working websites alongside their code. | Partial: opens a user-configured local URL in Simple Browser. Phase 8 lists the app's pages with the files that make them and previews a page next to its code (owner-verified). |
 | 6 | Learn programming incrementally while developing. | Partial: Phase 4b shows rule-based tips for each AI session (owner-verified). Phase 5 adds plain-language file and symbol explanations, a glossary and code tips (owner-verified). |
 | 7 | Preserve educational notes, architecture explanations and decisions. | Partial (owner-verified): Phase 4 saves the owner's notes (what, why, decision) as Markdown in `.vibecode/notes/`, opt-in. |
 | 8 | Work across projects and programming languages. | Partial: any folder, multi-root, no-Git. Graph covers JS/TS and Python (Phase 6, owner-verified), with a language list for adding more. |
@@ -188,14 +188,14 @@ Approved by the owner on 2026-10-30 with the recommended choices: a Pages sectio
 
 | # | Requirement | Status |
 | --- | --- | --- |
-| A | **Pages** section first in the **Pages & APIs** tab: address, kind, main file and the number of files. Click: outline the page's files in the graph and show details. Double-click or **Open code**: open the main file | Done (UI not auto-tested) |
+| A | **Pages** section first in the **Pages & APIs** tab: address, kind, main file and the number of files. Click: outline the page's files in the graph and show details. Double-click or **Open code**: open the main file | Done (owner-verified in the GUI) |
 | B | Pages: Next.js `app/**/page.*` (with parent `layout.*`) and `pages/**` (not `pages/api`, `_app`, `_document`), only when a `package.json` lists `next`; React Router `<Route path element>` (nested and index) and route objects (`element`, `Component`, `lazy`); Vue Router `{ path, component }`; HTML files (`public/`, `static/` and `www/` are the site root) with the local scripts and styles they load; Express `res.render` / `res.sendFile`, Flask `render_template`, FastAPI `TemplateResponse`, Django `render` / `template_name` linked through `urls.py` | Done |
 | C | A page's files: its main file, its direct local imports, Next.js layouts, the router file, the template. Names in the code that can't be found are shown as not found | Done |
-| D | **Preview**: the address (editable, for `:id`-style parts) is joined to `vibecodeExplorer.previewUrl` and must stay on that server. In VS Code: the main file opens and the page opens in the Simple Browser beside it. In the browser view: the code and the running page side by side, with **Reload**, **Close preview** and a link to open it in a new tab | Done (UI not auto-tested) |
+| D | **Preview**: the address (editable, for `:id`-style parts) is joined to `vibecodeExplorer.previewUrl` and must stay on that server. In VS Code: the main file opens and the page opens in the Simple Browser beside it. In the browser view: the code and the running page side by side, with **Reload**, **Close preview** and a link to open it in a new tab | Done (owner-verified in the GUI) |
 | E | Browser view CSP: `frame-src` allows only the configured loopback preview origin, never the dashboard's own port, otherwise `'none'`. The frame is sandboxed (`allow-scripts allow-same-origin allow-forms allow-popups`) with `no-referrer`. The page checks the address again before showing it | Done |
 | F | Read-only; never starts the app. Names only for listing; `package.json` and HTML files (at most 20 and 300, 512 KB each) are read. Sensitive files skipped. No new dependency | Done |
 
-Owner verification is pending. Non-goals: following clicks inside the running app, starting dev servers, guessing values for `:id`, Svelte/Nuxt/Astro file routes, server-side includes inside templates.
+Owner-verified 2026-10-30 with `Documentsibecode-api-demo` (see the development log). Non-goals: following clicks inside the running app, starting dev servers, guessing values for `:id`, Svelte/Nuxt/Astro file routes, server-side includes inside templates.
 
 ## Non-goals for Phase 1
 

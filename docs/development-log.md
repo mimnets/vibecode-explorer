@@ -293,10 +293,16 @@ With the owner's approval, a small demo was created **outside this repository**,
 
 **Limitations:** pages are what the code shows, not what the running app does. Addresses with `:id`-style parts need a value typed in. Apps that forbid framing (`X-Frame-Options`, `frame-ancestors`) stay blank in the browser view; the new-tab link still works. A preview URL changed while the browser page is open needs a page reload for the frame to be allowed. Svelte, Nuxt and Astro file routes are not read.
 
+## 2026-10-30: Owner GUI check of Phase 8, and a final look at this repository
+
+**Owner evidence:** with `Documentsibecode-api-demo` open, the owner's own preview server running and the preview URL set, the Pages list and the previews worked in VS Code (Simple Browser beside the code) and in the browser view (code and page side by side). Phase 8 is owner-verified, which completes every phase on the roadmap.
+
+**Owner screenshot of this repository in the browser view:** the Pages & APIs tab shows Pages (0), Routes (0) and Database (0), which is correct for an extension. It shows one HTTP call, `POST ./message?c=*` from `src/webview/browserBridge.js:12`, marked "no matching route found": the browser page's own call to the extension's server, as the dry run predicted. The tabs wrap onto two rows, and the graph shows 53 files and 121 imports. Cosmetic note, not changed: the four files without imports sit in a row at the top right, and two of their labels touch.
+
 ## Handoff for the next session (updated 2026-10-30)
 
 **Where things stand:** Phases 0–7 are Done and owner-verified. Phase 8 (pages and preview alongside code) is implemented and auto-tested, **awaiting the owner's GUI check** with `Documents\vibecode-api-demo` (`node preview-server.js`, preview URL `http://localhost:5173`). That completes every phase on the roadmap. GitHub is up to date to `791d2d9`; later commits are local (pushing needs the owner's yes).
 
-**Next:** the Phase 8 GUI check, then ask the owner what comes after the roadmap (for example the open ideas below, or the saved future plans for project tracking and learning aids).
+**Next:** ask the owner what comes after the roadmap (for example the open ideas below, or the saved future plans for project tracking and learning aids).
 
-**Open ideas, not scheduled:** notes written fully in the browser; syntax colours; a "No" answer to the notes question isn't remembered; notes break on file rename; AI sessions read Claude Code logs only; clicking a listed note wasn't explicitly owner-checked; Svelte/Nuxt/Astro pages.
+**Open ideas, not scheduled:** notes written fully in the browser; syntax colours; a "No" answer to the notes question isn't remembered; notes break on file rename; AI sessions read Claude Code logs only; clicking a listed note wasn't explicitly owner-checked; Svelte/Nuxt/Astro pages; labels of unconnected graph files can touch.
