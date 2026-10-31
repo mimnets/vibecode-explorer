@@ -452,12 +452,16 @@ The owner added two GitHub workflow templates on github.com (`892145c`, `ed1630f
 
 **Verified automatically (locally):** lint, 95 unit tests, the changelog extraction for 1.0.0, and `vsce package` with the release's file name (63 files; contains `package.json` version 1.0.0, `LICENSE.txt` and `changelog.md`). **Not verified yet:** the release workflow itself, which first runs when the tag is pushed.
 
+## 2026-10-31: Release 1.0.0 published, owner check of Phase 15
+
+**Published:** with the owner's "publish", `main` was pushed (`07d9305`) and the annotated tag `v1.0.0` was pushed. The Release workflow passed every step (tag check, lint, unit tests, integration suite under `xvfb-run`, VSIX build, notes, release) and created https://github.com/mimnets/vibecode-explorer/releases/tag/v1.0.0 with `vibecode-explorer-1.0.0.vsix` (1,959,750 bytes).
+
+**Owner evidence:** the owner downloaded the VSIX from the release page, installed it with **Install from VSIX…** and checked the dashboard: "all okay". Phase 15 is owner-verified.
+
 ## Handoff for the next session (updated 2026-10-31)
 
-**Where things stand:** Phases 0–14 are Done and owner-verified. Phase 15 (first release) is implemented and checked locally and committed; it is not pushed yet. GitHub runs lint, tests and packaging on every push (`.github/workflows/node.js.yml`).
+**Where things stand:** Phases 0–15 are Done and owner-verified. Version 1.0.0 is released on GitHub (`v1.0.0`, VSIX attached) and installed in the owner's VS Code from that release. The repository is public under MIT. GitHub runs lint, tests and packaging on every push, and publishes a release when a `v*` tag matching `package.json` is pushed (add the version's section to `CHANGELOG.md` first; pushing a tag needs the owner's yes).
 
-**Next:**
-1. With the owner's yes, push `main`, then create and push the `v1.0.0` tag. Watch the Release workflow; check the release page has the VSIX and notes. Owner check: download the VSIX from the release and install it with **Install from VSIX…**. Record the evidence and mark Phase 15 Done.
-2. Ask the owner what next.
+**Next:** ask the owner what next. Nothing is scheduled.
 
 **Open ideas, not scheduled:** editing the AI's memory and rule files from the dashboard (saved idea, needs its own approval and an AGENTS.md rule); notes break on file rename; AI sessions read Claude Code logs only; Svelte/Nuxt/Astro pages; a closed date on issues; Marketplace/Open VSX publishing, an icon and screenshots.

@@ -298,10 +298,10 @@ Approved by the owner on 2026-10-31 ("yes").
 | A | Version 1.0.0 in `package.json` and the lockfile | Done |
 | B | `CHANGELOG.md` with a short section per version, included in the VSIX | Done |
 | C | README: an **Install** section with plain steps (download the VSIX from Releases, **Install from VSIX…**); the source build kept below for developers | Done |
-| D | `.github/workflows/release.yml`: on a `v*` tag, checks the tag matches the version, runs lint, unit and integration tests, builds `vibecode-explorer-<version>.vsix` and creates the GitHub release with it and that version's changelog notes. Only GitHub's own actions and `gh`; `contents: write` only | Done (runs when the tag is pushed) |
-| E | The tag is pushed only after the owner says yes | Pending |
+| D | `.github/workflows/release.yml`: on a `v*` tag, checks the tag matches the version, runs lint, unit and integration tests, builds `vibecode-explorer-<version>.vsix` and creates the GitHub release with it and that version's changelog notes. Only GitHub's own actions and `gh`; `contents: write` only | Done (the v1.0.0 run passed every step) |
+| E | The tag is pushed only after the owner says yes | Done ("publish") |
 
-Non-goals: the VS Code Marketplace and Open VSX, an icon or screenshots, automatic updates.
+Owner-verified 2026-10-31 (see the development log). Non-goals: the VS Code Marketplace and Open VSX, an icon or screenshots, automatic updates.
 
 ## Non-goals for Phase 1
 
