@@ -24,6 +24,7 @@ Before each phase: write a short plan, get owner approval, implement, verify, re
 | 11 | Learning aids: reading order, test map, copy context for AI, folder rules, commit message check, TODO list, package list, hotspots, how-to-run card, prompt tips | R6, R2, R10 | Done, owner-verified 2026-10-31 |
 | 12 | Small fixes: notes written in the browser, syntax colours in the code view, remembering a "No" to the notes question, graph labels that don't touch | R7, R8, R3 | Done, owner-verified 2026-10-31 |
 | 13 | Close and reopen issues: a **Close** button on each open issue in the Project tab, a **Closed** list with **Reopen**. Only the issue's `issue:` line is changed | R4, R7 | Done, owner-verified 2026-10-31 |
+| 14 | Review checklist for each AI session: the files it changed, each with a tick box and labels (not committed, test, deleted, sensitive), progress, automatic checks, and "reviewed n/m" in the session list. Ticks kept in VS Code's storage | R1, R4, R6 | Implemented and auto-tested (plan approved 2026-10-31). Awaiting owner check |
 
 ## Guardrails for every phase
 

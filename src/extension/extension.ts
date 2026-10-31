@@ -12,6 +12,7 @@ import { openTarget } from './open';
 import { explainSymbolAt, explainTarget } from './explain';
 import { describeCommit, loadHistory, openCommitFile } from './history';
 import { changeIssueState, createNote, listNotes, notesFor } from './notes';
+import { loadReview, setReviewed } from './review';
 import { openPreview } from './preview';
 import { collectState, describeTarget, findUsages } from './state';
 
@@ -76,6 +77,8 @@ export function activate(context: vscode.ExtensionContext) {
     changeIssueState: context.extensionMode === vscode.ExtensionMode.Test ? changeIssueState : undefined,
     readSessions: context.extensionMode === vscode.ExtensionMode.Test ? readSessions : undefined,
     loadSessions: (folder: vscode.WorkspaceFolder) => loadSessions(context.workspaceState, folder),
+    loadReview: context.extensionMode === vscode.ExtensionMode.Test ? loadReview : undefined,
+    setReviewed: context.extensionMode === vscode.ExtensionMode.Test ? setReviewed : undefined,
     isDashboardOpen: () => Dashboard.instance !== undefined,
     renderReport: () => Dashboard.instance?.renderReport,
     revivePanel: (panel: vscode.WebviewPanel) => Dashboard.revive(panel, context.extensionUri, context.workspaceState),

@@ -275,6 +275,20 @@ Approved by the owner on 2026-10-31, together with the AGENTS.md change that all
 
 Owner-verified 2026-10-31 (see the development log). Non-goals: deleting issues, editing their title or text, a closed date.
 
+## Phase 14 scope: review checklist for AI sessions
+
+Approved by the owner on 2026-10-31 ("approve").
+
+| # | Requirement | Status |
+| --- | --- | --- |
+| A | Session details show **Review checklist (n)** instead of the plain file list: a tick box per file, "n of m files reviewed" with a progress bar | Done (UI not auto-tested) |
+| B | Labels per file: not committed yet (in the workspace changes), test file, deleted since, ⚠ sensitive. Clicking a name shows the change (diff when uncommitted) in VS Code or on the browser page; sensitive files are never opened | Done |
+| C | Automatic checks: test files added or changed, files not committed, security mentions to read, sensitive files changed | Done |
+| D | The session list shows "reviewed n/m", or "✔ all files reviewed" | Done (UI not auto-tested) |
+| E | Ticks in VS Code's storage (`workspaceState`), per folder and session log file, only for that session's files, capped. Nothing written into the project; opaque `v…` ids; no new dependency | Done |
+
+Owner verification is pending. Non-goals: review notes per file, line-by-line review, approving a session for others.
+
 ## Non-goals for Phase 1
 
 Function/API/database graphs, agent attribution, change explanations, embedded browser, marketplace publishing, servers, databases, cloud sync, plugin framework.

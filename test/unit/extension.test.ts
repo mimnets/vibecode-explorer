@@ -44,12 +44,17 @@ test('webview messages are validated strictly', () => {
     { type: 'projectItem', id: 'docs/roadmap.md' }, { type: 'learnItem', id: '../x' }, { type: 'copyContext', id: 'C:/x' },
     // Phase 13: an issue is named by its id and the state must be open or closed.
     { type: 'setIssue', id: 'j1' }, { type: 'setIssue', id: 'j1', state: 'done' }, { type: 'setIssue', id: '.vibecode/notes/a.md', state: 'closed' },
-    { type: 'setIssue', state: 'closed' }]) {
+    { type: 'setIssue', state: 'closed' },
+    // Phase 14: review ticks need a file id and a true/false.
+    { type: 'reviewFile', id: 'v1' }, { type: 'reviewFile', id: 'v1', reviewed: 'yes' }, { type: 'reviewFile', id: 'src/a.ts', reviewed: true },
+    { type: 'reviewOpen', id: 'src/a.ts' }]) {
     assert.equal(parseWebviewMessage(bad), undefined, JSON.stringify(bad));
   }
   assert.deepEqual(parseWebviewMessage({ type: 'addIssue', title: 'Fix login', text: 'details', path: 'x' }), { type: 'addIssue', title: 'Fix login', text: 'details' });
   assert.deepEqual(parseWebviewMessage({ type: 'saveNote', id: 'k3', title: 'Why', text: '' }), { type: 'saveNote', id: 'k3', title: 'Why', text: '' });
   assert.deepEqual(parseWebviewMessage({ type: 'setIssue', id: 'j4', state: 'closed', path: 'x' }), { type: 'setIssue', id: 'j4', state: 'closed' });
+  assert.deepEqual(parseWebviewMessage({ type: 'reviewFile', id: 'v2', reviewed: false, path: 'x' }), { type: 'reviewFile', id: 'v2', reviewed: false });
+  assert.deepEqual(parseWebviewMessage({ type: 'reviewOpen', id: 'v0' }), { type: 'reviewOpen', id: 'v0' });
   for (const type of ['project', 'learn', 'hotspots', 'createRules', 'askNotesAgain']) assert.deepEqual(parseWebviewMessage({ type, id: 'x' }), { type });
 });
 

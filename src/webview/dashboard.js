@@ -155,7 +155,8 @@
     else if (msg.type === 'notes') renderNotes(msg);
     else if (msg.type === 'sessions') renderSessions(msg.result);
     else if (msg.type === 'sessionsError') $('sessionsView').replaceChildren(el('p', 'Could not read the session logs: ' + msg.message, 'muted'));
-    else if (msg.type === 'session') renderSession(msg.details, msg.nodeIds);
+    else if (msg.type === 'session') renderSession(msg.details, msg.nodeIds, msg.review);
+    else if (msg.type === 'reviewProgress') renderReviewProgress(msg);
     else if (msg.type === 'code') renderCode(msg.view);
     else if (msg.type === 'files') renderFiles(msg.result);
     else if (msg.type === 'apis') renderApis(msg.result);
@@ -1606,12 +1607,90 @@
         send({ type: 'session', id: sess.id });
       });
       li.append(btn, el('div', `${when(sess.start)} · ${sess.prompts} prompts · ${fmt(sess.tokens)} tokens`, 'muted small'));
+      if (sess.files) {
+        const badge = el('div', '', 'muted small');
+        reviewBadges.set(sess.id, badge);
+        setReviewBadge(badge, sess.reviewed, sess.files);
+        li.append(badge);
+      }
       list.append(li);
     }
     view.append(list);
   }
 
-  function renderSession(d, nodeIds) {
+  // ---- Phase 14: review checklist ----
+  /** Session id → its "reviewed n/m" line in the session list. */
+  const reviewBadges = new Map();
+  const REVIEW_LABEL = { sensitive: '⚠ sensitive', deleted: 'deleted since', uncommitted: 'not committed yet', test: 'test file' };
+
+  function setReviewBadge(badge, reviewed, total) {
+    badge.textContent = reviewed >= total ? '✔ all files reviewed' : `reviewed ${reviewed}/${total}`;
+  }
+
+  function setReviewBar(reviewed, total) {
+    const text = document.getElementById('reviewCount');
+    const fill = document.getElementById('reviewFill');
+    if (text) text.textContent = `${reviewed} of ${total} file${total === 1 ? '' : 's'} reviewed`;
+    if (fill) fill.style.width = `${total ? Math.round((100 * reviewed) / total) : 0}%`;
+  }
+
+  function renderReviewProgress(msg) {
+    const badge = reviewBadges.get(msg.session);
+    if (badge) setReviewBadge(badge, msg.reviewed, msg.total);
+    if (msg.session === pendingSession) setReviewBar(msg.reviewed, msg.total);
+  }
+
+  function renderReview(info, r, hiddenFiles) {
+    info.append(withHelp(el('h3', `Review checklist (${r.items.length})`), 'review checklist'));
+    if (r.items.length === 0) {
+      info.append(el('p', 'No files were changed in this folder.', 'muted'));
+    } else {
+      const c = r.checks;
+      const count = el('div', '', 'small strong');
+      count.id = 'reviewCount';
+      info.append(count);
+      const bar = el('div', undefined, 'progress');
+      const fill = el('div', undefined, 'progress-fill');
+      fill.id = 'reviewFill';
+      bar.append(fill);
+      info.append(bar);
+      setReviewBar(c.reviewed, c.total);
+
+      const checks = el('ul', undefined, 'tips');
+      checks.append(el('li', c.tests ? `✔ ${c.tests} test file${c.tests === 1 ? ' was' : 's were'} added or changed.` : '○ No test files were changed. You could ask for a test.'));
+      checks.append(el('li', c.uncommitted ? `○ ${c.uncommitted} file${c.uncommitted === 1 ? ' is' : 's are'} not committed yet.` : '✔ Nothing from this session is waiting to be committed.'));
+      checks.append(el('li', c.securityMentions ? `○ ${c.securityMentions} security mention${c.securityMentions === 1 ? '' : 's'} in the replies: read them below.` : '✔ No security mentions in the replies.'));
+      if (c.sensitive) checks.append(el('li', `⚠ ${c.sensitive} sensitive-looking file${c.sensitive === 1 ? ' was' : 's were'} changed. Make sure ${c.sensitive === 1 ? 'it is' : 'they are'} in .gitignore and never committed.`));
+      info.append(checks);
+
+      const ul = el('ul', undefined, 'files review');
+      for (const item of r.items) {
+        const li = el('li');
+        const box = /** @type {HTMLInputElement} */ (el('input'));
+        box.type = 'checkbox';
+        box.checked = item.reviewed;
+        box.setAttribute('aria-label', `Reviewed ${item.path}`);
+        box.title = 'Tick when you have looked at this change';
+        box.addEventListener('change', () => send({ type: 'reviewFile', id: item.id, reviewed: box.checked }));
+        const sensitive = item.labels.includes('sensitive');
+        const name = el('button', item.path, 'link mono');
+        if (sensitive) {
+          name.setAttribute('disabled', '');
+          name.title = 'Sensitive-looking files are never opened';
+        } else {
+          name.title = item.labels.includes('uncommitted') ? 'Show what changed' : 'Open the file';
+          name.addEventListener('click', () => send({ type: 'reviewOpen', id: item.id }));
+        }
+        li.append(box, name);
+        for (const label of item.labels) li.append(el('span', REVIEW_LABEL[label] || label, `review-label review-${label}`));
+        ul.append(li);
+      }
+      info.append(ul);
+    }
+    if (hiddenFiles) info.append(el('p', `${hiddenFiles} file(s) outside this folder are not shown.`, 'muted'));
+  }
+
+  function renderSession(d, nodeIds, review) {
     if (d.id !== pendingSession) return;
     pendingSymbol = '';
     const info = $('info');
@@ -1636,12 +1715,7 @@
       info.append(ul);
     }
 
-    info.append(el('h3', `Files changed (${d.files.length})`));
-    if (d.files.length === 0) info.append(el('p', 'No files were changed in this folder.', 'muted'));
-    const files = el('ul', undefined, 'files');
-    for (const f of d.files) files.append(el('li', f, 'mono'));
-    info.append(files);
-    if (d.hiddenFiles) info.append(el('p', `${d.hiddenFiles} file(s) outside this folder are not shown.`, 'muted'));
+    if (review) renderReview(info, review, d.hiddenFiles);
 
     if (d.commits.length) {
       info.append(el('h3', `Commits during this session (${d.commits.length})`));

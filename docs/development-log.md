@@ -424,11 +424,25 @@ Also:
 
 **Verified automatically:** lint, 93 unit tests, `npm run package` (60 files, with LICENSE).
 
+## 2026-10-31: Phase 14: review checklist for AI sessions
+
+**Approved:** the owner picked "AI change checklist" as the next phase and approved the plan ("approve").
+
+**What:** in the AI sessions tab, a session's changed files are now a **Review checklist**: a tick box per file, labels (not committed yet, test file, deleted since, ⚠ sensitive), "n of m files reviewed" with a bar, and automatic checks (tests changed, files not committed, security mentions, sensitive files). Clicking a file name shows its change: the diff when it is still uncommitted, otherwise the file; on the browser page through the code view. The session list shows "reviewed n/m" or "✔ all files reviewed".
+
+**How:** `src/analysis/review.ts` (pure: labels, checks, cleaning stored ticks, the storage key) and `src/extension/review.ts` (file state, `v…` ids, ticks). Ticks live in VS Code's `workspaceState` under `reviewed:<folder>:<log file name>`, the same storage as the permission answers, so nothing is written into the project and AGENTS.md needs no change. Stored ticks are only kept for files of that session and capped at 500. New messages `reviewFile` (id + true/false) and `reviewOpen` (id). Sensitive files are listed but never opened. No new dependency.
+
+**Verified automatically:** lint. 95 unit tests, 2 new: the labels and checks (sensitive + uncommitted, deleted test files not counted as tests), cleaning stored ticks (unknown paths, wrong types, duplicates, cap) and the key; the new messages are checked. Integration suite passes, 1 new check: the sample session's `src/util.ts` is listed as not committed and opens as a diff, a tick is saved and comes back on reload, a file outside the session is not stored, another session has its own ticks, and unticking leaves nothing stored. **Not verified automatically:** the checklist and the list badge in the webview and the browser view.
+
+**Limitations:** files are those the agent edited or wrote (from the logs); a file changed by a command the agent ran is not listed. "Not committed" means it is in the workspace changes now, not necessarily because of this session. Ticks are per computer, not shared.
+
 ## Handoff for the next session (updated 2026-10-31)
 
-**Where things stand:** Phases 0–13 are Done and owner-verified, and everything is pushed. The code is MIT-licensed; the owner switches the repository to public on GitHub.
+**Where things stand:** Phases 0–13 are Done and owner-verified. Phase 14 (review checklist for AI sessions) is implemented, auto-tested and committed locally; the VSIX has not been installed yet (needs the owner's yes) and the owner's GUI check is still to do. GitHub is at `155f61b`; pushing needs the owner's yes. Commits in this repository now use the owner's GitHub email (local Git setting).
 
 **Next:**
-1. Ask the owner what next. Nothing is scheduled.
+1. With the owner's yes, package and install the VSIX. Owner GUI check: AI sessions tab, click a session, tick files, click a file name (diff opens), reload the window and see the ticks kept, "reviewed n/m" in the list. Record the evidence and mark Phase 14 Done.
+2. Ask before pushing.
+3. Ask the owner what next.
 
-**Open ideas, not scheduled:** editing the AI's memory and rule files from the dashboard (saved idea, needs its own approval and an AGENTS.md rule); "what did the AI change" review checklist per session; notes break on file rename; AI sessions read Claude Code logs only; Svelte/Nuxt/Astro pages; a closed date on issues; the extension version is still 0.1.0.
+**Open ideas, not scheduled:** editing the AI's memory and rule files from the dashboard (saved idea, needs its own approval and an AGENTS.md rule); notes break on file rename; AI sessions read Claude Code logs only; Svelte/Nuxt/Astro pages; a closed date on issues; the extension version is still 0.1.0.

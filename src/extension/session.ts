@@ -13,8 +13,10 @@ import { changeIssueState, createNote, ensureNotesAllowed, forgetNotesAnswer, li
 import { previewAddress } from '../analysis/pages';
 import { cleanText, cleanTitle } from '../analysis/projectStatus';
 import { loadProject } from './projectStatus';
+import { loadReview, ReviewFile, setReviewed } from './review';
 import { aiContext, RULES_TEMPLATE } from '../analysis/learn';
 import { isTestFor, isTestFile } from '../analysis/explain';
+import { isSensitiveFile } from '../analysis/sensitive';
 import { loadHotspots, loadLearn } from './learn';
 import { RULES_FILE } from './health';
 import { openPreview, previewBase, showInSimpleBrowser } from './preview';
@@ -52,6 +54,8 @@ export class DashboardSession {
   private context: { id: string; text: string } | undefined;
   /** AI sessions in the AI sessions tab (`a…`). */
   private sessions = new Map<string, StoredSession>();
+  /** The review checklist of the shown session (Phase 14): its files (`v…`) and paths. */
+  private review: { sessionId: string; sessionFile: string; paths: string[]; files: Map<string, ReviewFile> } | undefined;
   private state: DashboardState | undefined;
   private folderIndex = 0;
   private loading: Promise<void> | undefined;
@@ -374,8 +378,34 @@ export class DashboardSession {
         const nodeIds = [...this.targets.entries()]
           .filter(([id, t]) => id.startsWith('f') && paths.has(t.relPath))
           .map(([id]) => id);
+        const { result: review, files } = await loadReview(folder, this.memento, msg.id, session.file, details.files, details.securityMentions.length, this.targets);
+        this.review = { sessionId: msg.id, sessionFile: session.file, paths: details.files, files };
         this.subject = undefined;
-        this.post({ type: 'session', details, nodeIds });
+        this.post({ type: 'session', details, nodeIds, review });
+        break;
+      }
+      case 'reviewFile': {
+        const review = this.review;
+        const file = review?.files.get(msg.id);
+        const folder = this.folder();
+        if (!review || !file || !folder) return;
+        const reviewed = await setReviewed(folder, this.memento, review.sessionFile, review.paths, file.target.relPath, msg.reviewed);
+        this.post({ type: 'reviewProgress', session: review.sessionId, reviewed, total: review.files.size });
+        break;
+      }
+      case 'reviewOpen': {
+        const file = this.review?.files.get(msg.id);
+        if (!file) return;
+        const t = file.target;
+        if (this.codeInPage) {
+          this.post({ type: 'code', view: await codeForTarget(msg.id, t) });
+        } else if (t.sensitive || isSensitiveFile(t.relPath)) {
+          void vscode.window.showInformationMessage(`${t.relPath} looks sensitive, so it is not opened.`);
+        } else if (!file.exists && !t.change) {
+          void vscode.window.showInformationMessage(`${t.relPath} no longer exists.`);
+        } else {
+          await openTarget(t);
+        }
         break;
       }
       case 'addNote':

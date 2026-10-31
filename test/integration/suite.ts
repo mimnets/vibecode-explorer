@@ -544,6 +544,29 @@ export async function run(): Promise<void> {
     assert.ok(!JSON.stringify(sum).includes('TOOL OUTPUT') && !JSON.stringify(sum).includes('supersecret'));
   });
 
+  // Phase 14: the review checklist keeps its ticks in VS Code's storage (here an in-memory one).
+  assert.ok(api.loadReview && api.setReviewed, 'review checklist is exposed in test mode');
+  const store = new Map<string, unknown>();
+  const memento = { keys: () => [...store.keys()], get: (k: string) => store.get(k), update: async (k: string, v: unknown) => { if (v === undefined) store.delete(k); else store.set(k, v); } } as unknown as vscode.Memento;
+  const sessionFile = read.sessions[0].file;
+  const review = await api.loadReview!(repoFolder, memento, 'a0', sessionFile, ['src/util.ts', 'src/util.ts'], 1, targets);
+  const ticked = await api.setReviewed!(repoFolder, memento, sessionFile, ['src/util.ts'], 'src/util.ts', true);
+  const ignored = await api.setReviewed!(repoFolder, memento, sessionFile, ['src/util.ts'], 'src/other.ts', true);
+  const reloaded = await api.loadReview!(repoFolder, memento, 'a0', sessionFile, ['src/util.ts'], 1, targets);
+  const otherSession = await api.loadReview!(repoFolder, memento, 'a1', 'other-session.jsonl', ['src/util.ts'], 0, targets);
+  const unticked = await api.setReviewed!(repoFolder, memento, sessionFile, ['src/util.ts'], 'src/util.ts', false);
+  check('the review checklist lists the session files, and ticks stay per session in VS Code storage', () => {
+    assert.deepEqual(review.result.items.map((i) => `${i.id}:${i.path}:${i.labels.join('+')}:${i.reviewed}`), ['v0:src/util.ts:uncommitted:false']);
+    assert.deepEqual(review.result.checks, { total: 1, reviewed: 0, tests: 0, uncommitted: 1, deleted: 0, sensitive: 0, securityMentions: 1 });
+    assert.ok(review.files.get('v0')?.target.change, 'an uncommitted file opens as its diff');
+    assert.equal(ticked, 1);
+    assert.equal(ignored, 1, 'a file that is not in the session is not stored');
+    assert.equal(reloaded.result.items[0].reviewed, true);
+    assert.equal(otherSession.result.items[0].reviewed, false);
+    assert.equal(unticked, 0);
+    assert.equal(store.size, 0, 'no ticks left, nothing stored');
+  });
+
   // Phase 6b: the browser view's local server.
   assert.ok(api.browserLink, 'browser link is exposed in test mode');
   const link = new URL(await api.browserLink!());

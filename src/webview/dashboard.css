@@ -166,3 +166,9 @@ li.closed > button.link { opacity: 0.6; }
 .tok-s { color: var(--vscode-debugTokenExpression-string, #ce9178); }
 .tok-c { color: var(--vscode-descriptionForeground, #6a9955); font-style: italic; }
 .tok-n { color: var(--vscode-debugTokenExpression-number, #b5cea8); }
+
+/* Phase 14: review checklist */
+ul.review li { display: flex; align-items: center; gap: 6px; flex-wrap: wrap; }
+ul.review input[type="checkbox"] { margin: 0; }
+.review-label { font-size: 0.8em; padding: 0 5px; border-radius: 6px; border: 1px solid var(--vscode-editorWidget-border, #666); color: var(--vscode-descriptionForeground); }
+.review-sensitive { border-color: var(--vscode-editorWarning-foreground, #cca700); color: var(--vscode-editorWarning-foreground, #cca700); }

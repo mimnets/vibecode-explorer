@@ -55,6 +55,7 @@ export const GLOSSARY: Readonly<Record<string, string>> = {
   'output tokens': 'Tokens the model writes in its reply. They usually cost more per token than input.',
   'cache tokens': 'Input the model provider kept from earlier in the session. Reading from the cache is much cheaper than sending it new.',
   session: 'One conversation with an AI agent, from start until you clear it or start a new one.',
+  'review checklist': 'The files an AI session changed, to tick off once you have looked at each one. Ticks are kept in VS Code, not in your project.',
   'security mentions': 'Sentences in the agent\'s replies that mention a security topic. They are found by keywords, not by reviewing your code.',
   'restricted mode': 'VS Code\'s safe mode for folders you have not trusted. VibeCode Explorer reads nothing there.',
   // Phase 7: APIs and databases.

@@ -6,6 +6,7 @@ import * as vscode from 'vscode';
 import { claudeProjectDirName, SessionSummary, sessionTips, summarizeClaudeSession } from '../analysis/agentLogs';
 import { commitHeadline } from '../git/history';
 import { getHistory } from '../git/gitChanges';
+import { reviewedCount } from './review';
 
 // Phase 4b: AI session overview from the agent's own local logs (Claude Code first).
 // Reads ONLY the log folder that belongs to the open project, read-only, after the owner
@@ -121,7 +122,8 @@ export interface SessionListResult {
   state: 'ok' | 'notAllowed' | 'restricted';
   agent: string;
   logFolder: string;
-  sessions: { id: string; title: string; start: string; prompts: number; tokens: number }[];
+  /** `files`: changed files in this folder; `reviewed`: how many are ticked in the review checklist (Phase 14). */
+  sessions: { id: string; title: string; start: string; prompts: number; tokens: number; files: number; reviewed: number }[];
   totals: { sessions: number; prompts: number; input: number; output: number; cacheRead: number; cacheWrite: number };
   topFiles: { path: string; sessions: number }[];
 }
@@ -147,14 +149,18 @@ export async function loadSessions(memento: vscode.Memento, folder: vscode.Works
     map.set(id, st);
     const s = st.summary;
     const t = s.tokens;
-    result.sessions.push({ id, title: s.title, start: s.start, prompts: s.prompts.length, tokens: t.input + t.output + t.cacheRead + t.cacheWrite });
+    const paths = [...new Set(s.filesEdited.map((x) => relInside(folder, x)).filter((x): x is string => !!x))];
+    result.sessions.push({
+      id, title: s.title, start: s.start, prompts: s.prompts.length, tokens: t.input + t.output + t.cacheRead + t.cacheWrite,
+      files: paths.length, reviewed: reviewedCount(folder, memento, st.file, paths),
+    });
     result.totals.sessions++;
     result.totals.prompts += s.prompts.length;
     result.totals.input += t.input;
     result.totals.output += t.output;
     result.totals.cacheRead += t.cacheRead;
     result.totals.cacheWrite += t.cacheWrite;
-    for (const f of new Set(s.filesEdited.map((x) => relInside(folder, x)).filter((x): x is string => !!x))) {
+    for (const f of paths) {
       fileCounts.set(f, (fileCounts.get(f) ?? 0) + 1);
     }
   });

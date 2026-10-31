@@ -57,6 +57,9 @@ export type WebviewMessage =
   | { type: 'previewPage'; id: string; path: string }
   /** Show one AI session (`a…`). */
   | { type: 'session'; id: string }
+  /** Phase 14: tick or untick a file (`v…`) in the session's review checklist, or open it. */
+  | { type: 'reviewFile'; id: string; reviewed: boolean }
+  | { type: 'reviewOpen'; id: string }
   /** Sent by the webview after drawing the graph, or when a script error occurs. */
   | { type: 'rendered'; nodes: number; edges: number }
   | { type: 'webviewError'; message: string };
@@ -106,6 +109,7 @@ export function parseWebviewMessage(raw: unknown): WebviewMessage | undefined {
     case 'learnItem':
     case 'copyContext':
     case 'session':
+    case 'reviewOpen':
       return typeof msg.id === 'string' && ID_PATTERN.test(msg.id) ? { type: msg.type, id: msg.id } : undefined;
     case 'previewPage':
       return typeof msg.id === 'string' && ID_PATTERN.test(msg.id) && typeof msg.path === 'string' && msg.path.length <= 512
@@ -119,6 +123,10 @@ export function parseWebviewMessage(raw: unknown): WebviewMessage | undefined {
     case 'addIssue':
       return typeof msg.title === 'string' && msg.title.trim() && msg.title.length <= 200 && typeof msg.text === 'string' && msg.text.length <= 8000
         ? { type: 'addIssue', title: msg.title, text: msg.text }
+        : undefined;
+    case 'reviewFile':
+      return typeof msg.id === 'string' && ID_PATTERN.test(msg.id) && typeof msg.reviewed === 'boolean'
+        ? { type: 'reviewFile', id: msg.id, reviewed: msg.reviewed }
         : undefined;
     case 'setIssue':
       return typeof msg.id === 'string' && ID_PATTERN.test(msg.id) && (msg.state === 'open' || msg.state === 'closed')
