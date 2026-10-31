@@ -19,6 +19,17 @@ A free, local-first VS Code extension for seeing what changed during AI-assisted
 
 Nothing is uploaded and no AI is called. The extension only reads your project. The one exception is your own notes, which it saves in `.vibecode/notes/` only after you allow it.
 
+## Install
+
+You need VS Code 1.100 or later.
+
+1. Open the [Releases page](https://github.com/mimnets/vibecode-explorer/releases) and download `vibecode-explorer-<version>.vsix` from the newest release.
+2. In VS Code, open the Extensions view (`Ctrl+Shift+X`).
+3. Click the **…** menu at the top of the Extensions view and choose **Install from VSIX…**.
+4. Pick the file you downloaded. VS Code installs it and may ask you to reload.
+
+To update, install the newer file the same way. What changed in each version is in [CHANGELOG.md](CHANGELOG.md).
+
 ## User guide
 
 All commands are in the Command Palette: press `Ctrl+Shift+P` and type **VibeCode**.
@@ -97,9 +108,9 @@ Each VS Code window, and each **Reload Window**, opens a new browser tab.
 
 Open the Extensions view (`Ctrl+Shift+X`), find **VibeCode Explorer**, and click **Uninstall**.
 
-## Install from a VSIX
+## Build and install from source
 
-You need [Node.js](https://nodejs.org/) and VS Code (with its `code` command on your PATH).
+For developers. You need [Node.js](https://nodejs.org/) 22 or later and VS Code (with its `code` command on your PATH).
 
 ```bash
 git clone https://github.com/mimnets/vibecode-explorer.git

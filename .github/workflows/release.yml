@@ -1,0 +1,44 @@
+# Publishes a GitHub release when a version tag (for example v1.0.0) is pushed.
+# Every check runs first; the release is created only if they all pass. The VSIX is
+# attached, and the notes are that version's section of CHANGELOG.md.
+
+name: Release
+
+on:
+  push:
+    tags: [ "v*" ]
+
+permissions:
+  contents: write
+
+jobs:
+  release:
+
+    runs-on: ubuntu-latest
+
+    steps:
+    - uses: actions/checkout@v4
+    - uses: actions/setup-node@v4
+      with:
+        node-version: 24.x
+        cache: 'npm'
+    - name: Tag matches package.json version
+      run: |
+        VERSION=$(node -p "require('./package.json').version")
+        test "v$VERSION" = "$GITHUB_REF_NAME" || { echo "Tag $GITHUB_REF_NAME does not match package.json version $VERSION"; exit 1; }
+        echo "VERSION=$VERSION" >> "$GITHUB_ENV"
+    - run: npm ci
+    - run: npm run lint
+    - run: npm run test:unit
+    - name: Integration tests (VS Code in a virtual screen)
+      run: xvfb-run -a npm run test:integration
+    - name: Build the VSIX
+      run: npx vsce package --out "vibecode-explorer-$VERSION.vsix"
+    - name: Release notes from CHANGELOG.md
+      run: |
+        awk -v v="$VERSION" '$0 ~ "^## " v "( |$)" {on=1; next} /^## / && on {exit} on' CHANGELOG.md > notes.md
+        test -s notes.md || { echo "CHANGELOG.md has no section for $VERSION"; exit 1; }
+    - name: Create the release
+      env:
+        GH_TOKEN: ${{ github.token }}
+      run: gh release create "$GITHUB_REF_NAME" "vibecode-explorer-$VERSION.vsix" --title "VibeCode Explorer $VERSION" --notes-file notes.md

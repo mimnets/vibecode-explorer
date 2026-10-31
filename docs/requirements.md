@@ -289,6 +289,20 @@ Approved by the owner on 2026-10-31 ("approve").
 
 Owner-verified 2026-10-31 (see the development log). Non-goals: review notes per file, line-by-line review, approving a session for others.
 
+## Phase 15 scope: first release
+
+Approved by the owner on 2026-10-31 ("yes").
+
+| # | Requirement | Status |
+| --- | --- | --- |
+| A | Version 1.0.0 in `package.json` and the lockfile | Done |
+| B | `CHANGELOG.md` with a short section per version, included in the VSIX | Done |
+| C | README: an **Install** section with plain steps (download the VSIX from Releases, **Install from VSIX…**); the source build kept below for developers | Done |
+| D | `.github/workflows/release.yml`: on a `v*` tag, checks the tag matches the version, runs lint, unit and integration tests, builds `vibecode-explorer-<version>.vsix` and creates the GitHub release with it and that version's changelog notes. Only GitHub's own actions and `gh`; `contents: write` only | Done (runs when the tag is pushed) |
+| E | The tag is pushed only after the owner says yes | Pending |
+
+Non-goals: the VS Code Marketplace and Open VSX, an icon or screenshots, automatic updates.
+
 ## Non-goals for Phase 1
 
 Function/API/database graphs, agent attribution, change explanations, embedded browser, marketplace publishing, servers, databases, cloud sync, plugin framework.

@@ -2,6 +2,7 @@
 !package.json
 !README.md
 !LICENSE
+!CHANGELOG.md
 !out/src/**/*.js
 !src/webview/**
 !node_modules/cytoscape/dist/cytoscape.min.js

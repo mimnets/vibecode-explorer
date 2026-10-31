@@ -2,7 +2,7 @@
   "name": "vibecode-explorer",
   "displayName": "VibeCode Explorer",
   "description": "Local-first dashboard for exploring workspace changes and file dependencies during AI-assisted coding.",
-  "version": "0.1.0",
+  "version": "1.0.0",
   "private": true,
   "license": "MIT",
   "publisher": "mimnets",

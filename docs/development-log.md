@@ -444,11 +444,20 @@ Also:
 
 The owner added two GitHub workflow templates on github.com (`892145c`, `ed1630f`); they were merged, not rebased. The Node.js CI template failed at `npm test`, most likely because the integration suite starts VS Code and the Linux runner has no screen. With the owner's go-ahead ("if you think it's important then fix"), the workflow now runs lint, unit tests, the integration suite under `xvfb-run` and `npm run package`, on Node 22 and 24 with read-only permissions. (Node 20 failed the unit tests: its `node --test` does not expand the `*.test.js` pattern, and it is out of support since April 2026.) The SLSA template only built placeholder files ("artifact1") for releases and was removed; a real release workflow can attach the VSIX later.
 
+## 2026-10-31: Phase 15: first release
+
+**Approved:** the owner picked "First release" and approved the plan ("yes"). Pushing the `v1.0.0` tag, which publishes the release, waits for their separate yes.
+
+**What:** version 1.0.0; `CHANGELOG.md` (one plain line per area); the README starts with an **Install** section for people who just want to use it (download the VSIX from Releases, then **Install from VSIX…**), and the old section is now "Build and install from source" (Node.js 22 or later). `.github/workflows/release.yml` runs on `v*` tags: it stops if the tag doesn't match `package.json`, runs lint, unit tests and the integration suite under `xvfb-run`, builds `vibecode-explorer-<version>.vsix`, takes that version's section of the changelog as notes, and creates the release with `gh` and the workflow's own token (`contents: write`). No third-party actions besides checkout and setup-node; no new dependency.
+
+**Verified automatically (locally):** lint, 95 unit tests, the changelog extraction for 1.0.0, and `vsce package` with the release's file name (63 files; contains `package.json` version 1.0.0, `LICENSE.txt` and `changelog.md`). **Not verified yet:** the release workflow itself, which first runs when the tag is pushed.
+
 ## Handoff for the next session (updated 2026-10-31)
 
-**Where things stand:** Phases 0–14 are Done and owner-verified. The VSIX with Phase 14 is installed in the owner's VS Code. Everything is pushed. GitHub runs lint, unit tests, the integration suite and packaging on every push (`.github/workflows/node.js.yml`). Commits in this repository use the owner's GitHub email (local Git setting).
+**Where things stand:** Phases 0–14 are Done and owner-verified. Phase 15 (first release) is implemented and checked locally and committed; it is not pushed yet. GitHub runs lint, tests and packaging on every push (`.github/workflows/node.js.yml`).
 
 **Next:**
-1. Ask the owner what next. Nothing is scheduled.
+1. With the owner's yes, push `main`, then create and push the `v1.0.0` tag. Watch the Release workflow; check the release page has the VSIX and notes. Owner check: download the VSIX from the release and install it with **Install from VSIX…**. Record the evidence and mark Phase 15 Done.
+2. Ask the owner what next.
 
-**Open ideas, not scheduled:** editing the AI's memory and rule files from the dashboard (saved idea, needs its own approval and an AGENTS.md rule); notes break on file rename; AI sessions read Claude Code logs only; Svelte/Nuxt/Astro pages; a closed date on issues; the extension version is still 0.1.0.
+**Open ideas, not scheduled:** editing the AI's memory and rule files from the dashboard (saved idea, needs its own approval and an AGENTS.md rule); notes break on file rename; AI sessions read Claude Code logs only; Svelte/Nuxt/Astro pages; a closed date on issues; Marketplace/Open VSX publishing, an icon and screenshots.
