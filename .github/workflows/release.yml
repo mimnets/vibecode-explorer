@@ -1,6 +1,7 @@
 # Publishes a GitHub release when a version tag (for example v1.0.0) is pushed.
 # Every check runs first; the release is created only if they all pass. The VSIX is
-# attached, and the notes are that version's section of CHANGELOG.md.
+# attached, and the notes are that version's section of CHANGELOG.md. The same file then goes
+# to Open VSX when the OVSX_TOKEN secret exists.
 
 name: Release
 
@@ -42,3 +43,15 @@ jobs:
       env:
         GH_TOKEN: ${{ github.token }}
       run: gh release create "$GITHUB_REF_NAME" "vibecode-explorer-$VERSION.vsix" --title "VibeCode Explorer $VERSION" --notes-file notes.md
+    # Open VSX (Cursor, Windsurf, VSCodium): only when the owner has added the OVSX_TOKEN secret.
+    # Uses the registry's own upload API, so no extra tool is installed.
+    - name: Publish to Open VSX
+      env:
+        OVSX_TOKEN: ${{ secrets.OVSX_TOKEN }}
+      run: |
+        if [ -z "$OVSX_TOKEN" ]; then echo "No OVSX_TOKEN secret: skipping Open VSX."; exit 0; fi
+        API=https://open-vsx.org/api
+        if [ "$(curl -s -o /dev/null -w '%{http_code}' "$API/mimnets")" = "404" ]; then
+          curl -sS --fail-with-body -X POST -H "Content-Type: application/json" -d '{"name":"mimnets"}' "$API/-/namespace/create?token=$OVSX_TOKEN"
+        fi
+        curl -sS --fail-with-body -X POST -H "Content-Type: application/octet-stream" --data-binary "@vibecode-explorer-$VERSION.vsix" "$API/-/publish?token=$OVSX_TOKEN"

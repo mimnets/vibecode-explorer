@@ -1,8 +1,9 @@
 {
   "name": "vibecode-explorer",
   "displayName": "VibeCode Explorer",
-  "description": "Local-first dashboard for exploring workspace changes and file dependencies during AI-assisted coding.",
-  "version": "1.0.0",
+  "description": "See what your AI coding agent changed and how your files connect: a local dashboard with a dependency graph, Git history, AI session review and plain-language explanations.",
+  "icon": "images/icon.png",
+  "version": "1.0.1",
   "private": true,
   "license": "MIT",
   "publisher": "mimnets",
@@ -10,11 +11,30 @@
     "type": "git",
     "url": "https://github.com/mimnets/vibecode-explorer.git"
   },
+  "homepage": "https://github.com/mimnets/vibecode-explorer#readme",
+  "bugs": {
+    "url": "https://github.com/mimnets/vibecode-explorer/issues"
+  },
+  "keywords": [
+    "ai",
+    "claude",
+    "vibe coding",
+    "dependency graph",
+    "git",
+    "code review",
+    "learning"
+  ],
+  "galleryBanner": {
+    "color": "#162C54",
+    "theme": "dark"
+  },
   "engines": {
     "vscode": "^1.100.0"
   },
   "categories": [
     "Visualization",
+    "SCM Providers",
+    "Education",
     "Other"
   ],
   "main": "./out/src/extension/extension.js",

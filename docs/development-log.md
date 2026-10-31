@@ -458,10 +458,23 @@ The owner added two GitHub workflow templates on github.com (`892145c`, `ed1630f
 
 **Owner evidence:** the owner downloaded the VSIX from the release page, installed it with **Install from VSIX…** and checked the dashboard: "all okay". Phase 15 is owner-verified.
 
+## 2026-10-31: Phase 16: extension stores
+
+**Approved:** the owner asked whether the extension must go to the Marketplace and whether it costs money (no to both: optional and free), then asked for a plan and approved it ("yes").
+
+**Finding:** Azure DevOps global PATs, the usual way to publish with `vsce`, are retired on 2026-12-01; the replacement (Microsoft Entra ID with workload identity federation) needs an Azure setup. So the Marketplace is uploaded by hand for now, and Open VSX, which still uses its own tokens, is automated.
+
+**What:** `images/icon.png`, drawn by a pure-Python script (4× supersampled, written with zlib): a rounded dark-blue square, three white file dots linked by import lines and one orange "changed" dot. `package.json`: icon, clearer description, keywords, homepage and issues links, a banner colour, and categories Visualization, SCM Providers, Education. The release workflow then posts the VSIX to `https://open-vsx.org/api/-/publish` and creates the `mimnets` namespace if `GET /api/mimnets` is 404; without the `OVSX_TOKEN` secret it does nothing. GitHub masks the secret in logs. Version 1.0.1 with a changelog entry. No new dependency.
+
+**Verified automatically (locally):** lint, 95 unit tests, `vsce package` (64 files, with the icon, no warnings), `GET https://open-vsx.org/api/mimnets` returns 404 (the API answers, the namespace is free). **Not verified yet:** the Open VSX upload, which first runs on the `v1.0.1` tag.
+
 ## Handoff for the next session (updated 2026-10-31)
 
-**Where things stand:** Phases 0–15 are Done and owner-verified. Version 1.0.0 is released on GitHub (`v1.0.0`, VSIX attached) and installed in the owner's VS Code from that release. The repository is public under MIT. GitHub runs lint, tests and packaging on every push, and publishes a release when a `v*` tag matching `package.json` is pushed (add the version's section to `CHANGELOG.md` first; pushing a tag needs the owner's yes).
+**Where things stand:** Phases 0–15 are Done and owner-verified; 1.0.0 is released. Phase 16 (extension stores, version 1.0.1) is implemented and checked locally and committed, not pushed. The owner still has to approve the icon, set up Open VSX (account, publisher agreement, token saved as the `OVSX_TOKEN` repository secret) and say "publish".
 
-**Next:** ask the owner what next. Nothing is scheduled.
+**Next:**
+1. Owner: Open VSX setup, then "publish" → push `main` and the `v1.0.1` tag, watch the Release workflow (GitHub release + Open VSX).
+2. Owner: create the `mimnets` publisher on the VS Code Marketplace and upload `vibecode-explorer-1.0.1.vsix` from the release.
+3. Add the store links to the README, record the evidence, mark Phase 16 Done.
 
-**Open ideas, not scheduled:** editing the AI's memory and rule files from the dashboard (saved idea, needs its own approval and an AGENTS.md rule); notes break on file rename; AI sessions read Claude Code logs only; Svelte/Nuxt/Astro pages; a closed date on issues; Marketplace/Open VSX publishing, an icon and screenshots.
+**Open ideas, not scheduled:** automatic Marketplace publishing with Entra ID; editing the AI's memory and rule files from the dashboard (needs its own approval and an AGENTS.md rule); notes break on file rename; AI sessions read Claude Code logs only; Svelte/Nuxt/Astro pages; a closed date on issues; screenshots.

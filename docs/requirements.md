@@ -303,6 +303,20 @@ Approved by the owner on 2026-10-31 ("yes").
 
 Owner-verified 2026-10-31 (see the development log). Non-goals: the VS Code Marketplace and Open VSX, an icon or screenshots, automatic updates.
 
+## Phase 16 scope: extension stores
+
+Approved by the owner on 2026-10-31 ("yes").
+
+| # | Requirement | Status |
+| --- | --- | --- |
+| A | An original 128×128 icon (`images/icon.png`, drawn by a small script, no image library) in the VSIX | Done |
+| B | Store details in `package.json`: clearer description, keywords, homepage and issues links, banner colour, categories | Done |
+| C | Release workflow: after the GitHub release, publish the same VSIX to Open VSX through its upload API, creating the `mimnets` namespace on first use; skipped when the `OVSX_TOKEN` secret is missing. No new tool | Done (runs on the next tag) |
+| D | VS Code Marketplace: the owner creates the `mimnets` publisher and uploads the release's VSIX by hand (Azure DevOps PATs are retired on 2026-12-01, so no token is stored) | Pending (owner) |
+| E | Version 1.0.1 with a changelog entry; README store links once the listings are live | Partly done (links pending) |
+
+Non-goals: automatic Marketplace publishing, screenshots or video, a verified-publisher badge.
+
 ## Non-goals for Phase 1
 
 Function/API/database graphs, agent attribution, change explanations, embedded browser, marketplace publishing, servers, databases, cloud sync, plugin framework.

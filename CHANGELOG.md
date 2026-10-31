@@ -2,6 +2,11 @@
 
 What changed in each version of VibeCode Explorer. The newest version is at the top.
 
+## 1.0.1 (2026-10-31)
+
+- An icon, a clearer description, search keywords and links to the GitHub page and its issues, for the extension stores.
+- Releases are also published to Open VSX (for Cursor, Windsurf and VSCodium).
+
 ## 1.0.0 (2026-10-31)
 
 The first release. Everything runs on your computer: nothing is uploaded and no AI is called.

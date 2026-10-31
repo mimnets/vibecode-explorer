@@ -26,6 +26,7 @@ Before each phase: write a short plan, get owner approval, implement, verify, re
 | 13 | Close and reopen issues: a **Close** button on each open issue in the Project tab, a **Closed** list with **Reopen**. Only the issue's `issue:` line is changed | R4, R7 | Done, owner-verified 2026-10-31 |
 | 14 | Review checklist for each AI session: the files it changed, each with a tick box and labels (not committed, test, deleted, sensitive), progress, automatic checks, and "reviewed n/m" in the session list. Ticks kept in VS Code's storage | R1, R4, R6 | Done, owner-verified 2026-10-31 |
 | 15 | First release: version 1.0.0, a CHANGELOG, plain install steps in the README, and a GitHub workflow that runs every check and then publishes a release with the VSIX when a version tag is pushed. Marketplace publishing not included | R8, R11 | Done, owner-verified 2026-10-31 |
+| 16 | Extension stores: an icon and store details (description, keywords, links, banner), automatic Open VSX publishing from the release workflow when the owner has added a token, and the VS Code Marketplace uploaded by hand (its tokens are retired on 2026-12-01). Version 1.0.1 | R8, R11 | Implemented and checked locally (plan approved 2026-10-31). Awaiting the owner's store accounts and yes to publish |
 
 ## Guardrails for every phase
 
