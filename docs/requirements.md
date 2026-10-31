@@ -13,7 +13,7 @@ Status key: **Partial** = some of it is delivered and verified. **Constraint** =
 | 3 | Visually explore files, imports, functions, APIs and database relationships. | Partial: a file-import graph for JS/TS relative imports, and Python since Phase 6 (owner-verified). Phase 2 highlights the files that use a symbol. Phase 7 adds routes, HTTP calls and database models with their files (owner-verified). |
 | 4 | Understand why important changes were made. | Partial: Phase 3 shows each commit's full message. Phase 4 adds the owner's notes on files and commits (owner-verified). |
 | 5 | Preview working websites alongside their code. | Partial: opens a user-configured local URL in Simple Browser. Phase 8 lists the app's pages with the files that make them and previews a page next to its code (owner-verified). |
-| 6 | Learn programming incrementally while developing. | Partial: Phase 4b shows rule-based tips for each AI session (owner-verified). Phase 5 adds plain-language file and symbol explanations, a glossary and code tips (owner-verified). Phase 11 adds the Learn tab, copy context for AI, folder rules and commit hints (owner-verified). |
+| 6 | Learn programming incrementally while developing. | Partial: Phase 4b shows rule-based tips for each AI session (owner-verified). Phase 5 adds plain-language file and symbol explanations, a glossary and code tips (owner-verified). Phase 14 adds a review checklist of each AI session's changed files (owner-verified). Phase 11 adds the Learn tab, copy context for AI, folder rules and commit hints (owner-verified). |
 | 7 | Preserve educational notes, architecture explanations and decisions. | Partial (owner-verified): Phase 4 saves the owner's notes (what, why, decision) as Markdown in `.vibecode/notes/`, opt-in. Phase 10 adds issues saved as notes, Phase 12 notes written in the browser, and Phase 13 closing and reopening issues (owner-verified). |
 | 8 | Work across projects and programming languages. | Partial: any folder, multi-root, no-Git. Graph covers JS/TS and Python (Phase 6, owner-verified), with a language list for adding more. |
 | 9 | Support Claude, Qwen, Gemini and other agents without proprietary agent APIs. | Constraint: kept. Data comes from Git and files, never from agent APIs. |
@@ -281,13 +281,13 @@ Approved by the owner on 2026-10-31 ("approve").
 
 | # | Requirement | Status |
 | --- | --- | --- |
-| A | Session details show **Review checklist (n)** instead of the plain file list: a tick box per file, "n of m files reviewed" with a progress bar | Done (UI not auto-tested) |
+| A | Session details show **Review checklist (n)** instead of the plain file list: a tick box per file, "n of m files reviewed" with a progress bar | Done (owner-verified in the GUI) |
 | B | Labels per file: not committed yet (in the workspace changes), test file, deleted since, ⚠ sensitive. Clicking a name shows the change (diff when uncommitted) in VS Code or on the browser page; sensitive files are never opened | Done |
 | C | Automatic checks: test files added or changed, files not committed, security mentions to read, sensitive files changed | Done |
-| D | The session list shows "reviewed n/m", or "✔ all files reviewed" | Done (UI not auto-tested) |
+| D | The session list shows "reviewed n/m", or "✔ all files reviewed" | Done (owner-verified in the GUI) |
 | E | Ticks in VS Code's storage (`workspaceState`), per folder and session log file, only for that session's files, capped. Nothing written into the project; opaque `v…` ids; no new dependency | Done |
 
-Owner verification is pending. Non-goals: review notes per file, line-by-line review, approving a session for others.
+Owner-verified 2026-10-31 (see the development log). Non-goals: review notes per file, line-by-line review, approving a session for others.
 
 ## Non-goals for Phase 1
 

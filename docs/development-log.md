@@ -436,13 +436,16 @@ Also:
 
 **Limitations:** files are those the agent edited or wrote (from the logs); a file changed by a command the agent ran is not listed. "Not committed" means it is in the workspace changes now, not necessarily because of this session. Ticks are per computer, not shared.
 
+## 2026-10-31: Owner GUI check of Phase 14
+
+**Owner evidence:** the VSIX with Phase 14 was installed into the owner's VS Code with their yes. After reloading, the owner opened a session in the AI sessions tab, ticked files (the count and bar went up), clicked a file name (its change opened), reloaded again and found the ticks kept and "reviewed n/m" in the session list: "all okay". Phase 14 is owner-verified.
+
 ## Handoff for the next session (updated 2026-10-31)
 
-**Where things stand:** Phases 0–13 are Done and owner-verified. Phase 14 (review checklist for AI sessions) is implemented, auto-tested and committed locally; the VSIX has not been installed yet (needs the owner's yes) and the owner's GUI check is still to do. GitHub is at `155f61b`; pushing needs the owner's yes. Commits in this repository now use the owner's GitHub email (local Git setting).
+**Where things stand:** Phases 0–14 are Done and owner-verified. The VSIX with Phase 14 is installed in the owner's VS Code. GitHub is at `155f61b`; the Phase 14 commits are local, and pushing needs the owner's yes. Commits in this repository use the owner's GitHub email (local Git setting).
 
 **Next:**
-1. With the owner's yes, package and install the VSIX. Owner GUI check: AI sessions tab, click a session, tick files, click a file name (diff opens), reload the window and see the ticks kept, "reviewed n/m" in the list. Record the evidence and mark Phase 14 Done.
-2. Ask before pushing.
-3. Ask the owner what next.
+1. Ask before pushing.
+2. Ask the owner what next. Nothing is scheduled.
 
 **Open ideas, not scheduled:** editing the AI's memory and rule files from the dashboard (saved idea, needs its own approval and an AGENTS.md rule); notes break on file rename; AI sessions read Claude Code logs only; Svelte/Nuxt/Astro pages; a closed date on issues; the extension version is still 0.1.0.
