@@ -14,7 +14,7 @@ Status key: **Partial** = some of it is delivered and verified. **Constraint** =
 | 4 | Understand why important changes were made. | Partial: Phase 3 shows each commit's full message. Phase 4 adds the owner's notes on files and commits (owner-verified). |
 | 5 | Preview working websites alongside their code. | Partial: opens a user-configured local URL in Simple Browser. Phase 8 lists the app's pages with the files that make them and previews a page next to its code (owner-verified). |
 | 6 | Learn programming incrementally while developing. | Partial: Phase 4b shows rule-based tips for each AI session (owner-verified). Phase 5 adds plain-language file and symbol explanations, a glossary and code tips (owner-verified). Phase 11 adds the Learn tab, copy context for AI, folder rules and commit hints (owner-verified). |
-| 7 | Preserve educational notes, architecture explanations and decisions. | Partial (owner-verified): Phase 4 saves the owner's notes (what, why, decision) as Markdown in `.vibecode/notes/`, opt-in. Phase 10 adds issues saved as notes, and Phase 12 notes written in the browser (owner-verified). |
+| 7 | Preserve educational notes, architecture explanations and decisions. | Partial (owner-verified): Phase 4 saves the owner's notes (what, why, decision) as Markdown in `.vibecode/notes/`, opt-in. Phase 10 adds issues saved as notes, Phase 12 notes written in the browser, and Phase 13 closing and reopening issues (owner-verified). |
 | 8 | Work across projects and programming languages. | Partial: any folder, multi-root, no-Git. Graph covers JS/TS and Python (Phase 6, owner-verified), with a language list for adding more. |
 | 9 | Support Claude, Qwen, Gemini and other agents without proprietary agent APIs. | Constraint: kept. Data comes from Git and files, never from agent APIs. |
 | 10 | Save tokens through local static analysis and Git data. | Constraint: kept. No LLM calls. |
@@ -268,12 +268,12 @@ Approved by the owner on 2026-10-31, together with the AGENTS.md change that all
 
 | # | Requirement | Status |
 | --- | --- | --- |
-| A | Project tab: each open issue has **Close**; closed issues are listed under **Closed (n)** with **Reopen**; the open count updates. Same in the browser view | Done (UI not auto-tested) |
+| A | Project tab: each open issue has **Close**; closed issues are listed under **Closed (n)** with **Reopen**; the open count updates. Same in the browser view | Done (owner-verified in VS Code; the browser view was not checked separately) |
 | B | Only the `issue:` line in the note's header changes (`open` ↔ `closed`; the older word `done` counts as closed). Line endings, a byte-order mark and the rest of the file are kept | Done |
 | C | Only issues the Project tab listed (`j…` ids), only inside `.vibecode/notes/`, only under the notes permission. The file is read again first; if it no longer says the state the page showed, or is gone, nothing is written and the owner is told | Done |
 | D | No new dependency | Done |
 
-Owner verification is pending. Non-goals: deleting issues, editing their title or text, a closed date.
+Owner-verified 2026-10-31 (see the development log). Non-goals: deleting issues, editing their title or text, a closed date.
 
 ## Non-goals for Phase 1
 

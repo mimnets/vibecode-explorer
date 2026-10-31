@@ -412,13 +412,16 @@ Also:
 
 **Limitations:** a closed issue doesn't record when it was closed. An issue note renamed or moved while the tab is open is reported as changed.
 
+## 2026-10-31: Owner GUI check of Phase 13
+
+**Owner evidence:** the VSIX with Phase 13 was installed into the owner's VS Code with their yes. Before reloading, the owner had closed the test issue by hand (`issue: closed` in the file); the dashboard listed it under **Closed (1)**. After the reload they used **Reopen** and **Close** in the Project tab and checked the file each time: "yes, all working". The browser view was not reported separately; it uses the same messages. Phase 13 is owner-verified.
+
 ## Handoff for the next session (updated 2026-10-31)
 
-**Where things stand:** Phases 0–12 are Done and owner-verified. Phase 13 (close and reopen issues) is implemented, auto-tested and committed locally; the owner's GUI check is still to do, and the VSIX has not been installed yet (installing needs the owner's yes). GitHub is at `4898eac`; pushing needs the owner's yes.
+**Where things stand:** Phases 0–13 are Done and owner-verified. The VSIX with Phase 13 is installed in the owner's VS Code. GitHub is at `4898eac`; the Phase 13 commits are local, and pushing needs the owner's yes.
 
 **Next:**
-1. With the owner's yes, package and install the VSIX. Owner GUI check: close the test issue, see it under Closed, open the file (only `issue: closed` changed), Reopen, and the same in the browser view. Record the evidence and mark Phase 13 Done.
-2. Ask before pushing.
-3. Ask the owner what next.
+1. Ask before pushing.
+2. Ask the owner what next. Nothing is scheduled.
 
-**Open ideas, not scheduled:** editing the AI's memory and rule files from the dashboard (saved idea, needs its own approval and an AGENTS.md rule); "what did the AI change" review checklist per session; notes break on file rename; AI sessions read Claude Code logs only; Svelte/Nuxt/Astro pages; the extension version is still 0.1.0.
+**Open ideas, not scheduled:** editing the AI's memory and rule files from the dashboard (saved idea, needs its own approval and an AGENTS.md rule); "what did the AI change" review checklist per session; notes break on file rename; AI sessions read Claude Code logs only; Svelte/Nuxt/Astro pages; a closed date on issues; the extension version is still 0.1.0.
