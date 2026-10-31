@@ -442,7 +442,7 @@ Also:
 
 ## 2026-10-31: GitHub checks
 
-The owner added two GitHub workflow templates on github.com (`892145c`, `ed1630f`); they were merged, not rebased. The Node.js CI template failed at `npm test`, most likely because the integration suite starts VS Code and the Linux runner has no screen. With the owner's go-ahead ("if you think it's important then fix"), the workflow now runs lint, unit tests, the integration suite under `xvfb-run` and `npm run package`, on Node 20 and 22 (18 is out of support), with read-only permissions. The SLSA template only built placeholder files ("artifact1") for releases and was removed; a real release workflow can attach the VSIX later.
+The owner added two GitHub workflow templates on github.com (`892145c`, `ed1630f`); they were merged, not rebased. The Node.js CI template failed at `npm test`, most likely because the integration suite starts VS Code and the Linux runner has no screen. With the owner's go-ahead ("if you think it's important then fix"), the workflow now runs lint, unit tests, the integration suite under `xvfb-run` and `npm run package`, on Node 22 and 24 with read-only permissions. (Node 20 failed the unit tests: its `node --test` does not expand the `*.test.js` pattern, and it is out of support since April 2026.) The SLSA template only built placeholder files ("artifact1") for releases and was removed; a real release workflow can attach the VSIX later.
 
 ## Handoff for the next session (updated 2026-10-31)
 
