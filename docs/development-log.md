@@ -396,13 +396,16 @@ Also:
 
 **Limitations:** colours come from simple rules, not a real parser, so a rare line may be coloured wrongly. Existing notes are still edited in VS Code.
 
-## Handoff for the next session (updated 2026-10-30, end of day)
+## 2026-10-31: Owner GUI check of Phases 10–12
 
-**Where things stand:** Phases 0–9 are Done and owner-verified. Phases 10 (Project tab), 11 (learning aids) and 12 (small fixes) are implemented, auto-tested (lint, 92 unit tests, 89 integration checks) and committed (`cecdc6b`, `45cefad`, `8c52bf5`). The VSIX with all three was installed into the owner's VS Code with their yes. **The owner's GUI check of Phases 10–12 is still to do.** GitHub is at `9f20dc4`; the three commits above (and this handoff) are local, and pushing needs the owner's yes. AGENTS.md now also allows creating `.vibecode/rules.md` once (Phase 11).
+**Owner evidence:** after reloading VS Code with the installed VSIX, the owner went through the 13 checks on this repository and reported "all okay": the Project tab (stage, phase steps, requirements count, layout, Add issue), the Learn tab (its sections, test colours, hotspots), **Copy context for AI**, the commit hints, **Create rules file** (it wrote `.vibecode/rules.md` with the two example rules), and in the browser view the syntax colours, **Save note** (it wrote `.vibecode/notes/2026-10-31-seems-good.md`) and the spaced graph labels. Phases 10, 11 and 12 are owner-verified. The owner's earlier test note (`2026-10-30-note-about-agentlogs-test-ts-testing-notes.md`) was deleted at their request. `.vibecode/` stays untracked.
+
+## Handoff for the next session (updated 2026-10-31)
+
+**Where things stand:** Phases 0–12 are Done and owner-verified. GitHub is at `9f20dc4`; the Phase 10–12 commits and the docs commits after them are local, and pushing needs the owner's yes. Every saved idea except the one below has been built.
 
 **Next:**
-1. Owner GUI check, one phase at a time (the 13 steps given in the session: Project tab stage/steps/structure/Add issue; Learn tab sections, test colours, hotspots, Copy context for AI, commit hints, Create rules file; browser syntax colours, Save note, spaced labels). Record the evidence, mark the phases Done in `roadmap.md` and `requirements.md`.
-2. Fix anything the check finds, then ask before pushing.
-3. Then ask the owner what next: every saved idea except the one below has been built.
+1. Ask the owner before pushing.
+2. Ask the owner what to do next. Nothing is scheduled.
 
 **Open ideas, not scheduled:** editing the AI's memory and rule files from the dashboard (saved idea, needs its own approval and an AGENTS.md rule); closing issues from the dashboard; "what did the AI change" review checklist per session; notes break on file rename; AI sessions read Claude Code logs only; Svelte/Nuxt/Astro pages; the extension version is still 0.1.0.

@@ -13,8 +13,8 @@ Status key: **Partial** = some of it is delivered and verified. **Constraint** =
 | 3 | Visually explore files, imports, functions, APIs and database relationships. | Partial: a file-import graph for JS/TS relative imports, and Python since Phase 6 (owner-verified). Phase 2 highlights the files that use a symbol. Phase 7 adds routes, HTTP calls and database models with their files (owner-verified). |
 | 4 | Understand why important changes were made. | Partial: Phase 3 shows each commit's full message. Phase 4 adds the owner's notes on files and commits (owner-verified). |
 | 5 | Preview working websites alongside their code. | Partial: opens a user-configured local URL in Simple Browser. Phase 8 lists the app's pages with the files that make them and previews a page next to its code (owner-verified). |
-| 6 | Learn programming incrementally while developing. | Partial: Phase 4b shows rule-based tips for each AI session (owner-verified). Phase 5 adds plain-language file and symbol explanations, a glossary and code tips (owner-verified). |
-| 7 | Preserve educational notes, architecture explanations and decisions. | Partial (owner-verified): Phase 4 saves the owner's notes (what, why, decision) as Markdown in `.vibecode/notes/`, opt-in. |
+| 6 | Learn programming incrementally while developing. | Partial: Phase 4b shows rule-based tips for each AI session (owner-verified). Phase 5 adds plain-language file and symbol explanations, a glossary and code tips (owner-verified). Phase 11 adds the Learn tab, copy context for AI, folder rules and commit hints (owner-verified). |
+| 7 | Preserve educational notes, architecture explanations and decisions. | Partial (owner-verified): Phase 4 saves the owner's notes (what, why, decision) as Markdown in `.vibecode/notes/`, opt-in. Phase 10 adds issues saved as notes, and Phase 12 notes written in the browser (owner-verified). |
 | 8 | Work across projects and programming languages. | Partial: any folder, multi-root, no-Git. Graph covers JS/TS and Python (Phase 6, owner-verified), with a language list for adding more. |
 | 9 | Support Claude, Qwen, Gemini and other agents without proprietary agent APIs. | Constraint: kept. Data comes from Git and files, never from agent APIs. |
 | 10 | Save tokens through local static analysis and Git data. | Constraint: kept. No LLM calls. |
@@ -219,7 +219,7 @@ Approved by the owner on 2026-10-30 ("all, one by one", for the saved project-tr
 
 | # | Requirement | Status |
 | --- | --- | --- |
-| A | **Project** tab (seventh): current stage, a progress bar, "N of M phases done, K left", open issues | Done (UI not auto-tested) |
+| A | **Project** tab (seventh): current stage, a progress bar, "N of M phases done, K left", open issues | Done (owner-verified in the GUI) |
 | B | Plan: the first Markdown table with a Phase (or Step, Milestone, Stage) and a Status column in `docs/roadmap.md`, `ROADMAP.md` or `docs/plan.md` and similar. Each status is read as done, in progress, not started or not planned. The current stage is the first phase in progress, else the first not started | Done |
 | C | Workflow steps for each phase (plan written, approved, built, tested automatically, checked by the owner, recorded in the log), ticked from the status words and whether the development log mentions the phase | Done |
 | D | Requirements: the first table with a Requirement and a Status column, counted by its first word (Met, Partial, …) | Done |
@@ -227,7 +227,7 @@ Approved by the owner on 2026-10-30 ("all, one by one", for the saved project-tr
 | F | Issues: a title and optional details typed on the page, saved as a new note with `issue: open` in `.vibecode/notes/` under the existing notes permission. Plan files are never changed. Closing an issue = changing the word to `closed` in the file | Done |
 | G | Plan files and issues open on the page in the browser view, or in VS Code's editor. No new dependency | Done |
 
-Owner verification is pending. Non-goals: editing the plan, memory or rule files; closing issues from the dashboard; guessing a plan from anything but a table.
+Owner-verified 2026-10-31 (see the development log). Non-goals: editing the plan, memory or rule files; closing issues from the dashboard; guessing a plan from anything but a table.
 
 ## Phase 11 scope: learning aids
 
@@ -235,19 +235,19 @@ Approved by the owner on 2026-10-30 together with Phases 10 and 12 ("all, one by
 
 | # | Requirement | Status |
 | --- | --- | --- |
-| A | **Learn** tab (eighth) with How to run, Reading order, Test map, TODO list, Packages and Hotspots. Glossary terms for each | Done (UI not auto-tested) |
+| A | **Learn** tab (eighth) with How to run, Reading order, Test map, TODO list, Packages and Hotspots. Glossary terms for each | Done (owner-verified in the GUI) |
 | B | How to run: an install step and the package.json scripts in a sensible order with plain labels; Python `requirements.txt`, `pyproject.toml`, `manage.py`, `main.py`/`app.py`; command lines from the README's install/run sections. Shown only, never run | Done |
 | C | Reading order: start files (entry points, or files nothing imports but that import others), then what they use level by level; tests left out; unconnected files last | Done |
 | D | Test map: a file has a test when a test file imports it or is named after it (same language). Lists, plus a button that colours the graph (green tested, grey not, blue tests) | Done |
 | E | TODO list: TODO/FIXME/HACK/XXX/BUG comments with file, line and text (secret-looking text hidden, sensitive files never opened); click opens the line | Done |
 | F | Packages: npm and pip packages with version, dev or not, license and description from the installed package's own `package.json`, and whether the code imports them, a script runs them, they are type information, or nothing uses them | Done |
 | G | Hotspots: on request, the files changed most in the latest 100 commits, with the count in fix commits | Done |
-| H | Copy context for AI: a button under "In plain words" copies a short summary of the file (sentences, imports, packages, imported by, symbols, tests, note titles) to the clipboard and shows it | Done (UI not auto-tested) |
+| H | Copy context for AI: a button under "In plain words" copies a short summary of the file (sentences, imports, packages, imported by, symbols, tests, note titles) to the clipboard and shows it | Done (owner-verified in the GUI) |
 | I | Folder rules in the Health tab: lines like "`src/ui/` must not import `src/db/`" or a package name, in `.vibecode/rules.md`; breaking imports are listed and dashed orange in the graph. **Create rules file** writes the file once with examples (notes permission, never overwritten); AGENTS.md updated | Done |
 | J | Commit message check in History: a hint under commits whose first line doesn't follow Conventional Commits | Done |
 | K | Prompt tips in AI sessions: prompts sent again with the same words, and prompts that name no file or folder | Done |
 
-Owner verification is pending. Non-goals: running scripts or tests, installing or removing packages, fixing TODOs, checking licenses beyond what the package says, rewriting commit messages.
+Owner-verified 2026-10-31 (see the development log). Non-goals: running scripts or tests, installing or removing packages, fixing TODOs, checking licenses beyond what the package says, rewriting commit messages.
 
 ## Phase 12 scope: small fixes
 
@@ -255,12 +255,12 @@ Approved by the owner on 2026-10-30 with Phases 10 and 11. These four come from 
 
 | # | Requirement | Status |
 | --- | --- | --- |
-| A | Notes in the browser: a title and text box under Notes in Details; **Save note** creates the note file (same permission, never overwrites). Clicking a note shows it on the page, with **Open in VS Code** | Done (UI not auto-tested) |
-| B | Syntax colours in the code view and diffs: keywords, strings, comments and numbers for JS/TS, Python, CSS, HTML-like, JSON and shell/config files, using VS Code's theme colours (browser: light and dark sets). Text is still set with `textContent` | Done (UI not auto-tested) |
-| C | The notes question now has **No, don't ask again**, which is remembered for the folder (in VS Code's storage). Notes then show "turned off" with **Ask me again**. Closing the question without answering still asks next time | Done (UI not auto-tested) |
-| D | Graph: files without imports are placed in a grid under the rest, spaced by their label length, so their labels don't touch | Done (webview runs without errors; layout not auto-checked) |
+| A | Notes in the browser: a title and text box under Notes in Details; **Save note** creates the note file (same permission, never overwrites). Clicking a note shows it on the page, with **Open in VS Code** | Done (owner-verified in the GUI) |
+| B | Syntax colours in the code view and diffs: keywords, strings, comments and numbers for JS/TS, Python, CSS, HTML-like, JSON and shell/config files, using VS Code's theme colours (browser: light and dark sets). Text is still set with `textContent` | Done (owner-verified in the GUI) |
+| C | The notes question now has **No, don't ask again**, which is remembered for the folder (in VS Code's storage). Notes then show "turned off" with **Ask me again**. Closing the question without answering still asks next time | Done (owner-verified in the GUI) |
+| D | Graph: files without imports are placed in a grid under the rest, spaced by their label length, so their labels don't touch | Done (owner-verified in the GUI) |
 
-Owner verification is pending. Non-goals: editing existing notes, full syntax parsing, themes of their own.
+Owner-verified 2026-10-31 (see the development log). Non-goals: editing existing notes, full syntax parsing, themes of their own.
 
 ## Non-goals for Phase 1
 
