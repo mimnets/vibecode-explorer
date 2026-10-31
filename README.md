@@ -1,6 +1,6 @@
 # VibeCode Explorer
 
-A private, local-first VS Code extension for seeing what changed during AI-assisted coding and how your files connect.
+A free, local-first VS Code extension for seeing what changed during AI-assisted coding and how your files connect.
 
 - **Workspace changes:** added, modified, deleted and untracked files, plus repository and branch. Click a file to open it or its diff against HEAD.
 - **History:** the latest commits with their messages. Click one to see the files it changed, highlighted in the graph, and open a before/after diff of any of them.
@@ -99,7 +99,11 @@ Open the Extensions view (`Ctrl+Shift+X`), find **VibeCode Explorer**, and click
 
 ## Install from a VSIX
 
+You need [Node.js](https://nodejs.org/) and VS Code (with its `code` command on your PATH).
+
 ```bash
+git clone https://github.com/mimnets/vibecode-explorer.git
+cd vibecode-explorer
 npm install
 npm run package                                  # builds vibecode-explorer.vsix
 code --install-extension vibecode-explorer.vsix --force   # installs into your VS Code
@@ -155,4 +159,6 @@ The first integration run downloads an isolated VS Code into `.vscode-test/`. It
 
 See [docs/architecture.md](docs/architecture.md) and [docs/requirements.md](docs/requirements.md).
 
-License: UNLICENSED (private, proprietary).
+## License
+
+[MIT](LICENSE): free to use, change and share, as long as the copyright notice is kept.

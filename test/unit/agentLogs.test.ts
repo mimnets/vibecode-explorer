@@ -23,7 +23,7 @@ const SAMPLE = [
 ];
 
 test('Claude Code log folder names and project matching', () => {
-  assert.equal(claudeProjectDirName('C:\\Users\\VCL-Admin\\Documents\\vibedev-explorer'), 'C--Users-VCL-Admin-Documents-vibedev-explorer');
+  assert.equal(claudeProjectDirName('C:\\Users\\dev\\Documents\\my-app'), 'C--Users-dev-Documents-my-app');
   assert.equal(claudeProjectDirName('/home/me/my_app'), '-home-me-my-app');
   assert.ok(isInsideProject('c:\\work\\shop', 'C:\\work\\shop'));
   assert.ok(isInsideProject('C:/work/shop/src', 'C:\\work\\shop'));

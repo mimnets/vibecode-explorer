@@ -416,12 +416,19 @@ Also:
 
 **Owner evidence:** the VSIX with Phase 13 was installed into the owner's VS Code with their yes. Before reloading, the owner had closed the test issue by hand (`issue: closed` in the file); the dashboard listed it under **Closed (1)**. After the reload they used **Reopen** and **Close** in the Project tab and checked the file each time: "yes, all working". The browser view was not reported separately; it uses the same messages. Phase 13 is owner-verified.
 
+## 2026-10-31: MIT license, ready to make the repository public
+
+**Approved:** the owner wants the repository public so others can use it, and chose the MIT license ("yes, use MIT").
+
+**What:** a `LICENSE` file (MIT, Monirul Islam); `package.json` and the lockfile say `MIT`; the VSIX now includes the license (`.vscodeignore`), so `--skip-license` was removed from `npm run package`. The README says "free" instead of "private", lists Node.js and the clone step under Install, and has a License section. A unit test used the owner's Windows user folder as a sample path; it now uses a made-up one. A check of the tracked files and the history found no secrets or sensitive files (only fake test values). This repository's commit email is now the owner's GitHub email (local Git setting), so new commits link to their profile; earlier commits use another address, which the owner can add to GitHub. Switching the repository to public is done by the owner in GitHub's settings.
+
+**Verified automatically:** lint, 93 unit tests, `npm run package` (60 files, with LICENSE).
+
 ## Handoff for the next session (updated 2026-10-31)
 
-**Where things stand:** Phases 0–13 are Done and owner-verified. The VSIX with Phase 13 is installed in the owner's VS Code. GitHub is at `4898eac`; the Phase 13 commits are local, and pushing needs the owner's yes.
+**Where things stand:** Phases 0–13 are Done and owner-verified, and everything is pushed. The code is MIT-licensed; the owner switches the repository to public on GitHub.
 
 **Next:**
-1. Ask before pushing.
-2. Ask the owner what next. Nothing is scheduled.
+1. Ask the owner what next. Nothing is scheduled.
 
 **Open ideas, not scheduled:** editing the AI's memory and rule files from the dashboard (saved idea, needs its own approval and an AGENTS.md rule); "what did the AI change" review checklist per session; notes break on file rename; AI sessions read Claude Code logs only; Svelte/Nuxt/Astro pages; a closed date on issues; the extension version is still 0.1.0.
