@@ -440,12 +440,15 @@ Also:
 
 **Owner evidence:** the VSIX with Phase 14 was installed into the owner's VS Code with their yes. After reloading, the owner opened a session in the AI sessions tab, ticked files (the count and bar went up), clicked a file name (its change opened), reloaded again and found the ticks kept and "reviewed n/m" in the session list: "all okay". Phase 14 is owner-verified.
 
+## 2026-10-31: GitHub checks
+
+The owner added two GitHub workflow templates on github.com (`892145c`, `ed1630f`); they were merged, not rebased. The Node.js CI template failed at `npm test`, most likely because the integration suite starts VS Code and the Linux runner has no screen. With the owner's go-ahead ("if you think it's important then fix"), the workflow now runs lint, unit tests, the integration suite under `xvfb-run` and `npm run package`, on Node 20 and 22 (18 is out of support), with read-only permissions. The SLSA template only built placeholder files ("artifact1") for releases and was removed; a real release workflow can attach the VSIX later.
+
 ## Handoff for the next session (updated 2026-10-31)
 
-**Where things stand:** Phases 0–14 are Done and owner-verified. The VSIX with Phase 14 is installed in the owner's VS Code. GitHub is at `155f61b`; the Phase 14 commits are local, and pushing needs the owner's yes. Commits in this repository use the owner's GitHub email (local Git setting).
+**Where things stand:** Phases 0–14 are Done and owner-verified. The VSIX with Phase 14 is installed in the owner's VS Code. Everything is pushed. GitHub runs lint, unit tests, the integration suite and packaging on every push (`.github/workflows/node.js.yml`). Commits in this repository use the owner's GitHub email (local Git setting).
 
 **Next:**
-1. Ask before pushing.
-2. Ask the owner what next. Nothing is scheduled.
+1. Ask the owner what next. Nothing is scheduled.
 
 **Open ideas, not scheduled:** editing the AI's memory and rule files from the dashboard (saved idea, needs its own approval and an AGENTS.md rule); notes break on file rename; AI sessions read Claude Code logs only; Svelte/Nuxt/Astro pages; a closed date on issues; the extension version is still 0.1.0.
