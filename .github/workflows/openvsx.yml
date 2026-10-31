@@ -1,0 +1,39 @@
+# Sends the VSIX of an existing GitHub release to Open VSX, started by hand from the Actions tab
+# (Run workflow). Use it when the Open VSX step of a release failed, for example before the
+# OVSX_TOKEN secret or the publisher agreement was in place.
+
+name: Publish to Open VSX
+
+on:
+  workflow_dispatch:
+    inputs:
+      tag:
+        description: 'Release tag, for example v1.0.1'
+        required: true
+
+permissions:
+  contents: read
+
+jobs:
+  publish:
+
+    runs-on: ubuntu-latest
+
+    steps:
+    - name: Download the release's VSIX
+      env:
+        GH_TOKEN: ${{ github.token }}
+        TAG: ${{ inputs.tag }}
+      run: gh release download "$TAG" --repo "$GITHUB_REPOSITORY" --pattern '*.vsix'
+    - name: Publish to Open VSX
+      env:
+        OVSX_TOKEN: ${{ secrets.OVSX_TOKEN }}
+      run: |
+        if [ -z "$OVSX_TOKEN" ]; then echo "The OVSX_TOKEN secret is missing."; exit 1; fi
+        API=https://open-vsx.org/api
+        if [ "$(curl -s -o /dev/null -w '%{http_code}' "$API/mimnets")" = "404" ]; then
+          curl -sS --fail-with-body -X POST -H "Content-Type: application/json" -d '{"name":"mimnets"}' "$API/-/namespace/create?token=$OVSX_TOKEN"
+        fi
+        for f in *.vsix; do
+          curl -sS --fail-with-body -X POST -H "Content-Type: application/octet-stream" --data-binary "@$f" "$API/-/publish?token=$OVSX_TOKEN"
+        done

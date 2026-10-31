@@ -468,12 +468,16 @@ The owner added two GitHub workflow templates on github.com (`892145c`, `ed1630f
 
 **Verified automatically (locally):** lint, 95 unit tests, `vsce package` (64 files, with the icon, no warnings), `GET https://open-vsx.org/api/mimnets` returns 404 (the API answers, the namespace is free). **Not verified yet:** the Open VSX upload, which first runs on the `v1.0.1` tag.
 
+## 2026-10-31: Release 1.0.1; Open VSX step refused
+
+With the owner's "publish", `main` (`4da1117`) and the tag `v1.0.1` were pushed. Every check passed and the GitHub release was created with `vibecode-explorer-1.0.1.vsix`. The Open VSX step then failed with exit code 22 (an HTTP error) at the namespace creation: `mimnets` still doesn't exist there. The endpoint itself answers (`401 Invalid access token.` for a fake token), so the cause is on the account side (most likely the publisher agreement or the Eclipse link, or the token). The response text is only in the job log, which needs the owner's GitHub login. Added `.github/workflows/openvsx.yml`, started by hand with a tag, to send an existing release's VSIX to Open VSX without a new version.
+
 ## Handoff for the next session (updated 2026-10-31)
 
-**Where things stand:** Phases 0–15 are Done and owner-verified; 1.0.0 is released. Phase 16 (extension stores, version 1.0.1) is implemented and checked locally and committed, not pushed. The owner still has to approve the icon, set up Open VSX (account, publisher agreement, token saved as the `OVSX_TOKEN` repository secret) and say "publish".
+**Where things stand:** Phases 0–15 are Done and owner-verified; 1.0.0 is released. Phase 16 (extension stores): 1.0.1 is released on GitHub; its Open VSX upload was refused (see the entry above), and the manual retry workflow `openvsx.yml` is committed locally, not pushed.
 
 **Next:**
-1. Owner: Open VSX setup, then "publish" → push `main` and the `v1.0.1` tag, watch the Release workflow (GitHub release + Open VSX).
+1. Get the Open VSX error text from the owner, fix the account side, push `openvsx.yml` (with their yes) and run it with `v1.0.1`.
 2. Owner: create the `mimnets` publisher on the VS Code Marketplace and upload `vibecode-explorer-1.0.1.vsix` from the release.
 3. Add the store links to the README, record the evidence, mark Phase 16 Done.
 
