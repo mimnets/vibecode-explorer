@@ -21,7 +21,19 @@ Nothing is uploaded and no AI is called. The extension only reads your project. 
 
 ## Install
 
-You need VS Code 1.100 or later.
+You need VS Code 1.100 or later, or an editor built on it (Cursor, Windsurf, VSCodium). Pick one of the three ways below.
+
+### From the extension store (easiest)
+
+The extension is being listed in the [VS Code Marketplace](https://marketplace.visualstudio.com/items?itemName=mimnets.vibecode-explorer) and on [Open VSX](https://open-vsx.org/extension/mimnets/vibecode-explorer). Until those links work, use the release file below.
+
+1. Open the Extensions view: press `Ctrl+Shift+X` (`Cmd+Shift+X` on a Mac).
+2. Type **VibeCode Explorer** in the search box.
+3. Click **Install** on the result from publisher **mimnets**.
+
+VS Code installs from the Marketplace; Cursor, Windsurf and VSCodium install from Open VSX. Updates arrive on their own.
+
+### From a release file
 
 1. Open the [Releases page](https://github.com/mimnets/vibecode-explorer/releases) and download `vibecode-explorer-<version>.vsix` from the newest release.
 2. In VS Code, open the Extensions view (`Ctrl+Shift+X`).
@@ -29,6 +41,10 @@ You need VS Code 1.100 or later.
 4. Pick the file you downloaded. VS Code installs it and may ask you to reload.
 
 To update, install the newer file the same way. What changed in each version is in [CHANGELOG.md](CHANGELOG.md).
+
+### From the source code
+
+See [Build and install from source](#build-and-install-from-source) below (needs Node.js).
 
 ## User guide
 
@@ -169,6 +185,36 @@ The first integration run downloads an isolated VS Code into `.vscode-test/`. It
 - Preview uses VS Code's Simple Browser. It does not start servers or inject code into your app.
 
 See [docs/architecture.md](docs/architecture.md) and [docs/requirements.md](docs/requirements.md).
+
+## Publish a new version (maintainers)
+
+Releases are built and published by GitHub Actions. Nothing is uploaded from your own computer.
+
+1. Raise `"version"` in `package.json` (for example `1.0.2`) and run `npm install` so `package-lock.json` matches.
+2. Add a `## 1.0.2 (date)` section at the top of [CHANGELOG.md](CHANGELOG.md). Its text becomes the release notes.
+3. Commit and push, then push a matching tag: `git tag -a v1.0.2 -m "VibeCode Explorer 1.0.2"` and `git push origin v1.0.2`.
+4. The **Release** workflow runs every check. If they pass, it creates the GitHub release with the `.vsix` file attached, then sends the same file to Open VSX.
+5. Upload the same `.vsix` file to the VS Code Marketplace by hand (see below).
+
+### One-time setup: Open VSX
+
+1. Go to [open-vsx.org](https://open-vsx.org), click **Log In** and sign in with GitHub.
+2. Create a free account at [accounts.eclipse.org](https://accounts.eclipse.org) and enter your GitHub username in its profile.
+3. On open-vsx.org, click your picture, then **Settings**. Under **Profile**, click **Log in with Eclipse**, then **Show Publisher Agreement** and **Agree**.
+4. Under **Access Tokens**, click **Generate New Token** and copy it (it is shown once).
+5. In the GitHub repository: **Settings → Secrets and variables → Actions → New repository secret**. Name `OVSX_TOKEN`, paste the token, **Add secret**.
+
+The namespace (`mimnets`, the `publisher` in `package.json`) is created on the first upload. If the Open VSX step of a release fails, fix the cause, then open the **Actions** tab, choose **Publish to Open VSX**, click **Run workflow** and enter the tag (for example `v1.0.1`). It sends that release's file again.
+
+### One-time setup and each release: VS Code Marketplace
+
+Publishing is free. Azure DevOps personal access tokens stop working on 1 December 2026, so this project uploads by hand instead of storing a token.
+
+1. Open the [Marketplace management page](https://marketplace.visualstudio.com/manage) and sign in with a Microsoft account.
+2. The first time: click **Create publisher**, use the ID `mimnets` (it must match `publisher` in `package.json`) and a display name, and save.
+3. Download the `.vsix` file from the GitHub release.
+4. First version: click **New extension → Visual Studio Code** and upload the file. Later versions: click **…** next to the extension, choose **Update** and upload the new file.
+5. The Marketplace checks the file for a few minutes; then it appears in VS Code's Extensions search.
 
 ## License
 
