@@ -39,10 +39,11 @@ export type WebviewMessage =
   | { type: 'health' }
   | { type: 'healthItem'; id: string }
   | { type: 'markSafe'; id: string }
-  /** Project tab (Phase 10): load the plan, open a plan file or issue (`j…`), save a new issue. */
+  /** Project tab (Phase 10): load the plan, open a plan file or issue (`j…`), save a new issue; close or reopen one (Phase 13). */
   | { type: 'project' }
   | { type: 'projectItem'; id: string }
   | { type: 'addIssue'; title: string; text: string }
+  | { type: 'setIssue'; id: string; state: 'open' | 'closed' }
   /** Learn tab (Phase 11): load it, open a TODO (`l…`), find hotspots; copy a file's (`f…`/`c…`/`p…`) context for an AI chat; create the folder rules file. */
   | { type: 'learn' }
   | { type: 'learnItem'; id: string }
@@ -118,6 +119,10 @@ export function parseWebviewMessage(raw: unknown): WebviewMessage | undefined {
     case 'addIssue':
       return typeof msg.title === 'string' && msg.title.trim() && msg.title.length <= 200 && typeof msg.text === 'string' && msg.text.length <= 8000
         ? { type: 'addIssue', title: msg.title, text: msg.text }
+        : undefined;
+    case 'setIssue':
+      return typeof msg.id === 'string' && ID_PATTERN.test(msg.id) && (msg.state === 'open' || msg.state === 'closed')
+        ? { type: 'setIssue', id: msg.id, state: msg.state }
         : undefined;
     case 'rendered':
       return Number.isInteger(msg.nodes) && Number.isInteger(msg.edges)

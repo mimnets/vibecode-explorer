@@ -262,6 +262,19 @@ Approved by the owner on 2026-10-30 with Phases 10 and 11. These four come from 
 
 Owner-verified 2026-10-31 (see the development log). Non-goals: editing existing notes, full syntax parsing, themes of their own.
 
+## Phase 13 scope: close and reopen issues
+
+Approved by the owner on 2026-10-31, together with the AGENTS.md change that allows it.
+
+| # | Requirement | Status |
+| --- | --- | --- |
+| A | Project tab: each open issue has **Close**; closed issues are listed under **Closed (n)** with **Reopen**; the open count updates. Same in the browser view | Done (UI not auto-tested) |
+| B | Only the `issue:` line in the note's header changes (`open` ↔ `closed`; the older word `done` counts as closed). Line endings, a byte-order mark and the rest of the file are kept | Done |
+| C | Only issues the Project tab listed (`j…` ids), only inside `.vibecode/notes/`, only under the notes permission. The file is read again first; if it no longer says the state the page showed, or is gone, nothing is written and the owner is told | Done |
+| D | No new dependency | Done |
+
+Owner verification is pending. Non-goals: deleting issues, editing their title or text, a closed date.
+
 ## Non-goals for Phase 1
 
 Function/API/database graphs, agent attribution, change explanations, embedded browser, marketplace publishing, servers, databases, cloud sync, plugin framework.

@@ -17,7 +17,7 @@ export interface NoteHeader {
   created?: string;
   /** Phase 9: the commit was marked as a safe point. */
   safe?: boolean;
-  /** Phase 10: an issue for the plan, open or closed (the owner edits the word to close it). */
+  /** Phase 10: an issue for the plan, open or closed (Phase 13: closed and reopened from the dashboard). */
   issue?: 'open' | 'closed';
   /** First `# ` heading, or '' when there is none. */
   title: string;
@@ -84,11 +84,29 @@ export function noteTemplate(subject: { about: string } | { commit: string } | u
   const line = !subject ? '' : 'about' in subject ? `about: ${subject.about}\n` : `commit: ${subject.commit}\n`;
   const body = options.body?.trim() ? `${options.body.trim()}\n` : '';
   if (options.issue) {
-    return `---\n${line}issue: open\ncreated: ${created}\n---\n\n# ${title}\n\n${body}${body ? '\n' : ''}To close this issue, change "issue: open" to "issue: closed" above.\n`;
+    return `---\n${line}issue: open\ncreated: ${created}\n---\n\n# ${title}\n\n${body}${body ? '\n' : ''}To close this issue, click Close in the dashboard's Project tab, or change "issue: open" to "issue: closed" above.\n`;
   }
   if (options.safe) {
     return `---\n${line}safe: true\ncreated: ${created}\n---\n\n# ${title}\n\nMarked as a safe point: a commit that worked and is worth going back to.\n\n## Why it is safe\n\n`;
   }
   if (body) return `---\n${line}created: ${created}\n---\n\n# ${title}\n\n${body}`;
   return `---\n${line}created: ${created}\n---\n\n# ${title}\n\n## What\n\n\n## Why\n\n\n## Decision\n\n`;
+}
+
+/**
+ * Phase 13: switches the header's `issue:` line from `from` to `to`, keeping every other
+ * character of the note. Undefined when there is no such line, or it no longer says `from`
+ * (the file was changed since the dashboard read it).
+ */
+export function setIssueState(text: string, from: 'open' | 'closed', to: 'open' | 'closed'): string | undefined {
+  const lines = text.split('\n'); // A `\r` stays at the end of its line.
+  if (lines[0].replace(/^\uFEFF/, '').trim() !== '---') return undefined;
+  for (let i = 1; i < lines.length && lines[i].trim() !== '---'; i++) {
+    const m = /^(issue:\s*)(open|closed|done)(\s*)$/i.exec(lines[i]);
+    if (!m) continue;
+    if ((m[2].toLowerCase() === 'open' ? 'open' : 'closed') !== from) return undefined;
+    lines[i] = `${m[1]}${to}${m[3]}`;
+    return lines.join('\n');
+  }
+  return undefined;
 }

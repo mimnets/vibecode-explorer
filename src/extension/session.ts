@@ -9,7 +9,7 @@ import { explainSymbolAt, explainTarget } from './explain';
 import { listProjectFiles } from './files';
 import { describeCommit, HistoryFile, loadHistory, openCommitFile } from './history';
 import { parseWebviewMessage, WebviewMessage } from './messages';
-import { createNote, ensureNotesAllowed, forgetNotesAnswer, listNotes, NoteEntry, notesDeclined, notesFor, NoteSubject } from './notes';
+import { changeIssueState, createNote, ensureNotesAllowed, forgetNotesAnswer, listNotes, NoteEntry, notesDeclined, notesFor, NoteSubject } from './notes';
 import { previewAddress } from '../analysis/pages';
 import { cleanText, cleanTitle } from '../analysis/projectStatus';
 import { loadProject } from './projectStatus';
@@ -44,6 +44,8 @@ export class DashboardSession {
   private secretIds = new Set<string>();
   /** Plan files and issues in the Project tab (`j…`). */
   private projectLocations = new Map<string, CodeLocation>();
+  /** The issues among them, with the state the page shows (Phase 13). */
+  private projectIssues = new Map<string, { uri: vscode.Uri; state: 'open' | 'closed' }>();
   /** TODOs in the Learn tab (`l…`). */
   private learnLocations = new Map<string, CodeLocation>();
   /** Facts about the file shown in Details, for "Copy context for AI". */
@@ -285,6 +287,9 @@ export class DashboardSession {
       case 'addIssue':
         await this.addIssue(msg.title, msg.text);
         break;
+      case 'setIssue':
+        await this.setIssue(msg.id, msg.state);
+        break;
       case 'learn': {
         const folder = this.folder();
         if (!folder || !this.state) {
@@ -468,6 +473,13 @@ export class DashboardSession {
     }
     const { result, locations } = await loadProject(folder);
     this.projectLocations = locations;
+    this.projectIssues.clear();
+    if (result.state === 'ok') {
+      for (const i of result.issues) {
+        const loc = locations.get(i.id);
+        if (loc) this.projectIssues.set(i.id, { uri: loc.uri, state: i.state });
+      }
+    }
     this.post({ type: 'project', result });
   }
 
@@ -480,14 +492,39 @@ export class DashboardSession {
       this.post({ type: 'issueSaved', ok: false, message: 'Not saved: notes are not allowed for this folder.' });
       return;
     }
+    let message: string;
     try {
       const uri = await createNote(folder, undefined, title, { issue: true, body: cleanText(rawText) });
-      this.post({ type: 'issueSaved', ok: true, message: `Saved as ${vscode.workspace.asRelativePath(uri, false)}` });
+      message = `Saved as ${vscode.workspace.asRelativePath(uri, false)}`;
     } catch (err) {
-      this.post({ type: 'issueSaved', ok: false, message: err instanceof Error ? err.message : String(err) });
+      message = err instanceof Error ? err.message : String(err);
     }
     this.allNotes = undefined;
     await this.postProject();
+    this.post({ type: 'issueSaved', message }); // After the redraw, which empties the status line.
+  }
+
+  /** Phase 13: closes or reopens an issue listed in the Project tab (the same opt-in as notes). */
+  private async setIssue(id: string, to: 'open' | 'closed'): Promise<void> {
+    const folder = this.folder();
+    const issue = this.projectIssues.get(id);
+    if (!folder || !issue || issue.state === to || !vscode.workspace.isTrusted) return;
+    if (!await ensureNotesAllowed(this.memento, folder)) {
+      this.post({ type: 'issueSaved', message: 'Not changed: notes are not allowed for this folder.' });
+      return;
+    }
+    let message: string;
+    try {
+      const name = vscode.workspace.asRelativePath(issue.uri, false);
+      message = await changeIssueState(folder, issue.uri, to) === 'ok'
+        ? `${to === 'closed' ? 'Closed' : 'Reopened'}: ${name}`
+        : `Not changed: ${name} was changed or removed since the list was read. The list is now up to date.`;
+    } catch (err) {
+      message = err instanceof Error ? err.message : String(err);
+    }
+    this.allNotes = undefined;
+    await this.postProject();
+    this.post({ type: 'issueSaved', message });
   }
 
   /** Phase 11: creates the folder rules file with examples, if it doesn't exist yet (never overwritten). */

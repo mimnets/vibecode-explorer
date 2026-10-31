@@ -400,12 +400,25 @@ Also:
 
 **Owner evidence:** after reloading VS Code with the installed VSIX, the owner went through the 13 checks on this repository and reported "all okay": the Project tab (stage, phase steps, requirements count, layout, Add issue), the Learn tab (its sections, test colours, hotspots), **Copy context for AI**, the commit hints, **Create rules file** (it wrote `.vibecode/rules.md` with the two example rules), and in the browser view the syntax colours, **Save note** (it wrote `.vibecode/notes/2026-10-31-seems-good.md`) and the spaced graph labels. Phases 10, 11 and 12 are owner-verified. The owner's earlier test note (`2026-10-30-note-about-agentlogs-test-ts-testing-notes.md`) was deleted at their request. `.vibecode/` stays untracked.
 
+## 2026-10-31: Phase 13: close and reopen issues
+
+**Approved:** the owner checked Phases 10–12 ("all okay", and a test issue added in the Project tab showed up), the commits were pushed with their yes (`9f20dc4..4898eac`), and they approved this plan and its AGENTS.md change ("yes").
+
+**What:** in the Project tab each open issue has a **Close** button. Closed issues move to a **Closed (n)** list with **Reopen**. A status line under the issue form says what happened.
+
+**How:** a new `setIssue` message (opaque `j…` id plus `open`/`closed`). The session keeps the issues it listed with the state it showed. `changeIssueState` accepts only a `.md` file inside `.vibecode/notes/` (case-insensitive on Windows), reads it again, and `setIssueState` switches the header's `issue:` line only if it still says the opposite state. Otherwise nothing is written and the list is refreshed. It uses the notes permission. AGENTS.md now allows this one change to an existing note. New issues' closing hint mentions the Close button. Also fixed: the "Saved as …" line after **Add issue** was wiped by the redraw; it is now sent after it. No new dependency.
+
+**Verified automatically:** lint. 93 unit tests, 1 new: only the line changes (body text saying "issue: open" is kept), CRLF, byte-order mark and `done` kept, a changed file, a non-issue note and an `issue:` line outside the header are refused; the new message is checked (bad state, path as id). Integration suite passes, 1 new check: an issue in `sample-repo` is closed (the file differs only in that word), closing it again writes nothing, the Project tab lists it as closed, reopening restores the exact original, and a file outside the notes folder is refused. **Not verified automatically:** the buttons and lists in the webview and the browser view.
+
+**Limitations:** a closed issue doesn't record when it was closed. An issue note renamed or moved while the tab is open is reported as changed.
+
 ## Handoff for the next session (updated 2026-10-31)
 
-**Where things stand:** Phases 0–12 are Done and owner-verified. GitHub is at `9f20dc4`; the Phase 10–12 commits and the docs commits after them are local, and pushing needs the owner's yes. Every saved idea except the one below has been built.
+**Where things stand:** Phases 0–12 are Done and owner-verified. Phase 13 (close and reopen issues) is implemented, auto-tested and committed locally; the owner's GUI check is still to do, and the VSIX has not been installed yet (installing needs the owner's yes). GitHub is at `4898eac`; pushing needs the owner's yes.
 
 **Next:**
-1. Ask the owner before pushing.
-2. Ask the owner what to do next. Nothing is scheduled.
+1. With the owner's yes, package and install the VSIX. Owner GUI check: close the test issue, see it under Closed, open the file (only `issue: closed` changed), Reopen, and the same in the browser view. Record the evidence and mark Phase 13 Done.
+2. Ask before pushing.
+3. Ask the owner what next.
 
-**Open ideas, not scheduled:** editing the AI's memory and rule files from the dashboard (saved idea, needs its own approval and an AGENTS.md rule); closing issues from the dashboard; "what did the AI change" review checklist per session; notes break on file rename; AI sessions read Claude Code logs only; Svelte/Nuxt/Astro pages; the extension version is still 0.1.0.
+**Open ideas, not scheduled:** editing the AI's memory and rule files from the dashboard (saved idea, needs its own approval and an AGENTS.md rule); "what did the AI change" review checklist per session; notes break on file rename; AI sessions read Claude Code logs only; Svelte/Nuxt/Astro pages; the extension version is still 0.1.0.

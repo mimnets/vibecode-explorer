@@ -1036,7 +1036,7 @@
     view.replaceChildren();
     if (r.state === 'restricted') { view.append(el('p', 'The project status is off in Restricted Mode. Trust the workspace to see it.', 'muted')); return; }
     if (r.state !== 'ok') { view.append(el('p', 'No folder is open.', 'muted')); return; }
-    view.append(el('p', 'Read from the project\'s own plan files. Nothing is changed, except a new issue when you save one.', 'muted small'));
+    view.append(el('p', 'Read from the project\'s own plan files. Nothing is changed, except the issues you add, close or reopen.', 'muted small'));
 
     // Stage
     const stage = el('div', undefined, 'summary');
@@ -1121,19 +1121,37 @@
     }
 
     // Issues
-    view.append(withHelp(el('h3', `Issues (${r.issues.filter((i) => i.state === 'open').length} open)`), 'issue'));
+    const openIssues = r.issues.filter((i) => i.state === 'open');
+    const closedIssues = r.issues.filter((i) => i.state === 'closed');
+    view.append(withHelp(el('h3', `Issues (${openIssues.length} open)`), 'issue'));
+    if (r.issues.length === 0) view.append(el('p', 'No issues yet.', 'muted small'));
+    else if (openIssues.length === 0) view.append(el('p', 'No open issues.', 'muted small'));
+    view.append(issueList(openIssues));
+    if (closedIssues.length) view.append(el('h3', `Closed (${closedIssues.length})`), issueList(closedIssues));
+    view.append(issueForm());
+  }
+
+  /** Phase 13: each issue opens on click and has a Close or Reopen button. */
+  function issueList(issues) {
     const ul = el('ul', undefined, 'files');
-    for (const i of r.issues) {
-      const li = el('li', undefined, i.state === 'closed' ? 'closed' : '');
-      const btn = el('button', `${i.state === 'closed' ? '✔ ' : ''}${i.title}`, 'link');
+    for (const i of issues) {
+      const closed = i.state === 'closed';
+      const li = el('li', undefined, closed ? 'closed' : '');
+      const btn = el('button', `${closed ? '✔ ' : ''}${i.title}`, 'link');
       btn.title = 'Open ' + i.path;
       btn.addEventListener('click', () => send({ type: 'projectItem', id: i.id }));
+      const toggle = el('button', closed ? 'Reopen' : 'Close', 'issue-toggle');
+      toggle.title = `${closed ? 'Reopen' : 'Close'} this issue: changes only the "issue:" line of ${i.path}`;
+      toggle.addEventListener('click', () => {
+        toggle.setAttribute('disabled', '');
+        send({ type: 'setIssue', id: i.id, state: closed ? 'open' : 'closed' });
+      });
       li.append(btn);
       if (i.created) li.append(el('span', i.created, 'muted small note-date'));
+      li.append(toggle);
       ul.append(li);
     }
-    if (r.issues.length === 0) view.append(el('p', 'No issues yet.', 'muted small'));
-    view.append(ul, issueForm());
+    return ul;
   }
 
   function issueForm() {

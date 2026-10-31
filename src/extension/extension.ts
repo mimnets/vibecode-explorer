@@ -11,7 +11,7 @@ import { listProjectFiles } from './files';
 import { openTarget } from './open';
 import { explainSymbolAt, explainTarget } from './explain';
 import { describeCommit, loadHistory, openCommitFile } from './history';
-import { createNote, listNotes, notesFor } from './notes';
+import { changeIssueState, createNote, listNotes, notesFor } from './notes';
 import { openPreview } from './preview';
 import { collectState, describeTarget, findUsages } from './state';
 
@@ -73,6 +73,7 @@ export function activate(context: vscode.ExtensionContext) {
     listNotes,
     notesFor,
     createNote: context.extensionMode === vscode.ExtensionMode.Test ? createNote : undefined,
+    changeIssueState: context.extensionMode === vscode.ExtensionMode.Test ? changeIssueState : undefined,
     readSessions: context.extensionMode === vscode.ExtensionMode.Test ? readSessions : undefined,
     loadSessions: (folder: vscode.WorkspaceFolder) => loadSessions(context.workspaceState, folder),
     isDashboardOpen: () => Dashboard.instance !== undefined,

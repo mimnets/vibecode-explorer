@@ -3,7 +3,7 @@ import assert from 'node:assert/strict';
 import {
   cleanText, cleanTitle, currentPhase, foldersOf, logMentions, parsePlan, phaseState, plannedFolders, structureDrift, summarizeRequirements, workflowSteps,
 } from '../../src/analysis/projectStatus';
-import { noteTemplate, parseNote } from '../../src/analysis/notes';
+import { noteTemplate, parseNote, setIssueState } from '../../src/analysis/notes';
 
 const ROADMAP = `# Roadmap
 
@@ -75,4 +75,20 @@ test('issues are notes with an open or closed state, and page text is cleaned', 
   assert.ok(noteTemplate({ about: 'a.ts' }, '2026-10-30', 'Why', { body: 'Because.' }).endsWith('# Why\n\nBecause.\n'));
   assert.equal(cleanTitle('  Fix\nthe\u0007 bug  '), 'Fix the bug');
   assert.equal(cleanText('a\r\nb\u0000c\t'), 'a\nbc');
+});
+
+test('closing or reopening an issue changes only its issue line', () => {
+  const text = noteTemplate({ about: 'a.ts' }, '2026-10-31', 'Fix login', { issue: true, body: 'issue: open in the text stays' });
+  const closed = setIssueState(text, 'open', 'closed');
+  assert.equal(closed, text.replace('issue: open\n', 'issue: closed\n'));
+  assert.equal(parseNote(closed!).issue, 'closed');
+  assert.equal(setIssueState(closed!, 'closed', 'open'), text);
+  // Windows line endings, a byte-order mark and the older word "done" are kept as they are.
+  const crlf = '\uFEFF---\r\nissue:  done \r\ncreated: 2026-10-31\r\n---\r\n\r\n# Old\r\n';
+  assert.equal(setIssueState(crlf, 'closed', 'open'), '\uFEFF---\r\nissue:  open \r\ncreated: 2026-10-31\r\n---\r\n\r\n# Old\r\n');
+  // Changed since it was read, not an issue, or the line is outside the header: nothing to write.
+  assert.equal(setIssueState(text, 'closed', 'open'), undefined);
+  assert.equal(setIssueState(noteTemplate({ about: 'a.ts' }, '2026-10-31', 'x'), 'open', 'closed'), undefined);
+  assert.equal(setIssueState('# Title\n\nissue: open\n', 'open', 'closed'), undefined);
+  assert.equal(setIssueState('---\ncreated: 2026-10-31\n---\nissue: open\n', 'open', 'closed'), undefined);
 });

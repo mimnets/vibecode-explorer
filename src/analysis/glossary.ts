@@ -78,7 +78,7 @@ export const GLOSSARY: Readonly<Record<string, string>> = {
   todo: 'A comment like "TODO: …" or "FIXME: …" that someone left as a reminder of unfinished work.',
   hotspot: 'A file that changes very often. Many changes, especially fixes, mean the file is hard to get right: a good place for a test or a clean-up.',
   'folder rule': 'A rule you write about which folders may use which, like "src/ui/ must not import src/database/". It keeps the code organised as it grows.',
-  issue: 'Something that needs doing or fixing, written down so it is not forgotten. Saved as a small file in .vibecode/notes/; your plan files are never changed.',
+  issue: 'Something that needs doing or fixing, written down so it is not forgotten. Saved as a small file in .vibecode/notes/; your plan files are never changed. Close marks it done, Reopen brings it back.',
   'http method': 'The kind of request: GET reads, POST creates, PUT or PATCH changes, DELETE removes. ANY means the route accepts every method.',
 };
 

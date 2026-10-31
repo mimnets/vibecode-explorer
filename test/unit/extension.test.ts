@@ -41,11 +41,15 @@ test('webview messages are validated strictly', () => {
     // Phases 10–12: text from the page is limited, and ids stay opaque.
     { type: 'addIssue', title: '   ', text: '' }, { type: 'addIssue', title: 'x'.repeat(201), text: '' }, { type: 'addIssue', title: 'ok', text: 'x'.repeat(8001) },
     { type: 'addIssue', title: 'ok' }, { type: 'saveNote', id: 'src/a.ts', title: 'ok', text: '' }, { type: 'saveNote', id: 'f1', title: '', text: '' },
-    { type: 'projectItem', id: 'docs/roadmap.md' }, { type: 'learnItem', id: '../x' }, { type: 'copyContext', id: 'C:/x' }]) {
+    { type: 'projectItem', id: 'docs/roadmap.md' }, { type: 'learnItem', id: '../x' }, { type: 'copyContext', id: 'C:/x' },
+    // Phase 13: an issue is named by its id and the state must be open or closed.
+    { type: 'setIssue', id: 'j1' }, { type: 'setIssue', id: 'j1', state: 'done' }, { type: 'setIssue', id: '.vibecode/notes/a.md', state: 'closed' },
+    { type: 'setIssue', state: 'closed' }]) {
     assert.equal(parseWebviewMessage(bad), undefined, JSON.stringify(bad));
   }
   assert.deepEqual(parseWebviewMessage({ type: 'addIssue', title: 'Fix login', text: 'details', path: 'x' }), { type: 'addIssue', title: 'Fix login', text: 'details' });
   assert.deepEqual(parseWebviewMessage({ type: 'saveNote', id: 'k3', title: 'Why', text: '' }), { type: 'saveNote', id: 'k3', title: 'Why', text: '' });
+  assert.deepEqual(parseWebviewMessage({ type: 'setIssue', id: 'j4', state: 'closed', path: 'x' }), { type: 'setIssue', id: 'j4', state: 'closed' });
   for (const type of ['project', 'learn', 'hotspots', 'createRules', 'askNotesAgain']) assert.deepEqual(parseWebviewMessage({ type, id: 'x' }), { type });
 });
 

@@ -149,7 +149,8 @@ dd { margin: 0; word-break: break-all; }
 .phases li.done > button { opacity: 0.75; }
 .phases li.current > button { font-weight: 600; }
 .phases li.skipped > button { text-decoration: line-through; opacity: 0.6; }
-li.closed > button { opacity: 0.6; }
+li.closed > button.link { opacity: 0.6; }
+.issue-toggle { margin-left: 8px; padding: 0 8px; font-size: 0.9em; }
 .note-form { display: flex; flex-direction: column; gap: 4px; margin-top: 6px; }
 .note-form input, .note-form textarea { font: inherit; color: var(--vscode-input-foreground); background: var(--vscode-input-background); border: 1px solid var(--vscode-input-border, #555); padding: 3px 5px; }
 .note-form button { align-self: flex-start; }

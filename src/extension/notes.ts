@@ -1,8 +1,9 @@
 import * as vscode from 'vscode';
-import { isNoteFileName, NoteOptions, NOTES_DIR, noteFileName, noteTemplate, parseNote, sameCommit } from '../analysis/notes';
+import { isNoteFileName, NoteOptions, NOTES_DIR, noteFileName, noteTemplate, parseNote, sameCommit, setIssueState } from '../analysis/notes';
 
 // Phase 4: the owner's notes. This is the only place the extension writes into a project,
-// and only after the owner allows it for that folder.
+// and only after the owner allows it for that folder. Existing notes are never changed,
+// except the `issue:` line of an issue (Phase 13).
 
 const MAX_NOTES = 500;
 const MAX_NOTE_BYTES = 64 * 1024;
@@ -102,6 +103,32 @@ export async function createNote(folder: vscode.WorkspaceFolder, subject: NoteSu
   if (await exists(uri)) throw new Error(`${NOTES_DIR}/${name} already exists.`);
   await vscode.workspace.fs.writeFile(uri, new TextEncoder().encode(noteTemplate(subject, created, title, options)));
   return uri;
+}
+
+/**
+ * Phase 13: closes or reopens an issue by switching its `issue:` line, nothing else.
+ * Only a note inside the notes folder, and only when it still says the opposite state.
+ */
+export async function changeIssueState(folder: vscode.WorkspaceFolder, uri: vscode.Uri, to: 'open' | 'closed'): Promise<'ok' | 'changed'> {
+  if (!vscode.workspace.isTrusted) throw new Error('Notes are off in Restricted Mode.');
+  // Windows paths ignore letter case, so a drive letter may be spelled either way.
+  const norm = (p: string): string => (process.platform === 'win32' ? p.toLowerCase() : p);
+  const dir = norm(notesFolderUri(folder).path.replace(/\/$/, ''));
+  const file = norm(uri.path);
+  if (uri.scheme !== folder.uri.scheme || !file.startsWith(`${dir}/`) || file.includes('/../') || !file.endsWith('.md')) {
+    throw new Error(`Only issues in ${NOTES_DIR}/ can be changed.`);
+  }
+  let text: string;
+  try {
+    if ((await vscode.workspace.fs.stat(uri)).size > MAX_NOTE_BYTES) return 'changed';
+    text = new TextDecoder().decode(await vscode.workspace.fs.readFile(uri));
+  } catch {
+    return 'changed'; // Deleted or unreadable since the list was read.
+  }
+  const next = setIssueState(text, to === 'open' ? 'closed' : 'open', to);
+  if (next === undefined) return 'changed';
+  await vscode.workspace.fs.writeFile(uri, new TextEncoder().encode(next));
+  return 'ok';
 }
 
 async function exists(uri: vscode.Uri): Promise<boolean> {

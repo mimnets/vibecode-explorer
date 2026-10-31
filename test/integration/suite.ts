@@ -463,6 +463,28 @@ export async function run(): Promise<void> {
     assert.equal(repoProject.locations.get(rp!.issues[0].id)?.relPath, rp!.issues[0].path);
   });
 
+  // Phase 13: closing and reopening an issue changes only its issue line.
+  const rpIssue = repoProject.result.state === 'ok' ? repoProject.result.issues[0] : undefined;
+  const issueUri = repoProject.locations.get(rpIssue!.id)!.uri;
+  const issueBefore = new TextDecoder().decode(await vscode.workspace.fs.readFile(issueUri));
+  assert.ok(api.changeIssueState, 'issue writer is exposed in test mode');
+  const closedResult = await api.changeIssueState!(repoFolder, issueUri, 'closed');
+  const issueClosed = new TextDecoder().decode(await vscode.workspace.fs.readFile(issueUri));
+  const closeAgain = await api.changeIssueState!(repoFolder, issueUri, 'closed');
+  const projectAfterClose = await api.loadProject(repoFolder);
+  const reopened = await api.changeIssueState!(repoFolder, issueUri, 'open');
+  const issueAfter = new TextDecoder().decode(await vscode.workspace.fs.readFile(issueUri));
+  const outside = await api.changeIssueState!(repoFolder, vscode.Uri.joinPath(repoFolder.uri, 'README.md'), 'closed').then(() => 'written', (e: Error) => e.message);
+  check('an issue is closed and reopened, and only its issue line changes', () => {
+    assert.equal(closedResult, 'ok');
+    assert.equal(issueClosed, issueBefore.replace('issue: open', 'issue: closed'));
+    assert.equal(closeAgain, 'changed', 'an issue that is already closed is not written again');
+    assert.deepEqual(projectAfterClose.result.state === 'ok' && projectAfterClose.result.issues.map((i) => i.state), ['closed']);
+    assert.equal(reopened, 'ok');
+    assert.equal(issueAfter, issueBefore);
+    assert.match(outside, /Only issues in \.vibecode\/notes\/ can be changed/);
+  });
+
   // Phase 11: learning aids.
   const learn = await api.loadLearn(apiFolder, apiState.state, apiState.targets);
   const lr = learn.result.state === 'ok' ? learn.result : undefined;
